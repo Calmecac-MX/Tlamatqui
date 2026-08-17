@@ -16,6 +16,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** registrar cambios de versión v2.5.5 en changelogs (`ece4511`)
 - **[rules]** actualizar nombre del proyecto a Tlamatqui en la ruta de la IA y documentación (`4248b88`)
 - **[changelog]** actualizar changelog raíz y archivos por versión con último commit (`50cc9ce`)
 
