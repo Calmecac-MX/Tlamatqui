@@ -12,6 +12,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 🚀 Features & Nuevas Funcionalidades
 
+- **[rules]** crear regla dedicada para el ecosistema Caveman en .agents/rules/caveman-rules.md (`c411890`)
 - **[rules]** crear sistema modular de reglas de IA en .agents/rules/ (`1023197`)
 - **[changelog]** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
 
