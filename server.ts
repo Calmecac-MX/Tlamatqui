@@ -111,7 +111,7 @@ initializeDatabase().then(() => {
 app.get("/api/health", (req: Request, res: Response) => {
   res.json({
     status: "online",
-    service: "Tiendanube Diagnostic Analyzer Backend REST API",
+    service: "Tlamatqui Backend REST API",
     version: BACKEND_VERSION,
     frontendVersion: FRONTEND_VERSION,
     timestamp: new Date().toISOString()

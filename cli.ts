@@ -45,7 +45,7 @@ function saveReports(reports: any[]): void {
  */
 function printHelp(): void {
   console.log(`
-\x1b[1m\x1b[36mTiendanube Diagnostic Analyzer CLI\x1b[0m
+\x1b[1m\x1b[36mTlamatqui CLI\x1b[0m
 ====================================
 Comandos disponibles:
   \x1b[32mlist\x1b[0m                 Muestra todos los reportes de diagnóstico.

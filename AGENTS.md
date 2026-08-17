@@ -94,7 +94,7 @@ El repositorio cuenta con 21 skills especializadas en `.agents/skills/`. A conti
 
 ## 5. 📦 Reglas y Configuración del Manejo de Versiones
 
-El repositorio utiliza un sistema de **Auto-Versionado Desacoplado Independiente** gestionado por el script [`scripts/auto-version.js`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/scripts/auto-version.js).
+El repositorio utiliza un sistema de **Auto-Versionado Desacoplado Independiente** gestionado por el script [`scripts/auto-version.js`](file:///Users/cesarayar/Documents/tlamatqui/scripts/auto-version.js).
 
 ### 5.1 Ámbitos de Componentes y Desacoplamiento
 - **Frontend Scope (`src/`, `index.html`, `assets/`):** Genera `src/version.ts` y gestiona la versión independiente del Frontend (`FRONTEND_VERSION`).
@@ -118,10 +118,10 @@ El repositorio utiliza un sistema de **Auto-Versionado Desacoplado Independiente
 
 ## 6. 📝 Reglas de Conventional Commits y Automatización de Changelog (Google Release Please)
 
-El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/CHANGELOG.md) guiada por la especificación de **Conventional Commits** y **Google Release Please** ([`release-please-config.json`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/release-please-config.json), [`.release-please-manifest.json`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/.release-please-manifest.json) y [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/.github/workflows/release-please.yml)).
+El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por la especificación de **Conventional Commits** y **Google Release Please** ([`release-please-config.json`](file:///Users/cesarayar/Documents/tlamatqui/release-please-config.json), [`.release-please-manifest.json`](file:///Users/cesarayar/Documents/tlamatqui/.release-please-manifest.json) y [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/release-please.yml)).
 
 ### 6.1 Estructura Obligatoria de Commits
-Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir estrictamente el estándar Conventional Commits:
+Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir strictly el estándar Conventional Commits:
 ```text
 <tipo>(<ámbito>): <descripción concisa>
 
@@ -143,8 +143,8 @@ Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir
 | `BREAKING CHANGE:` | Cambio Incompatible en API / DB | Se destaca en 🚨 Cambios Incompatibles. Incrementa versión MAJOR. |
 
 ### 6.3 Automatización del Changelog
-1. **Generación Local:** Ejecuta `npm run changelog` o `npm run cli changelog` para actualizar [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/CHANGELOG.md) antes de enviar PRs o finalizar entregables.
-2. **Generación Automática en CI/CD:** El workflow de GitHub Actions [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/.github/workflows/release-please.yml) ejecuta `google-github-actions/release-please-action@v4` en la rama `main` para crear PRs automáticas de versión y release notes.
+1. **Generación Local:** Ejecuta `npm run changelog` o `npm run cli changelog` para actualizar [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) antes de enviar PRs o finalizar entregables.
+2. **Generación Automática en CI/CD:** El workflow de GitHub Actions [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/release-please.yml) ejecuta `google-github-actions/release-please-action@v4` en la rama `main` para crear PRs automáticas de versión y release notes.
 3. **Integración con Auto-Versioner:** Al ejecutar `npm run changelog`, ejecuta siempre `npm run auto-version` para asegurar la sincronización de hashes de Backend y Frontend.
 4. **Commit Obligatorio por Cambio:** En cada tarea o ajuste finalizado, la IA o el desarrollador DEBE realizar un `git commit` estructurado bajo Conventional Commits para que el historial alimente continuamente `CHANGELOG.md` y los archivos individuales en `changelog/CHANGELOG-vx.x.md`.
 

@@ -14,6 +14,10 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 - **[changelog]** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
 
+## 📚 Documentación
+
+- **[changelog]** actualizar changelog raíz y archivos por versión con último commit (`50cc9ce`)
+
 ---
 
 *Documento generado automáticamente por el sistema de auto-versionado y changelog de Tlamatqui.*

@@ -1,4 +1,4 @@
-# Reglas y Contexto para IA - Tiendanube Diagnostic Analyzer
+# Reglas y Contexto para IA - Tlamatqui
 Este archivo redirige y extiende las reglas definidas en [`AGENTS.md`](../../AGENTS.md).
 
 Por favor, consulta el archivo [`AGENTS.md`](../../AGENTS.md) en la raíz del proyecto para ver la arquitectura detallada, el flujo de desarrollo y la matriz completa de las 21 skills instaladas.

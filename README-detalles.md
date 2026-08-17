@@ -1,4 +1,4 @@
-# Tiendanube Diagnostic Analyzer (Evolución Diagnostics)
+# Tlamatqui (Evolución Diagnostics)
 ## Manual de Arquitectura, Funcionalidades y Detalles Técnicos
 
 ---
@@ -27,7 +27,7 @@
 
 ## 🎯 Visión General del Proyecto
 
-**Tiendanube Diagnostic Analyzer (Evolución Diagnostics)** es una plataforma web integral y suite de herramientas CLI diseñada para agencias de comercio electrónico, consultores de migración y equipos comerciales.
+**Tlamatqui (Evolución Diagnostics)** es una plataforma web integral y suite de herramientas CLI diseñada para agencias de comercio electrónico, consultores de migración y equipos comerciales.
 
 Su objetivo principal es realizar **auditorías financieras cuantitativas y cualitativas** de tiendas en **Shopify** para identificar fugas de margen operativo producidas por:
 1. **Comisiones por transacción ocultas o adicionales** (de 0.2% a 2.0% por cada venta según el plan de Shopify).
@@ -60,7 +60,7 @@ A partir de estos datos, la plataforma genera una **presentación ejecutiva inte
 ### Base de Datos y Persistencia
 - **ORM:** [Prisma ORM 6.19](https://www.prisma.io) (`@prisma/client` ^6.19.3, `prisma` ^6.19.3)
 - **Motor de Base de Datos Principal:** [PostgreSQL](https://www.postgresql.org)
-- **Puente Híbrido de Persistencia:** [server/dbBridge.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/server/dbBridge.ts) que proporciona un fallback automático y transparente a archivos JSON locales (`/data/*.json`) cuando no se dispone de una base de datos PostgreSQL activa.
+- **Puente Híbrido de Persistencia:** [server/dbBridge.ts](file:///Users/cesarayar/Documents/tlamatqui/server/dbBridge.ts) que proporciona un fallback automático y transparente a archivos JSON locales (`/data/*.json`) cuando no se dispone de una base de datos PostgreSQL activa.
 
 ### Web Scraping y Detección de Apps
 - **Servicio de Scraping Externo:** Integración con la API Chismógrafo Scraper (`chismografo.rifatela.lol`) y motor de evaluación adaptativa para análisis de herramientas.
@@ -72,15 +72,13 @@ A partir de estos datos, la plataforma genera una **presentación ejecutiva inte
 - **Modo Demostración / Fallback:** Conmutación automática a modo local si no se configuran las variables de entorno de Auth0.
 
 ### Herramientas CLI y Especificaciones
-- **Herramienta CLI:** [cli.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/cli.ts) ejecutada vía `npm run cli`.
-- **Especificación de API:** Documentación OpenAPI 3.0.3 en [openapi.json](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/openapi.json).
-
----
+- **Herramienta CLI:** [cli.ts](file:///Users/cesarayar/Documents/tlamatqui/cli.ts) ejecutada vía `npm run cli`.
+- **Especificación de API:** Documentación OpenAPI 3.0.3 en [openapi.json](file:///Users/cesarayar/Documents/tlamatqui/openapi.json).
 
 ## 📁 Estructura del Proyecto y Archivos
 
 ```text
-tiendanube-diagnostic-analyzer/
+tlamatqui/
 ├── assets/                  # Logotipos, imágenes y recursos estáticos
 ├── data/                    # Almacenamiento JSON local (fallback del DB Bridge)
 ├── prisma/                  # Configuración de Prisma ORM
@@ -100,7 +98,7 @@ tiendanube-diagnostic-analyzer/
 
 ## 🛢️ Diagrama de Base de Datos y Modelo de Datos
 
-A continuación se presenta el diagrama entidad-relación de la base de datos definido en [schema.prisma](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/prisma/schema.prisma):
+A continuación se presenta el diagrama entidad-relación de la base de datos definido en [schema.prisma](file:///Users/cesarayar/Documents/tlamatqui/prisma/schema.prisma):
 
 ```mermaid
 erDiagram
@@ -320,7 +318,7 @@ erDiagram
 
 ## 🌉 Mecanismo de Persistencia Híbrida (DB Bridge)
 
-El archivo [server/dbBridge.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/server/dbBridge.ts) implementa un patrón de arquitectura denominado **Puente Híbrido de Persistencia**.
+El archivo [server/dbBridge.ts](file:///Users/cesarayar/Documents/tlamatqui/server/dbBridge.ts) implementa un patrón de arquitectura denominado **Puente Híbrido de Persistencia**.
 
 ### Funcionamiento:
 1. **Detección Dinámica:** Al arrancar el servidor `server.ts`, `initializeDatabase()` verifica la validez de la variable de entorno `DATABASE_URL` y prueba la conexión con el servidor de PostgreSQL mediante `@prisma/client`.
@@ -332,7 +330,7 @@ El archivo [server/dbBridge.ts](file:///Users/cesarayar/Documents/tiendanube-dia
 
 ## 🚀 Módulos y Funcionalidades Detalladas
 
-### 1. Panel de Administración ([AdminPanel.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/AdminPanel.tsx))
+### 1. Panel de Administración ([AdminPanel.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/AdminPanel.tsx))
 Es el centro de control para agencias y administradores. Consta de **7 pestañas principales**:
 
 - **Pestaña 1: Reportes (Lista y Creador)**
@@ -345,7 +343,7 @@ Es el centro de control para agencias y administradores. Consta de **7 pestañas
 
 ---
 
-### 2. Presentación Ejecutiva para Clientes ([ReportView.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/ReportView.tsx))
+### 2. Presentación Ejecutiva para Clientes ([ReportView.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/ReportView.tsx))
 Ofrece una experiencia visual premium de 6 diapositivas interactivas diseñadas para presentaciones comerciales con clientes.
 
 ---
@@ -356,17 +354,17 @@ Ubicada en el núcleo del sistema, realiza cálculos inmediatos basados en comis
 
 ---
 
-### 4. Dashboard Global y Analítica Ejecutiva ([GlobalDashboard.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/GlobalDashboard.tsx))
+### 4. Dashboard Global y Analítica Ejecutiva ([GlobalDashboard.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/GlobalDashboard.tsx))
 Ofrece métricas agregadas de todos los diagnósticos realizados en la plataforma: GMV total auditado, ahorro proyectado, total de fugas y ranking de interés.
 
 ---
 
-### 5. Monitoreo en Tiempo Real ([RealTimeDashboard.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/RealTimeDashboard.tsx))
+### 5. Monitoreo en Tiempo Real ([RealTimeDashboard.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/RealTimeDashboard.tsx))
 Permite rastrear visitantes únicos, tiempo de permanencia, visualizaciones por diapositiva y conversiones (clics en WhatsApp).
 
 ---
 
-### 6. Espacios de Trabajo y Equipos ([TeamDashboard.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/TeamDashboard.tsx))
+### 6. Espacios de Trabajo y Equipos ([TeamDashboard.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/TeamDashboard.tsx))
 Permite organizar la agencia en múltiples equipos de trabajo:
 - Creación de equipos de trabajo con logotipo e información del líder/owner.
 - Invitación y gestión de miembros con roles diferenciados:
@@ -382,7 +380,7 @@ Permite personalizar la identidad visual del socio estratégico que realiza la c
 ---
 
 ### 8. Scraping Inteligente de Apps
-El módulo [scrapper.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/lib/scrapper.ts) permite auditar tiendas Shopify automáticamente:
+El módulo [scrapper.ts](file:///Users/cesarayar/Documents/tlamatqui/src/lib/scrapper.ts) permite auditar tiendas Shopify automáticamente:
 1. **Entrada:** La agencia ingresa la URL del comercio (ej. `tienda-ejemplo.myshopify.com`).
 2. **Extracción:** Se invoca la API externa del Chismógrafo Scraper para analizar las etiquetas HTML, scripts cargados y llamadas a APIs de la tienda objetivo.
 3. **Detección de Apps:** Identifica aplicaciones activas como Klaviyo, Loox, Bold, Gorgias, Lucky Orange, Infinite Options, etc.
@@ -391,7 +389,7 @@ El módulo [scrapper.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic
 
 ---
 
-### 9. Interfaz de Línea de Comandos ([cli.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/cli.ts))
+### 9. Interfaz de Línea de Comandos ([cli.ts](file:///Users/cesarayar/Documents/tlamatqui/cli.ts))
 Proporciona una interfaz de terminal rápida para sysadmins y desarrolladores:
 
 ```bash
@@ -409,7 +407,7 @@ npm run cli <comando> [opciones]
 ---
 
 ### 10. API REST y Especificación OpenAPI
-El backend Express ([server.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/server.ts)) expone los siguientes endpoints REST documentados en [openapi.json](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/openapi.json):
+El backend Express ([server.ts](file:///Users/cesarayar/Documents/tlamatqui/server.ts)) expone los siguientes endpoints REST documentados en [openapi.json](file:///Users/cesarayar/Documents/tlamatqui/openapi.json):
 
 | Método | Endpoint | Descripción |
 | :--- | :--- | :--- |
@@ -503,7 +501,7 @@ sequenceDiagram
 
 1. **Clonar o descargar el repositorio:**
    ```bash
-   cd /Users/cesarayar/Documents/tiendanube-diagnostic-analyzer
+   cd /Users/cesarayar/Documents/tlamatqui
    ```
 
 2. **Instalar dependencias del proyecto:**
@@ -568,4 +566,4 @@ Para desplegar la aplicación en servicios en la nube como Vercel, Railway, Rend
 El backend se encargará de servir automáticamente los archivos estáticos de la aplicación React ubicados en la carpeta `dist/` y responder a todas las peticiones a la API REST `/api/*`.
 
 ---
-*Documentación generada automáticamente para Tiendanube Diagnostic Analyzer.*
+*Documentación generada automáticamente para Tlamatqui.*

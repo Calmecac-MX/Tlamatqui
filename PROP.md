@@ -1,6 +1,6 @@
-# 🚀 Proposal of Improvements and Structural Changes: Tiendanube Diagnostic Analyzer (Evolución Diagnostics)
+# 🚀 Proposal of Improvements and Structural Changes: Tlamatqui (Evolución Diagnostics)
 
-Este documento contiene un análisis exhaustivo del diseño, la interfaz de usuario (UI/UX), las funcionalidades de negocio y la arquitectura del código fuente de **Tiendanube Diagnostic Analyzer**. Presenta un diagnóstico técnico detallado y un plan de acción para transformar la plataforma en una aplicación de nivel empresarial (*Enterprise-Grade*), altamente modular, segura, escalable y con una experiencia visual premium.
+Este documento contiene un análisis exhaustivo del diseño, la interfaz de usuario (UI/UX), las funcionalidades de negocio y la arquitectura del código fuente de **Tlamatqui**. Presenta un diagnóstico técnico detallado y un plan de acción para transformar la plataforma en una aplicación de nivel empresarial (*Enterprise-Grade*), altamente modular, segura, escalable y con una experiencia visual premium.
 
 ---
 
@@ -33,7 +33,7 @@ Este documento contiene un análisis exhaustivo del diseño, la interfaz de usua
 
 ## 📊 Resumen Ejecutivo
 
-**Tiendanube Diagnostic Analyzer** es una herramienta estratégica de alto impacto comercial que permite auditar tiendas Shopify, detectar fugas de margen operativo y presentar escenarios interactivos de ahorro al migrar a Tiendanube.
+**Tlamatqui** es una herramienta estratégica de alto impacto comercial que permite auditar tiendas Shopify, detectar fugas de margen operativo y presentar escenarios interactivos de ahorro al migrar a Tiendanube.
 
 Tras la revisión técnica del repositorio, se identificaron valiosas fortalezas (arquitectura desacoplada, soporte de persistencia híbrida PostgreSQL/JSON, diseño oscuro moderno y animaciones interactivas). Sin embargo, el proyecto presenta desafíos críticos de **mantenibilidad, rendimiento, seguridad y modularidad**:
 
@@ -50,8 +50,8 @@ Tras la revisión técnica del repositorio, se identificaron valiosas fortalezas
 ### 1.1 Descomposición de Componentes Monolíticos
 
 #### ❌ Estado Actual
-- [AdminPanel.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/AdminPanel.tsx) (3,650 líneas) contiene en un solo archivo: el layout del panel, 7 pestañas completas, formularios de edición/creación de reportes, gestores de marcas, selectores de equipos, tablas de auditoría y diálogos modales.
-- [ReportView.tsx](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/components/ReportView.tsx) (2,968 líneas) agrupa 6 diapositivas interactivas, cálculos de gráficos SVG de dona, lógica de animación con GSAP y Motion, listeners de teclado y sincronización de heartbeat.
+- [AdminPanel.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/AdminPanel.tsx) (3,650 líneas) contiene en un solo archivo: el layout del panel, 7 pestañas completas, formularios de edición/creación de reportes, gestores de marcas, selectores de equipos, tablas de auditoría y diálogos modales.
+- [ReportView.tsx](file:///Users/cesarayar/Documents/tlamatqui/src/components/ReportView.tsx) (2,968 líneas) agrupa 6 diapositivas interactivas, cálculos de gráficos SVG de dona, lógica de animación con GSAP y Motion, listeners de teclado y sincronización de heartbeat.
 
 #### ✅ Mejora Propuesta
 Dividir los componentes gigantescos en una estructura atómica y modular por dominio:
@@ -138,7 +138,7 @@ export const useReportStore = create<ReportState>((set) => ({
 ### 1.3 API REST, Validación Estricta con Zod y Seguridad RBAC
 
 #### ❌ Estado Actual
-- El servidor Express en [server.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/server.ts) acepta cualquier payload JSON (`express.json({ limit: "50mb" })`) sin sanitización ni validación de esquemas.
+- El servidor Express en [server.ts](file:///Users/cesarayar/Documents/tlamatqui/server.ts) acepta cualquier payload JSON (`express.json({ limit: "50mb" })`) sin sanitización ni validación de esquemas.
 - Ningún endpoint verifica si la petición proviene de un usuario autenticado o si su rol (`Administrador`, `Editor`, `Visor`) le otorga permisos para la acción.
 
 #### ✅ Mejora Propuesta
@@ -168,7 +168,7 @@ export const requireRole = (allowedRoles: string[]) => {
 ### 1.4 Asincronismo y Optimización en DB Bridge
 
 #### ❌ Estado Actual
-- En [server/dbBridge.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/server/dbBridge.ts), cuando la base de datos PostgreSQL no está activa, las lecturas y escrituras en archivos JSON usan `fs.readFileSync` y `fs.writeFileSync`. Esto bloquea el hilo único de Node.js durante escrituras concurrentes.
+- En [server/dbBridge.ts](file:///Users/cesarayar/Documents/tlamatqui/server/dbBridge.ts), cuando la base de datos PostgreSQL no está activa, las lecturas y escrituras en archivos JSON usan `fs.readFileSync` y `fs.writeFileSync`. Esto bloquea el hilo único de Node.js durante escrituras concurrentes.
 
 #### ✅ Mejora Propuesta
 1. Sustituir `fs` por `fs.promises` (`import { promises as fs } from 'fs'`) para ejecutar I/O de archivos de manera verdaderamente asíncrona.
@@ -263,7 +263,7 @@ Definir tokens de diseño semánticos en `index.css` utilizando CSS Variables na
 ### 3.1 Scraper Nativo e Inteligente de Tiendas Shopify
 
 #### ❌ Estado Actual
-- [src/lib/scrapper.ts](file:///Users/cesarayar/Documents/tiendanube-diagnostic-analyzer/src/lib/scrapper.ts) realiza peticiones desde el navegador a una API externa (`chismografo.rifatela.lol/api/analyze`).
+- [src/lib/scrapper.ts](file:///Users/cesarayar/Documents/tlamatqui/src/lib/scrapper.ts) realiza peticiones desde el navegador a una API externa (`chismografo.rifatela.lol/api/analyze`).
 - Si la API externa no responde o bloquea la petición (CORS/Rate limit), la app recurre a un simulador local que genera herramientas ficticias a partir de hashes del dominio.
 
 #### ✅ Mejora Propuesta
@@ -463,4 +463,4 @@ gantt
 ---
 
 > [!TIP]
-> **Conclusión:** La implementación de estas propuestas transformará **Tiendanube Diagnostic Analyzer** en una plataforma de software sumamente robusta, segura y mantenible, posicionándola como la suite de diagnóstico y auditoría e-commerce de referencia para agencias y consultores comerciales.
+> **Conclusión:** La implementación de estas propuestas transformará **Tlamatqui** en una plataforma de software sumamente robusta, segura y mantenible, posicionándola como la suite de diagnóstico y auditoría e-commerce de referencia para agencias y consultores comerciales.

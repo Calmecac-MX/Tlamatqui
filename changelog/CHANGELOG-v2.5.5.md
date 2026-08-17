@@ -1,6 +1,6 @@
-# Extracto Detallado de Cambios - Versión v2.5.14
+# Extracto Detallado de Cambios - Versión v2.5.5
 
-- **Versión de Actualización:** `v2.5.14`
+- **Versión de Actualización:** `v2.5.5`
 - **Fecha de Registro:** `2026-08-17`
 - **Estándar:** Conventional Commits & Google Release Please
 
@@ -8,7 +8,7 @@
 
 ## 📋 Resumen de la Versión
 
-Este archivo contiene el desglose y extracto detallado de todos los cambios, mejoras, correcciones y tareas de mantenimiento correspondientes a la versión **v2.5.14** de Tlamatqui.
+Este archivo contiene el desglose y extracto detallado de todos los cambios, mejoras, correcciones y tareas de mantenimiento correspondientes a la versión **v2.5.5** de Tlamatqui.
 
 ## 🚀 Features & Nuevas Funcionalidades
 
