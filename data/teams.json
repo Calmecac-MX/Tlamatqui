@@ -1,0 +1,33 @@
+[
+  {
+    "id": "team-default",
+    "name": "Equipo Evolución",
+    "image": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
+    "ownerName": "César Ayar",
+    "ownerEmail": "cesar.ayar19@gmail.com",
+    "members": [
+      {
+        "id": "member-1",
+        "name": "César Ayar",
+        "email": "cesar.ayar19@gmail.com",
+        "role": "Administrador",
+        "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
+      },
+      {
+        "id": "member-2",
+        "name": "Sofía Ruiz",
+        "email": "sofia.ruiz@evolucion.mx",
+        "role": "Editor",
+        "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
+      },
+      {
+        "id": "member-3",
+        "name": "Mateo Gómez",
+        "email": "mateo.gomez@evolucion.mx",
+        "role": "Visor",
+        "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80"
+      }
+    ],
+    "createdAt": "2026-07-08T10:00:00.000Z"
+  }
+]

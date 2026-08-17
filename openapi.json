@@ -1,0 +1,527 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Tlamatqui API",
+    "description": "API para el Panel de Administración y Reportes de Diagnósticos de Shopify vs Tiendanube.",
+    "version": "2.5.4"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Servidor local o de producción"
+    }
+  ],
+  "paths": {
+    "/reports": {
+      "get": {
+        "summary": "Obtener todos los reportes de diagnóstico",
+        "description": "Retorna un listado de todos los reportes creados en el administrador.",
+        "responses": {
+          "200": {
+            "description": "Lista de reportes obtenida correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Report"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo reporte de diagnóstico",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reporte creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/{id}": {
+      "get": {
+        "summary": "Obtener un reporte por ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del reporte.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reporte no encontrado."
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un reporte existente",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reporte actualizado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reporte no encontrado."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un reporte",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte eliminado correctamente."
+          },
+          "404": {
+            "description": "Reporte no encontrado."
+          }
+        }
+      }
+    },
+    "/templates": {
+      "get": {
+        "summary": "Obtener todas las plantillas de tablas comparativas",
+        "responses": {
+          "200": {
+            "description": "Lista de plantillas comparativas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComparisonTemplate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Guardar una nueva plantilla de tabla comparativa",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComparisonTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plantilla guardada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonTemplate"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/templates/{id}": {
+      "delete": {
+        "summary": "Eliminar una plantilla de tabla comparativa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plantilla eliminada correctamente."
+          }
+        }
+      }
+    },
+    "/exchange-rate": {
+      "get": {
+        "summary": "Obtener tipo de cambio actual USD to MXN",
+        "responses": {
+          "200": {
+            "description": "Tipo de cambio actual obtenido desde API financiera o caché.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rate": {
+                      "type": "number",
+                      "example": 18.25
+                    },
+                    "provider": {
+                      "type": "string",
+                      "example": "open.er-api.com"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Tool": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "costType",
+          "currency",
+          "semaphore"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "costType": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "range"
+            ]
+          },
+          "costExact": {
+            "type": "number"
+          },
+          "costMin": {
+            "type": "number"
+          },
+          "costMax": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "MXN",
+              "USD"
+            ]
+          },
+          "semaphore": {
+            "type": "string",
+            "enum": [
+              "green",
+              "yellow",
+              "red"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ComparisonRow": {
+        "type": "object",
+        "required": [
+          "id",
+          "variable",
+          "shopify",
+          "tiendanube"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "variable": {
+            "type": "string"
+          },
+          "shopify": {
+            "type": "string"
+          },
+          "tiendanube": {
+            "type": "string"
+          },
+          "pillText": {
+            "type": "string"
+          }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "fugasCantidad": {
+            "type": "number"
+          },
+          "fugasRangoMin": {
+            "type": "number"
+          },
+          "fugasRangoMax": {
+            "type": "number"
+          },
+          "visitasMensuales": {
+            "type": "number"
+          },
+          "gmv": {
+            "type": "number"
+          },
+          "shopifyFee": {
+            "type": "number"
+          },
+          "msi": {
+            "type": "string"
+          },
+          "shopifyPlan": {
+            "type": "string"
+          },
+          "shopifyPlanCustomFee": {
+            "type": "number"
+          },
+          "shopifyPlanCustomPrice": {
+            "type": "number"
+          },
+          "tiendanubePlan": {
+            "type": "string"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            }
+          },
+          "comparisonRows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonRow"
+            }
+          },
+          "contactEmail": {
+            "type": "string"
+          },
+          "contactWhatsapp": {
+            "type": "string"
+          },
+          "adminLogos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "visitasMensuales",
+          "gmv",
+          "shopifyPlan",
+          "tiendanubePlan"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "fugasCantidad": {
+            "type": "number"
+          },
+          "fugasRangoMin": {
+            "type": "number"
+          },
+          "fugasRangoMax": {
+            "type": "number"
+          },
+          "visitasMensuales": {
+            "type": "number"
+          },
+          "gmv": {
+            "type": "number"
+          },
+          "shopifyFee": {
+            "type": "number"
+          },
+          "msi": {
+            "type": "string"
+          },
+          "shopifyPlan": {
+            "type": "string"
+          },
+          "shopifyPlanCustomFee": {
+            "type": "number"
+          },
+          "shopifyPlanCustomPrice": {
+            "type": "number"
+          },
+          "tiendanubePlan": {
+            "type": "string"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            }
+          },
+          "comparisonRows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonRow"
+            }
+          },
+          "contactEmail": {
+            "type": "string"
+          },
+          "contactWhatsapp": {
+            "type": "string"
+          },
+          "adminLogos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ComparisonTemplate": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "rows"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonRow"
+            }
+          }
+        }
+      },
+      "ComparisonTemplateInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "rows"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonRow"
+            }
+          }
+        }
+      }
+    }
+  }
+}
