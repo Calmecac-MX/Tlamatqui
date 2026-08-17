@@ -6,6 +6,11 @@ Todos los cambios notables en este proyecto serán documentados automáticamente
 
 ## [v2.5.14 (Frontend) / v2.5.4 (Backend)] - 2026-08-17
 
+### 🚀 Features & Nuevas Funcionalidades
+- **changelog:** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
+
+## [v2.5.14 (Frontend) / v2.5.4 (Backend)] - 2026-08-17
+
 *Actualizaciones y mejoras continuas de estabilidad y rendimiento.*
 
 ## [v2.5.14 (Frontend) / v2.5.4 (Backend)] - 2026-08-17
