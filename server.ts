@@ -41,8 +41,18 @@ const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 
 // Configuración avanzada de Middleware CORS para comunicación cliente-servidor desacoplada
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+const envOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+  : [];
+
+const frontendOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.APP_URL,
+  process.env.APP_BASE_URL
+].filter(Boolean) as string[];
+
+const allowedOrigins: string[] | boolean = (envOrigins.length > 0 || frontendOrigins.length > 0)
+  ? Array.from(new Set([...envOrigins, ...frontendOrigins]))
   : true;
 
 const corsOptions: cors.CorsOptions = {
@@ -589,8 +599,11 @@ if (process.env.NODE_ENV === "production" && process.env.SERVE_STATIC === "true"
 // Iniciar servidor REST API independiente (solo si no se ejecuta en Vercel Serverless)
 if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== "test") {
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`\x1b[36m[Backend REST API]\x1b[0m Escuchando en http://localhost:${PORT}`);
-    console.log(`\x1b[32m[Health Check]\x1b[0m Endpoint de salud disponible en http://localhost:${PORT}/api/health`);
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+    console.log(`\x1b[36m[Backend REST API]\x1b[0m Escuchando en ${backendUrl} (Puerto ${PORT})`);
+    console.log(`\x1b[35m[Frontend Configured]\x1b[0m CORS permitiendo peticiones desde: ${frontendUrl}`);
+    console.log(`\x1b[32m[Health Check]\x1b[0m Endpoint de salud disponible en ${backendUrl}/api/health`);
   });
 }
 

@@ -18,6 +18,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar changelog con regla de Caveman Mode (`a0b0910`)
 - **[changelog]** actualizar changelog con la creación del sistema modular de reglas (`50d1ab7`)
 - **[changelog]** registrar cambios de versión v2.5.5 en changelogs (`ece4511`)
 - **[rules]** actualizar nombre del proyecto a Tlamatqui en la ruta de la IA y documentación (`4248b88`)
