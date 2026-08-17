@@ -7,6 +7,17 @@ Todos los cambios notables en este proyecto serán documentados automáticamente
 ## [v2.5.14 (Frontend) / v2.5.5 (Backend)] - 2026-08-17
 
 ### 🚀 Features & Nuevas Funcionalidades
+- **rules:** crear sistema modular de reglas de IA en .agents/rules/ (`1023197`)
+- **changelog:** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
+
+### 📚 Documentación
+- **changelog:** registrar cambios de versión v2.5.5 en changelogs (`ece4511`)
+- **rules:** actualizar nombre del proyecto a Tlamatqui en la ruta de la IA y documentación (`4248b88`)
+- **changelog:** actualizar changelog raíz y archivos por versión con último commit (`50cc9ce`)
+
+## [v2.5.14 (Frontend) / v2.5.5 (Backend)] - 2026-08-17
+
+### 🚀 Features & Nuevas Funcionalidades
 - **changelog:** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
 
 ### 📚 Documentación
