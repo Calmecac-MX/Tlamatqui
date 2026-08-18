@@ -38,6 +38,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 🔧 Tareas Operativas y Mantenimiento
 
+- **[license]** añadir licencia GNU Affero General Public License v3.0 (AGPL-3.0) (`d216ee0`)
 - remove legacy project documentation and architecture proposal files (`3f5bc24`)
 - **[git]** actualizar .gitignore con reglas de ignorado estructuradas (`dad0315`)
 
