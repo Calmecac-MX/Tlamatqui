@@ -27,6 +27,10 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 - **[rules]** actualizar nombre del proyecto a Tlamatqui en la ruta de la IA y documentación (`4248b88`)
 - **[changelog]** actualizar changelog raíz y archivos por versión con último commit (`50cc9ce`)
 
+## 🔧 Tareas Operativas y Mantenimiento
+
+- **[git]** actualizar .gitignore con reglas de ignorado estructuradas (`dad0315`)
+
 ---
 
 *Documento generado automáticamente por el sistema de auto-versionado y changelog de Tlamatqui.*
