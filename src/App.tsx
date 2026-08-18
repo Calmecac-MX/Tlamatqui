@@ -24,6 +24,11 @@ function MainAppRouter() {
   });
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Sync document title
+  useEffect(() => {
+    document.title = viewingReportId ? "Tlamatqui | Diagnóstico" : "Tlamatqui";
+  }, [viewingReportId]);
+
   // Sync mode with document body
   useEffect(() => {
     const root = window.document.documentElement;

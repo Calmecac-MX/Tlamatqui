@@ -19,6 +19,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar changelog tras revision de .gitignore (`5aca9ed`)
 - **[changelog]** sincronizar registro de changelog con ultimo commit (`23b0d7c`)
 - **[changelog]** actualizar CHANGELOG.md y extractos por version (`367af3b`)
 - **[changelog]** actualizar changelog con regla de Caveman Mode (`a0b0910`)
