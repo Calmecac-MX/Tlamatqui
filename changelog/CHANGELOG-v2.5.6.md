@@ -20,6 +20,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar changelog tras establecer directiva de cerebros (`d501d0f`)
 - **[rules]** establecer directiva obligatoria de registro en cerebros y documentacion IA (`c3d1797`)
 - **[changelog]** actualizar changelog con registro de cerebros y datos (`7bbfff4`)
 - **[context]** actualizar el contexto de los cerebros y datos del proyecto (`d720ce3`)

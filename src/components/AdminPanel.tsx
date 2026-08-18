@@ -2536,8 +2536,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       {/* Prisma LogoConfig Section */}
                       <div className="pt-4 border-t border-border-theme/30 space-y-4">
                         <div className="flex items-center justify-between">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">Configuración de Logo Prisma</label>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-accent-theme/20 text-accent-theme font-mono">Tabla Prisma</span>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">Configuración de Branding</label>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-accent-theme/20 text-accent-theme font-mono">Branding Global</span>
                         </div>
 
                         {/* Selector de Tipo de Logo */}
@@ -2582,26 +2582,6 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               placeholder="Escribe el texto del logo..."
                               className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
                             />
-                          </div>
-                        )}
-
-                        {/* Campo de Archivo/URL del Logo */}
-                        {logoType === "logo" && (
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Archivo / URL del Logo</label>
-                            <input 
-                              type="text" 
-                              value={logoFile} 
-                              onChange={e => setLogoFile(e.target.value)}
-                              placeholder="Pega la URL o ruta del archivo de logo..."
-                              className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
-                            />
-                            {logoFile && (
-                              <div className="mt-2 p-2 rounded bg-bg-theme border border-border-theme flex items-center gap-3">
-                                <img src={logoFile} alt="Preview" className="h-8 max-w-[100px] object-contain rounded" />
-                                <span className="text-[10px] text-text-dim-theme">Vista previa del archivo</span>
-                              </div>
-                            )}
                           </div>
                         )}
 
