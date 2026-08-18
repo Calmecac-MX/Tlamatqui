@@ -60,3 +60,10 @@ Este comando ejecuta de forma paralela el servidor **Backend** (`http://localhos
 ## 📚 Manual Detallado
 
 Para consultar la documentación exhaustiva sobre la base de datos, el diagrama ERD de Prisma, Auth0, los endpoints REST y los módulos del sistema, consulta el archivo **[README-detalles.md](README-detalles.md)**.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la **Licencia Pública General GNU Affero v3.0 (AGPL-3.0)**. Consulta el archivo [`LICENSE`](LICENSE) para más información.
+
