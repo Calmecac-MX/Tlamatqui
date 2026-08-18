@@ -42,5 +42,10 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 - **Script Local & CLI:** `npm run changelog` | `npm run cli changelog`
 - **Regla Obligatoria:** Todo cambio o entregable DEBE culminar con un `git commit` siguiendo la estructura Conventional Commits `<tipo>(<ámbito>): <descripción>` (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`, `BREAKING CHANGE`) incluyendo versiones y changelogs para nutrir el historial continuo del proyecto.
 
+---
+
+## 5. Sincronización Obligatoria en Cerebros y Documentación de IA
+- **Regla Estricta:** Todo ajuste, adición o modificación realizada por cualquier agente de IA DEBE ser documentada y reflejada de inmediato en los cerebros del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). No se dará por concluida ninguna tarea sin antes sincronizar el contexto operativo en la documentación para IA del proyecto.
+
 
 
