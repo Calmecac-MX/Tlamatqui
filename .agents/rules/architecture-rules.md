@@ -33,3 +33,17 @@ El sistema está dividido en dos capas independientes:
 
 - **Integración Auth0:** Autenticación JWT en backend vía [`server/authMiddleware.ts`](file:///Users/cesarayar/Documents/tlamatqui/server/authMiddleware.ts) y proveedor `@auth0/auth0-react` en frontend.
 - **Rutas Públicas vs Protegidas:** Los reportes compartidos (`?shared=true`) tienen acceso público de lectura sin requerir sesión iniciada.
+
+---
+
+## 4. 🌐 Variables de Entorno Desacopladas y Branding
+
+1. **Variables de Comunicación:**
+   - `FRONTEND_URL` / `APP_URL`: Especifica la URL pública del cliente Frontend.
+   - `BACKEND_URL`: Especifica la URL pública de la API REST Backend.
+   - `CORS_ORIGIN`: Define la lista de orígenes autorizados para CORS en la API Express.
+   - `VITE_API_URL`: Especifica la URL base del Backend consumida por la SPA desde el navegador.
+
+2. **Título de Pestaña e Identidad:**
+   - El título oficial de la pestaña del navegador está estandarizado como **Tlamatqui** en [`index.html`](file:///Users/cesarayar/Documents/tlamatqui/index.html) y sincronizado dinámicamente en [`src/App.tsx`](file:///Users/cesarayar/Documents/tlamatqui/src/App.tsx).
+

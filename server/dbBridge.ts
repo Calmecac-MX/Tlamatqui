@@ -36,7 +36,7 @@ const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 // Define defaults
 const DEFAULT_CONFIG = {
   adminLogoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
-  adminTextUrl: "Evolución Diagnostics",
+  adminTextUrl: "Tlamatqui Diagnostics",
   appUrl: "http://localhost:3000",
   defaultContactEmail: "cesar.ayar19@gmail.com",
   defaultContactWhatsapp: "5512345678",
@@ -55,7 +55,7 @@ const DEFAULT_CONFIG = {
 const DEFAULT_LOGO_CONFIG = {
   id: "default",
   logoType: "text",
-  logoText: "Evolución Diagnostics",
+  logoText: "Tlamatqui Diagnostics",
   logoFile: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
   globalEmail: "cesar.ayar19@gmail.com"
 };
