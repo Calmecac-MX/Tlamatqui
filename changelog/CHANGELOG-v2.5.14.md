@@ -20,6 +20,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[context]** actualizar el contexto de los cerebros y datos del proyecto (`d720ce3`)
 - **[changelog]** actualizar changelog con el titulo Tlamatqui (`6e03064`)
 - **[changelog]** actualizar changelog tras revision de .gitignore (`5aca9ed`)
 - **[changelog]** sincronizar registro de changelog con ultimo commit (`23b0d7c`)
