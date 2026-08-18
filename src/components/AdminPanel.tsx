@@ -18,6 +18,7 @@ import {
 import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } from "../types";
 import { scrapeShopifyStore } from "../lib/scrapper";
 import { useAuth } from "../lib/authContext";
+import SendEmailModal from "./SendEmailModal";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -86,6 +87,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [customGmvMax, setCustomGmvMax] = useState<string>("");
   const [customVisitsMin, setCustomVisitsMin] = useState<string>("");
   const [customVisitsMax, setCustomVisitsMax] = useState<string>("");
+  const [emailModalTarget, setEmailModalTarget] = useState<{ reportId: string; storeName: string; contactEmail: string } | null>(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -2062,6 +2064,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                     <Copy className="w-3.5 h-3.5" /> {copiedId === report.id ? "Copiado" : "Link"}
                                   </button>
                                   <button 
+                                    onClick={() => setEmailModalTarget({ reportId: report.id, storeName: report.name, contactEmail: report.contactEmail })}
+                                    className="p-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-all cursor-pointer"
+                                    title="Enviar reporte por Correo (SMTP)"
+                                  >
+                                    <Mail className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button 
                                     onClick={() => handleStartEdit(report)}
                                     className="p-1.5 rounded-md border border-border-theme bg-bg-theme hover:bg-surface-hover-theme text-slate-300 transition-all cursor-pointer"
                                     title="Editar diagnóstico"
@@ -2184,6 +2193,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                         title="Copiar link"
                                       >
                                         <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button 
+                                        onClick={() => setEmailModalTarget({ reportId: report.id, storeName: report.name, contactEmail: report.contactEmail })}
+                                        className="p-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-all cursor-pointer"
+                                        title="Enviar por Correo (SMTP)"
+                                      >
+                                        <Mail className="w-3.5 h-3.5" />
                                       </button>
                                       <button 
                                         onClick={() => handleStartEdit(report)}
@@ -3646,6 +3662,17 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         )}
 
       </main>
+
+      {/* Modal de Envío por Correo SMTP */}
+      {emailModalTarget && (
+        <SendEmailModal
+          isOpen={Boolean(emailModalTarget)}
+          onClose={() => setEmailModalTarget(null)}
+          reportId={emailModalTarget.reportId}
+          storeName={emailModalTarget.storeName}
+          defaultEmail={emailModalTarget.contactEmail}
+        />
+      )}
 
       </div>
     </div>

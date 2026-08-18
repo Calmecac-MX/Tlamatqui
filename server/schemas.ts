@@ -68,3 +68,14 @@ export const TeamSchema = z.object({
 export const ScrapeRequestSchema = z.object({
   url: z.string().min(1, "La URL del comercio es obligatoria"),
 });
+
+export const SendEmailRequestSchema = z.object({
+  toEmail: z.string().email("Correo electrónico no válido"),
+  reportId: z.string().min(1, "El ID del reporte es obligatorio"),
+  customSubject: z.string().optional(),
+  note: z.string().optional(),
+  pdfBase64: z.string().optional(),
+});
+
+export type SendEmailRequest = z.infer<typeof SendEmailRequestSchema>;
+

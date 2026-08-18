@@ -21,6 +21,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar changelog con registro de Licencia AGPL-3.0 (`a8a6db3`)
 - **[changelog]** actualizar changelog con cambios de Configuración de Branding (`ef436d7`)
 - **[changelog]** actualizar changelog tras establecer directiva de cerebros (`d501d0f`)
 - **[rules]** establecer directiva obligatoria de registro en cerebros y documentacion IA (`c3d1797`)

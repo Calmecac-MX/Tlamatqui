@@ -19,6 +19,7 @@ import { exportReportToCSV, exportReportToPrintPDF } from "../lib/exporter";
 import { formatReportDate, formatAbbreviatedAmount } from "../utils/formatters";
 import { getVisitorId, sendReportInteraction } from "../utils/telemetryHelpers";
 import { ReportPrintPresentation } from "./report/ReportPrintPresentation";
+import SendEmailModal from "./SendEmailModal";
 
 /**
  * Propiedades del componente ReportView.
@@ -190,6 +191,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   const [activeSlide, setActiveSlide] = useState<number>(0);
   const [slideDirection, setSlideDirection] = useState<"up" | "down">("down");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
+  const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState<boolean>(false);
   const lastScrollTime = useRef<number>(0);
   const scrollCooldown = 850; // ms
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -1134,6 +1136,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                       <Printer className="w-3.5 h-3.5 text-accent-theme group-hover:scale-110 transition-transform" />
                     )}
                     <span>{isGeneratingPDF ? "Generando..." : "PDF"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsSendEmailModalOpen(true)}
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm"
+                    title="Enviar Reporte por Correo Electrónico (SMTP)"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <span>Correo</span>
                   </button>
                 </div>
               </div>
@@ -3259,6 +3270,17 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
 
     {/* 2. PRINT / PDF PRESENTATION (Landscape 10-slide deck output) */}
     {report && <ReportPrintPresentation report={report} />}
+
+    {/* 3. MODAL DE ENVÍO DE CORREO SMTP */}
+    {report && (
+      <SendEmailModal
+        isOpen={isSendEmailModalOpen}
+        onClose={() => setIsSendEmailModalOpen(false)}
+        reportId={report.id}
+        storeName={report.name}
+        defaultEmail={report.contactEmail}
+      />
+    )}
   </>
 );
 }

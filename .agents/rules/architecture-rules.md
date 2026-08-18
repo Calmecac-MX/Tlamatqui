@@ -47,3 +47,9 @@ El sistema está dividido en dos capas independientes:
 2. **Título de Pestaña e Identidad:**
    - El título oficial de la pestaña del navegador está estandarizado como **Tlamatqui** en [`index.html`](file:///Users/cesarayar/Documents/tlamatqui/index.html) y sincronizado dinámicamente en [`src/App.tsx`](file:///Users/cesarayar/Documents/tlamatqui/src/App.tsx).
 
+3. **Servicio de Correo Electrónico SMTP (Nodemailer):**
+   - El backend cuenta con un servicio SMTP desacoplado en [`server/emailService.ts`](file:///Users/cesarayar/Documents/tlamatqui/server/emailService.ts) y endpoints REST (`/api/send-report-email`, `/api/smtp-status`, `/api/verify-smtp`).
+   - Requiere las variables de entorno `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` y `SMTP_FROM`.
+   - Se integra en el Frontend mediante el modal interactivo [`src/components/SendEmailModal.tsx`](file:///Users/cesarayar/Documents/tlamatqui/src/components/SendEmailModal.tsx).
+
+

@@ -30,8 +30,9 @@ import {
   saveDbLogoConfig
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token } from "./server/authMiddleware.js";
-import { ReportSchema, TeamSchema, ScrapeRequestSchema } from "./server/schemas.js";
+import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
+import { isSmtpConfigured, sendReportEmail, verifySmtpConnection } from "./server/emailService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 
 // Cargar variables de entorno desde archivo .env
@@ -124,8 +125,91 @@ app.get("/api/health", (req: Request, res: Response) => {
     service: "Tlamatqui Backend REST API",
     version: BACKEND_VERSION,
     frontendVersion: FRONTEND_VERSION,
+    smtpConfigured: isSmtpConfigured(),
     timestamp: new Date().toISOString()
   });
+});
+
+/**
+ * @route GET /api/smtp-status
+ * @description Verifica el estado de configuración del servidor SMTP.
+ */
+app.get("/api/smtp-status", (req: Request, res: Response) => {
+  res.json({
+    configured: isSmtpConfigured(),
+    host: process.env.SMTP_HOST || "",
+    port: process.env.SMTP_PORT || "587",
+    from: process.env.SMTP_FROM || ""
+  });
+});
+
+/**
+ * @route POST /api/verify-smtp
+ * @description Comprueba la conectividad real con el servidor SMTP configurado.
+ */
+app.post("/api/verify-smtp", async (req: Request, res: Response) => {
+  const result = await verifySmtpConnection();
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+  res.json(result);
+});
+
+/**
+ * @route POST /api/send-report-email
+ * @description Envía el reporte de diagnóstico por correo electrónico vía SMTP.
+ */
+app.post("/api/send-report-email", async (req: Request, res: Response) => {
+  try {
+    const parseResult = SendEmailRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: "Datos de correo inválidos",
+        details: parseResult.error.flatten(),
+      });
+    }
+
+    const { toEmail, reportId, customSubject, note, pdfBase64 } = parseResult.data;
+
+    // Buscar reporte en la base de datos
+    const report = await getDbReportById(reportId);
+    if (!report) {
+      return res.status(404).json({ error: "El reporte solicitado no existe." });
+    }
+
+    const frontendBaseUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+    const cleanBaseUrl = frontendBaseUrl.endsWith("/") ? frontendBaseUrl.slice(0, -1) : frontendBaseUrl;
+    const reportUrl = `${cleanBaseUrl}/?report=${report.id}&shared=true`;
+
+    const gmvFormatted = new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "MXN",
+      maximumFractionDigits: 0
+    }).format(report.gmv || 0);
+
+    const emailResult = await sendReportEmail({
+      toEmail,
+      reportId: report.id,
+      storeName: report.name || "Comercio",
+      reportUrl,
+      gmvFormatted,
+      customSubject,
+      note,
+      pdfBase64
+    });
+
+    res.json({
+      success: true,
+      message: `Reporte enviado exitosamente a ${toEmail}`,
+      messageId: emailResult.messageId
+    });
+  } catch (error: any) {
+    console.error("Error al enviar correo SMTP:", error);
+    res.status(500).json({
+      error: "Error al enviar el correo vía SMTP",
+      details: error.message
+    });
+  }
 });
 
 /**
