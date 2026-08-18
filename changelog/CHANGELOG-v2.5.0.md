@@ -1,7 +1,7 @@
 # Extracto Detallado de Cambios - Versión v2.5.0
 
 - **Versión de Actualización:** `v2.5.0`
-- **Fecha de Registro:** `2026-08-17`
+- **Fecha de Registro:** `2026-08-18`
 - **Estándar:** Conventional Commits & Google Release Please
 
 ---
@@ -19,6 +19,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar CHANGELOG.md y extractos por version (`367af3b`)
 - **[changelog]** actualizar changelog con regla de Caveman Mode (`a0b0910`)
 - **[changelog]** actualizar changelog con la creación del sistema modular de reglas (`50d1ab7`)
 - **[changelog]** registrar cambios de versión v2.5.5 en changelogs (`ece4511`)
