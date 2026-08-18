@@ -20,6 +20,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[rules]** establecer directiva obligatoria de registro en cerebros y documentacion IA (`c3d1797`)
 - **[changelog]** actualizar changelog con registro de cerebros y datos (`7bbfff4`)
 - **[context]** actualizar el contexto de los cerebros y datos del proyecto (`d720ce3`)
 - **[changelog]** actualizar changelog con el titulo Tlamatqui (`6e03064`)
