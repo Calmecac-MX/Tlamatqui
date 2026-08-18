@@ -12,6 +12,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 🚀 Features & Nuevas Funcionalidades
 
+- **[admin]** actualizar etiqueta a Configuración de Branding y remover campo de archivo/URL de logo (`5a77c92`)
 - **[ui]** actualizar el titulo de la pestana a Tlamatqui (`c8b91a4`)
 - **[env]** configurar variables de entorno y soporte CORS para ejecucion desacoplada (`7483b73`)
 - **[rules]** crear regla dedicada para el ecosistema Caveman en .agents/rules/caveman-rules.md (`c411890`)
