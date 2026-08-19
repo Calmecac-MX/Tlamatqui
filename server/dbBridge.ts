@@ -38,6 +38,8 @@ const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 // Define defaults
 const DEFAULT_CONFIG = {
   adminLogoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+  adminLogo2Url: "",
+  adminLogo3Url: "",
   adminTextUrl: "Tlamatqui Diagnostics",
   appUrl: "http://localhost:3000",
   defaultContactEmail: "cesar.ayar19@gmail.com",
@@ -298,6 +300,8 @@ export async function initializeDatabase() {
           data: {
             id: "default",
             adminLogoUrl: DEFAULT_CONFIG.adminLogoUrl,
+            adminLogo2Url: DEFAULT_CONFIG.adminLogo2Url,
+            adminLogo3Url: DEFAULT_CONFIG.adminLogo3Url,
             adminTextUrl: DEFAULT_CONFIG.adminTextUrl,
             appUrl: DEFAULT_CONFIG.appUrl,
             defaultContactEmail: DEFAULT_CONFIG.defaultContactEmail,
@@ -537,6 +541,8 @@ export async function saveDbConfig(config: any): Promise<any> {
   const currentConfig = await getDbConfig().catch(() => ({}));
   const cleanConfig = {
     adminLogoUrl: config.adminLogoUrl || DEFAULT_CONFIG.adminLogoUrl,
+    adminLogo2Url: config.adminLogo2Url !== undefined ? config.adminLogo2Url : (currentConfig.adminLogo2Url || ""),
+    adminLogo3Url: config.adminLogo3Url !== undefined ? config.adminLogo3Url : (currentConfig.adminLogo3Url || ""),
     adminTextUrl: config.adminTextUrl || DEFAULT_CONFIG.adminTextUrl,
     appUrl: config.appUrl || DEFAULT_CONFIG.appUrl,
     defaultContactEmail: config.defaultContactEmail || DEFAULT_CONFIG.defaultContactEmail,

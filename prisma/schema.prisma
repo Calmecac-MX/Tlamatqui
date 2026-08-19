@@ -64,6 +64,8 @@ enum LogoType {
 model Config {
   id                     String @id @default("default")
   adminLogoUrl           String
+  adminLogo2Url          String? @default("")
+  adminLogo3Url          String? @default("")
   adminTextUrl           String
   appUrl                 String
   defaultContactEmail    String

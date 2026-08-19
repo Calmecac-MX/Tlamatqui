@@ -35,6 +35,8 @@ export interface ConfigState {
 export const useConfigStore = create<ConfigState>((set) => ({
   config: {
     adminLogoUrl: "",
+    adminLogo2Url: "",
+    adminLogo3Url: "",
     adminTextUrl: "Evolución Diagnostics",
     defaultContactEmail: "cesar.ayar19@gmail.com",
     defaultContactWhatsapp: "5512345678",

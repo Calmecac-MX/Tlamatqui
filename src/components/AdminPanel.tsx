@@ -46,8 +46,9 @@ interface AdminPanelProps {
  */
 export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }: AdminPanelProps) {
   const { user: authUser, logout: authLogout, isAuth0Configured } = useAuth();
-  // Config from server
   const [adminLogo, setAdminLogo] = useState<string>("");
+  const [adminLogo2, setAdminLogo2] = useState<string>("");
+  const [adminLogo3, setAdminLogo3] = useState<string>("");
   const [adminFavicon, setAdminFavicon] = useState<string>("/favicon.ico");
   const [adminText, setAdminText] = useState<string>("");
   const [logoType, setLogoType] = useState<"text" | "logo">("text");
@@ -452,6 +453,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       const res = await fetch("/api/config");
       const data = await res.json();
       setAdminLogo(data.adminLogoUrl || "");
+      setAdminLogo2(data.adminLogo2Url || "");
+      setAdminLogo3(data.adminLogo3Url || "");
       setAdminFavicon(data.adminFaviconUrl || "/favicon.ico");
       setAdminText(data.adminTextUrl || "Evolución Diagnostics");
       setDefaultContactEmail(data.defaultContactEmail || "cesar.ayar19@gmail.com");
@@ -496,6 +499,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       }
     } catch (e) {
       setAdminLogo("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80");
+      setAdminLogo2("");
+      setAdminLogo3("");
       setAdminFavicon("/favicon.ico");
       setAdminText("Evolución Diagnostics");
       setDefaultContactEmail("cesar.ayar19@gmail.com");
@@ -524,6 +529,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           adminLogoUrl: adminLogo,
+          adminLogo2Url: adminLogo2,
+          adminLogo3Url: adminLogo3,
           adminFaviconUrl: adminFavicon,
           adminTextUrl: adminText,
           defaultContactEmail,
@@ -2703,6 +2710,69 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                 Quitar
                               </button>
                             )}
+                          </div>
+
+                          {/* Additional Global Logos for Final Slide Fallback */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border-theme/40 mt-3">
+                            <div>
+                              <label className="block text-[11px] font-semibold uppercase tracking-wider text-text-dim-theme mb-1">
+                                Logo Adicional 2 Global (Diapositiva Final)
+                              </label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text" 
+                                  value={adminLogo2} 
+                                  onChange={e => setAdminLogo2(e.target.value)}
+                                  placeholder="URL del Logo 2 (opcional)"
+                                  className="flex-1 text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
+                                />
+                                {adminLogo2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdminLogo2("")}
+                                    className="px-2 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:text-white hover:bg-rose-500/10 text-xs transition-colors cursor-pointer"
+                                  >
+                                    Quitar
+                                  </button>
+                                )}
+                              </div>
+                              {adminLogo2 && (
+                                <div className="mt-1.5 flex items-center gap-2">
+                                  <img src={adminLogo2} alt="Logo 2 Preview" className="h-6 max-w-[100px] object-contain rounded border border-border-theme bg-surface-theme/30 p-0.5" />
+                                  <span className="text-[10px] text-emerald-400 font-semibold">Vista previa</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-semibold uppercase tracking-wider text-text-dim-theme mb-1">
+                                Logo Adicional 3 Global (Diapositiva Final)
+                              </label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text" 
+                                  value={adminLogo3} 
+                                  onChange={e => setAdminLogo3(e.target.value)}
+                                  placeholder="URL del Logo 3 (opcional)"
+                                  className="flex-1 text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
+                                />
+                                {adminLogo3 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdminLogo3("")}
+                                    className="px-2 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:text-white hover:bg-rose-500/10 text-xs transition-colors cursor-pointer"
+                                  >
+                                    Quitar
+                                  </button>
+                                )}
+                              </div>
+                              {adminLogo3 && (
+                                <div className="mt-1.5 flex items-center gap-2">
+                                  <img src={adminLogo3} alt="Logo 3 Preview" className="h-6 max-w-[100px] object-contain rounded border border-border-theme bg-surface-theme/30 p-0.5" />
+                                  <span className="text-[10px] text-emerald-400 font-semibold">Vista previa</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
