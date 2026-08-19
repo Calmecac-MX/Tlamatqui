@@ -12,6 +12,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 🚀 Features & Nuevas Funcionalidades
 
+- **[config]** agregar campos para logos 2 y 3 en configuración global (`50d9942`)
 - **[teams]** permitir invitar miembros a un equipo a traves de un enlace corto (Frontend v2.5.23 / Backend v2.5.13) (`4cbf1e9`)
 - **[dns]** auto-registrar dominio automaticamente en Vercel API al guardar o consultar (Frontend v2.5.22 / Backend v2.5.12) (`b9d2695`)
 - **[dns]** integrar API de Vercel para auto-aprovisionamiento y diagnostico en vivo 4-checkpoints (Frontend v2.5.21 / Backend v2.5.11) (`4960fe7`)
