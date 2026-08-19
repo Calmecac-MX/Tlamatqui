@@ -682,6 +682,8 @@ export async function getDbTeams(): Promise<Team[]> {
             role: m.role as any,
             avatar: m.avatar || undefined
           })),
+          inviteToken: t.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
+          inviteRole: (t.inviteRole as any) || "Visor",
           createdAt: t.createdAt.toISOString()
         }));
       } catch (err) {
@@ -722,6 +724,8 @@ export async function saveDbTeam(team: Team): Promise<Team> {
               image: team.image || null,
               ownerName: team.ownerName,
               ownerEmail: team.ownerEmail,
+              inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
+              inviteRole: (team.inviteRole as any) || "Visor",
               members: {
                 create: team.members.map(m => ({
                   id: m.id,
@@ -738,6 +742,8 @@ export async function saveDbTeam(team: Team): Promise<Team> {
               image: team.image || null,
               ownerName: team.ownerName,
               ownerEmail: team.ownerEmail,
+              inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
+              inviteRole: (team.inviteRole as any) || "Visor",
               createdAt: team.createdAt ? new Date(team.createdAt) : new Date(),
               members: {
                 create: team.members.map(m => ({
@@ -764,6 +770,8 @@ export async function saveDbTeam(team: Team): Promise<Team> {
   const index = teams.findIndex(t => t.id === team.id);
   const cleanTeam = {
     ...team,
+    inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
+    inviteRole: team.inviteRole || "Visor",
     createdAt: team.createdAt || new Date().toISOString()
   };
 
@@ -813,6 +821,87 @@ export async function deleteDbTeam(id: string): Promise<boolean> {
     console.error("Error deleting team from local file:", err);
     return false;
   }
+}
+
+/**
+ * Busca un equipo de trabajo por su token de invitación.
+ * 
+ * @param {string} token - Token de invitación del equipo.
+ * @returns {Promise<Team | null>} Objeto del equipo o null si no existe.
+ */
+export async function getTeamByInviteToken(token: string): Promise<Team | null> {
+  if (!token || typeof token !== "string") return null;
+  const teams = await getDbTeams();
+  return teams.find(t => t.inviteToken === token.trim()) || null;
+}
+
+/**
+ * Regenera un nuevo token de invitación para el equipo dado.
+ * 
+ * @param {string} teamId - ID del equipo.
+ * @returns {Promise<Team | null>} Equipo con el nuevo token generado.
+ */
+export async function resetTeamInviteToken(teamId: string): Promise<Team | null> {
+  const teams = await getDbTeams();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) return null;
+  team.inviteToken = `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`;
+  return saveDbTeam(team);
+}
+
+/**
+ * Incorpora un nuevo miembro a un equipo mediante su token de invitación.
+ * 
+ * @param {string} token - Token de invitación.
+ * @param {string} name - Nombre del usuario a incorporar.
+ * @param {string} email - Correo del usuario a incorporar.
+ * @param {string} [avatar] - Avatar del usuario opcional.
+ * @returns {Promise<{ success: boolean; message: string; team?: Team; member?: any }>} Resultado.
+ */
+export async function joinTeamViaInviteToken(
+  token: string,
+  name: string,
+  email: string,
+  avatar?: string
+): Promise<{ success: boolean; message: string; team?: Team; member?: any }> {
+  const team = await getTeamByInviteToken(token);
+  if (!team) {
+    return { success: false, message: "El enlace de invitación no es válido o ha caducado." };
+  }
+
+  if (!email || !email.includes("@")) {
+    return { success: false, message: "Ingresa un correo electrónico válido." };
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const existingMember = team.members.find(m => m.email.toLowerCase() === cleanEmail);
+
+  if (existingMember) {
+    return {
+      success: true,
+      message: `¡Ya formas parte del equipo '${team.name}'!`,
+      team,
+      member: existingMember
+    };
+  }
+
+  const newMember = {
+    id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    name: name.trim() || cleanEmail.split("@")[0],
+    email: cleanEmail,
+    role: team.inviteRole || "Visor",
+    avatar: avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80`
+  };
+
+  team.members.push(newMember);
+  const updatedTeam = await saveDbTeam(team);
+
+  return {
+    success: true,
+    message: `¡Te has unido exitosamente al equipo '${team.name}' como ${newMember.role}!`,
+    team: updatedTeam,
+    member: newMember
+  };
 }
 
 // ==========================================

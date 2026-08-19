@@ -12,6 +12,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 🚀 Features & Nuevas Funcionalidades
 
+- **[dns]** auto-registrar dominio automaticamente en Vercel API al guardar o consultar (Frontend v2.5.22 / Backend v2.5.12) (`b9d2695`)
 - **[dns]** integrar API de Vercel para auto-aprovisionamiento y diagnostico en vivo 4-checkpoints (Frontend v2.5.21 / Backend v2.5.11) (`4960fe7`)
 - **[config]** agregar compartir reportes en dominio personalizado con verificacion TXT (Frontend v2.5.20 / Backend v2.5.10) (`b59d9b4`)
 - **[ui]** establecer titulo dinamico del reporte web como Reporte de {{marca}} | Tlamatqui (`94939d0`)

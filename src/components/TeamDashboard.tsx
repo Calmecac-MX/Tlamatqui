@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Users, Settings, Shield, Plus, Trash2, Edit, UploadCloud, 
-  Mail, Clock, FileText, DollarSign, Crown, CheckCircle, X, ChevronRight, User, AlertTriangle
+  Mail, Clock, FileText, DollarSign, Crown, CheckCircle, X, ChevronRight, User, AlertTriangle, Copy, Link as LinkIcon, RefreshCw, Check, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Team, TeamMember, Report } from "../types";
@@ -796,6 +796,80 @@ export default function TeamDashboard({
                       />
                     </div>
                   </div>
+
+                  {/* Tarjeta de Enlace de Invitación al Equipo */}
+                  {activeTeam && (
+                    <div className="pt-4 border-t border-border-theme/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme flex items-center gap-1.5">
+                          <LinkIcon className="w-3.5 h-3.5" />
+                          Enlace de Invitación Directa al Equipo
+                        </label>
+                        <span className="text-[10px] text-text-dim-theme bg-bg-theme px-2 py-0.5 rounded border border-border-theme font-mono">
+                          Token: {activeTeam.inviteToken || "Generando..."}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${typeof window !== "undefined" ? window.location.origin : "https://tlamatqui.app"}/?inviteTeam=${activeTeam.inviteToken || ""}`}
+                          className="w-full text-xs font-mono px-3.5 py-2.5 rounded-lg border outline-none bg-bg-theme border-border-theme text-emerald-400 select-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${window.location.origin}/?inviteTeam=${activeTeam.inviteToken || ""}`;
+                            navigator.clipboard.writeText(url);
+                            alert("¡Enlace de invitación copiado al portapapeles!");
+                          }}
+                          className="px-4 py-2.5 bg-accent-theme hover:bg-accent-theme/90 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5 shrink-0"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          Copiar Enlace
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-text-dim-theme font-medium">Rol Asignado por Defecto:</span>
+                          <select
+                            value={activeTeam.inviteRole || "Visor"}
+                            onChange={async (e) => {
+                              const updated = { ...activeTeam, inviteRole: e.target.value as any };
+                              await onUpdateTeam(updated);
+                            }}
+                            className="text-xs px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-white outline-none"
+                          >
+                            <option value="Visor">Visor</option>
+                            <option value="Editor">Editor</option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm("¿Estás seguro de regenerar el enlace? El enlace previo dejará de funcionar.")) {
+                              try {
+                                const res = await fetch(`/api/teams/${activeTeam.id}/reset-invite`, { method: "POST" });
+                                const data = await res.json();
+                                if (res.ok) {
+                                  await onUpdateTeam(data);
+                                  alert("¡Nuevo enlace de invitación generado exitosamente!");
+                                }
+                              } catch (e) {
+                                alert("Error al regenerar enlace.");
+                              }
+                            }
+                          }}
+                          className="text-[11px] text-text-dim-theme hover:text-red-theme underline cursor-pointer font-medium flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Regenerar Enlace
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Drag-and-drop team logo */}
                   <div className="space-y-2 pt-2">

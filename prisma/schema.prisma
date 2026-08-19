@@ -91,9 +91,11 @@ model Team {
   image      String?
   ownerName  String
   ownerEmail String
-  members    TeamMember[]
-  reports    Report[]
-  createdAt  DateTime     @default(now())
+  members     TeamMember[]
+  reports     Report[]
+  inviteToken String?      @default("")
+  inviteRole  Role         @default(Visor)
+  createdAt   DateTime     @default(now())
 }
 
 /// Individual members belonging to a team.

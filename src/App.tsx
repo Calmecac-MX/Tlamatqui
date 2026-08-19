@@ -9,6 +9,7 @@ import { Auth0ProviderWrapper, useAuth } from "./lib/authContext";
 
 const AdminPanel = lazy(() => import("./components/AdminPanel"));
 const ReportView = lazy(() => import("./components/ReportView"));
+import { JoinTeamModal } from "./components/JoinTeamModal";
 
 function MainAppRouter() {
   const [viewingReportId, setViewingReportId] = useState<string | null>(() => {
@@ -21,6 +22,11 @@ function MainAppRouter() {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
     return params.get("shared") === "true";
+  });
+  const [inviteTeamToken, setInviteTeamToken] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("inviteTeam");
   });
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -49,11 +55,13 @@ function MainAppRouter() {
       const params = new URLSearchParams(window.location.search);
       const reportId = params.get("report");
       const sharedParam = params.get("shared") === "true";
+      const inviteToken = params.get("inviteTeam");
       setViewingReportId(reportId);
       setIsSharedMode(sharedParam);
+      setInviteTeamToken(inviteToken);
 
       // Sincronizar slug /tlachialoyan cuando se accede a la administración
-      if (!reportId && window.location.pathname === "/") {
+      if (!reportId && !inviteToken && window.location.pathname === "/") {
         window.history.replaceState({}, "", "/tlachialoyan");
       }
     };
@@ -135,6 +143,26 @@ function MainAppRouter() {
           toggleDarkMode={toggleDarkMode}
         />
       </Suspense>
+
+      {/* Modal de Invitación a Equipo vía Enlace Corto */}
+      {inviteTeamToken && (
+        <JoinTeamModal
+          inviteToken={inviteTeamToken}
+          onJoined={() => {
+            // Limpiar parámetro de la URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete("inviteTeam");
+            window.history.replaceState({}, "", url.toString());
+            setInviteTeamToken(null);
+          }}
+          onClose={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("inviteTeam");
+            window.history.replaceState({}, "", url.toString());
+            setInviteTeamToken(null);
+          }}
+        />
+      )}
     </div>
   );
 }

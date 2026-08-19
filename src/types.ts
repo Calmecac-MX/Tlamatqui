@@ -257,6 +257,10 @@ export interface Team {
   ownerName: string;
   ownerEmail: string;
   members: TeamMember[];
+  /** Token secreto único para el enlace de invitación al equipo */
+  inviteToken?: string;
+  /** Rol asignado por defecto a los miembros que se unan vía enlace */
+  inviteRole?: "Administrador" | "Editor" | "Visor";
   createdAt: string;
 }
 

@@ -28,7 +28,10 @@ import {
   saveDbPartner,
   getDbLogoConfig,
   saveDbLogoConfig,
-  verifyCustomDomainDNS
+  verifyCustomDomainDNS,
+  getTeamByInviteToken,
+  resetTeamInviteToken,
+  joinTeamViaInviteToken
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
@@ -311,7 +314,63 @@ app.delete("/api/teams/:id", async (req: Request, res: Response) => {
     if (!success) {
       return res.status(404).json({ error: "Equipo no encontrado" });
     }
-    res.json({ message: "Equipo eliminado con éxito" });
+    res.json({ message: "Equipo eliminado correctamente" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route GET /api/teams/invite/:token
+ * @description Obtiene los datos de vista previa pública de un equipo para la pantalla de invitación.
+ */
+app.get("/api/teams/invite/:token", async (req: Request, res: Response) => {
+  try {
+    const team = await getTeamByInviteToken(req.params.token);
+    if (!team) {
+      return res.status(404).json({ error: "El enlace de invitación no es válido o ha caducado" });
+    }
+    res.json({
+      id: team.id,
+      name: team.name,
+      image: team.image,
+      ownerName: team.ownerName,
+      inviteRole: team.inviteRole || "Visor",
+      memberCount: team.members.length
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/teams/invite/join
+ * @description Une a un nuevo usuario como miembro del equipo mediante su token de invitación.
+ */
+app.post("/api/teams/invite/join", async (req: Request, res: Response) => {
+  try {
+    const { token, name, email, avatar } = req.body;
+    const result = await joinTeamViaInviteToken(token, name, email, avatar);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * @route POST /api/teams/:id/reset-invite
+ * @description Regenera un nuevo token de invitación para el equipo (invalida el enlace anterior).
+ */
+app.post("/api/teams/:id/reset-invite", async (req: Request, res: Response) => {
+  try {
+    const updatedTeam = await resetTeamInviteToken(req.params.id);
+    if (!updatedTeam) {
+      return res.status(404).json({ error: "Equipo no encontrado" });
+    }
+    res.json(updatedTeam);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
