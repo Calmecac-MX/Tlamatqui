@@ -4,13 +4,15 @@ import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "../src/lib/prisma.js";
 import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig } from "../src/types.js";
+import { encryptData, decryptData } from "./encryptionService.js";
 
-// Async JSON file helper utilities (non-blocking I/O)
+// Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo)
 async function readJsonAsync<T>(filePath: string, fallback: T): Promise<T> {
   try {
     if (fs.existsSync(filePath)) {
       const content = await fsPromises.readFile(filePath, "utf-8");
-      return JSON.parse(content);
+      const rawData = JSON.parse(content);
+      return decryptData(rawData);
     }
   } catch (error) {
     console.error(`Error al leer archivo JSON asíncrono ${filePath}:`, error);
@@ -20,7 +22,8 @@ async function readJsonAsync<T>(filePath: string, fallback: T): Promise<T> {
 
 async function writeJsonAsync<T>(filePath: string, data: T): Promise<void> {
   try {
-    await fsPromises.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+    const encryptedData = encryptData(data);
+    await fsPromises.writeFile(filePath, JSON.stringify(encryptedData, null, 2), "utf-8");
   } catch (error) {
     console.error(`Error al escribir archivo JSON asíncrono ${filePath}:`, error);
   }
@@ -511,7 +514,10 @@ export async function getDbConfig(): Promise<any> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        config = await prisma.config.findUnique({ where: { id: "default" } });
+        const raw = await prisma.config.findUnique({ where: { id: "default" } });
+        if (raw) {
+          config = decryptData(raw);
+        }
       } catch (err) {
         console.error("Error reading config from database:", err);
       }
@@ -567,19 +573,20 @@ export async function saveDbConfig(config: any): Promise<any> {
     const prisma = getPrisma();
     if (prisma) {
       try {
+        const dbPayload = encryptData(cleanConfig);
         const updated = await prisma.config.upsert({
           where: { id: "default" },
           update: {
-            ...cleanConfig,
+            ...dbPayload,
             userRole: cleanConfig.userRole as any
           },
           create: {
             id: "default",
-            ...cleanConfig,
+            ...dbPayload,
             userRole: cleanConfig.userRole as any
           }
         });
-        return updated;
+        return decryptData(updated);
       } catch (err) {
         console.error("Error writing config to database:", err);
       }
@@ -699,14 +706,7 @@ export async function getDbTeams(): Promise<Team[]> {
   }
 
   // Local fallback
-  try {
-    if (fs.existsSync(TEAMS_FILE)) {
-      return JSON.parse(fs.readFileSync(TEAMS_FILE, "utf-8"));
-    }
-  } catch (error) {
-    console.error("Error reading local teams file:", error);
-  }
-  return [];
+  return readJsonAsync(TEAMS_FILE, []);
 }
 
 /**
@@ -1003,14 +1003,7 @@ export async function getDbReports(): Promise<Report[]> {
   }
 
   // Local fallback
-  try {
-    if (fs.existsSync(REPORTS_FILE)) {
-      return JSON.parse(fs.readFileSync(REPORTS_FILE, "utf-8"));
-    }
-  } catch (error) {
-    console.error("Error reading local reports file:", error);
-  }
-  return [];
+  return readJsonAsync(REPORTS_FILE, []);
 }
 
 /**
@@ -1421,11 +1414,7 @@ export async function saveDbTemplate(template: ComparisonTemplate): Promise<Comp
     templates[index] = cleanTemplate;
   }
 
-  try {
-    fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(templates, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error writing template to local file:", err);
-  }
+  await writeJsonAsync(TEMPLATES_FILE, templates);
   return cleanTemplate;
 }
 
@@ -1454,13 +1443,8 @@ export async function deleteDbTemplate(id: string): Promise<boolean> {
   if (templates.length === filtered.length) {
     return false;
   }
-  try {
-    fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(filtered, null, 2), "utf-8");
-    return true;
-  } catch (err) {
-    console.error("Error deleting template from local file:", err);
-    return false;
-  }
+  await writeJsonAsync(TEMPLATES_FILE, filtered);
+  return true;
 }
 
 // ==========================================
@@ -1489,14 +1473,7 @@ export async function getDbPartner(): Promise<any> {
   }
 
   // Fallback to local files
-  try {
-    if (fs.existsSync(PARTNERS_FILE)) {
-      return JSON.parse(fs.readFileSync(PARTNERS_FILE, "utf-8"));
-    }
-  } catch (error) {
-    console.error("Error reading local partner file:", error);
-  }
-  return DEFAULT_PARTNER;
+  return readJsonAsync(PARTNERS_FILE, DEFAULT_PARTNER);
 }
 
 /**
@@ -1565,11 +1542,8 @@ export async function saveDbPartner(partner: any): Promise<any> {
       partnerId: "default"
     }))
   };
-  try {
-    fs.writeFileSync(PARTNERS_FILE, JSON.stringify(fullPartner, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Error writing partner to local file:", error);
-  }
+
+  await writeJsonAsync(PARTNERS_FILE, fullPartner);
   return fullPartner;
 }
 
@@ -1596,14 +1570,7 @@ export async function getDbLogoConfig(): Promise<any> {
   }
 
   // Fallback to local files
-  try {
-    if (fs.existsSync(LOGO_CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(LOGO_CONFIG_FILE, "utf-8"));
-    }
-  } catch (error) {
-    console.error("Error reading local logo config file:", error);
-  }
-  return DEFAULT_LOGO_CONFIG;
+  return readJsonAsync(LOGO_CONFIG_FILE, DEFAULT_LOGO_CONFIG);
 }
 
 /**
@@ -1644,11 +1611,7 @@ export async function saveDbLogoConfig(logoConfig: any): Promise<any> {
   }
 
   const result = { id: "default", ...cleanConfig };
-  try {
-    fs.writeFileSync(LOGO_CONFIG_FILE, JSON.stringify(result, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Error writing logo config to local file:", error);
-  }
+  await writeJsonAsync(LOGO_CONFIG_FILE, result);
   return result;
 }
 

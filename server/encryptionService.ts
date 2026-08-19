@@ -126,3 +126,89 @@ export function verifyHmacSignature(payload: string, signature: string): boolean
   const expectedSignature = createHmacSignature(payload);
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
+
+/**
+ * Lista de nombres de campos sensibles que deben ser automáticamente cifrados en reposo.
+ */
+export const SENSITIVE_FIELDS = new Set([
+  "contactEmail",
+  "contactWhatsapp",
+  "ownerEmail",
+  "email",
+  "userEmail",
+  "defaultContactEmail",
+  "defaultContactWhatsapp",
+  "inviteToken",
+  "domainVerificationToken",
+  "globalEmail",
+  "smtpPass",
+  "pass"
+]);
+
+/**
+ * Cifra de forma recursiva todos los valores correspondientes a campos sensibles en un objeto o array.
+ * Preserva la estructura original del objeto.
+ * 
+ * @param {T} data - El objeto o colección de datos.
+ * @returns {T} El objeto procesado con los campos sensibles cifrados mediante ENCRYPTION_KEY.
+ */
+export function encryptData<T = any>(data: T): T {
+  if (data === null || data === undefined) return data;
+
+  if (typeof data === "string") {
+    return data as any;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => encryptData(item)) as any;
+  }
+
+  if (typeof data === "object") {
+    const result: any = { ...data };
+    for (const key of Object.keys(result)) {
+      const value = result[key];
+      if (typeof value === "string" && SENSITIVE_FIELDS.has(key)) {
+        result[key] = encryptText(value);
+      } else if (typeof value === "object" && value !== null) {
+        result[key] = encryptData(value);
+      }
+    }
+    return result;
+  }
+
+  return data;
+}
+
+/**
+ * Descifra de forma recursiva todos los campos cifrados en un objeto o colección de datos.
+ * 
+ * @param {T} data - El objeto o colección de datos con posibles valores cifrados.
+ * @returns {T} El objeto procesado con todos los campos descifrados a texto plano en memoria.
+ */
+export function decryptData<T = any>(data: T): T {
+  if (data === null || data === undefined) return data;
+
+  if (typeof data === "string") {
+    return decryptText(data) as any;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => decryptData(item)) as any;
+  }
+
+  if (typeof data === "object") {
+    const result: any = { ...data };
+    for (const key of Object.keys(result)) {
+      const value = result[key];
+      if (typeof value === "string") {
+        result[key] = decryptText(value);
+      } else if (typeof value === "object" && value !== null) {
+        result[key] = decryptData(value);
+      }
+    }
+    return result;
+  }
+
+  return data;
+}
+

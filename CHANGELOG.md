@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.26 (Frontend) / v2.5.17 (Backend)] - 2026-08-19
+
+### 🚀 Features & Nuevas Funcionalidades
+- **security:** integrar servicio de encriptacion AES-256-GCM y firmas HMAC utilizando ENCRYPTION_KEY (v2.5.26 / v2.5.16) (`94151da`)
+
 ## [v2.5.26 (Frontend) / v2.5.16 (Backend)] - 2026-08-19
 
 ### 🚀 Features & Nuevas Funcionalidades

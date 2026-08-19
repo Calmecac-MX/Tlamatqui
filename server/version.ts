@@ -6,7 +6,7 @@
  * Generado automáticamente por scripts/auto-version.js
  */
 
-export const BACKEND_VERSION = "2.5.16";
+export const BACKEND_VERSION = "2.5.17";
 export const FRONTEND_VERSION = "2.5.26";
 
 export default BACKEND_VERSION;
