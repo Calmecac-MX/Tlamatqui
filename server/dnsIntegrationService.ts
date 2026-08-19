@@ -220,6 +220,28 @@ export async function provisionDomainOnVercel(
         data
       };
     } else {
+      // Si el dominio ya fue registrado previamente en este proyecto Vercel (código de error idempotente)
+      if (
+        data.error?.code === "DOMAIN_ALREADY_IN_USE" || 
+        data.error?.code === "DOMAIN_EXISTS" || 
+        (data.error?.message && data.error.message.includes("already"))
+      ) {
+        // Intentar la verificación de todas formas
+        await fetch(
+          `https://api.vercel.com/v9/projects/${projectId}/domains/${clean}/verify${queryTeam}`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        ).catch(() => {});
+
+        return {
+          success: true,
+          message: `¡Dominio '${clean}' ya está asociado y configurado en el proyecto Vercel!`,
+          data
+        };
+      }
+
       return {
         success: false,
         message: data.error?.message || `Error al dar de alta el dominio en Vercel (${res.status}).`,

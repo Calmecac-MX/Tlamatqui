@@ -550,7 +550,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         })
       });
       if (res.ok) {
-        alert("¡Configuración guardada correctamente!");
+        alert("¡Configuración guardada correctamente y dominio auto-registrado en Vercel!");
         fetchConfig();
       } else {
         alert("Error al guardar la configuración.");

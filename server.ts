@@ -615,6 +615,14 @@ app.post("/api/config", async (req: Request, res: Response) => {
     const config = await getDbConfig();
     const newConfig = { ...config, ...req.body };
     const saved = await saveDbConfig(newConfig);
+
+    // Auto-registrar automáticamente en la API de Vercel si se proporcionó un dominio personalizado
+    if (newConfig.customDomain && process.env.VERCEL_AUTH_TOKEN && process.env.VERCEL_PROJECT_ID) {
+      provisionDomainOnVercel(newConfig.customDomain).catch((e) =>
+        console.error("Auto-registro en Vercel en segundo plano:", e)
+      );
+    }
+
     res.json(saved);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -651,6 +659,12 @@ app.post("/api/config/dns/status", async (req: Request, res: Response) => {
     const config = await getDbConfig();
     const targetDomain = sanitizeDomain(domain || config.customDomain || "");
     const token = config.domainVerificationToken || "";
+
+    // Intentar auto-registrar automáticamente en Vercel si la API está configurada
+    if (targetDomain && process.env.VERCEL_AUTH_TOKEN && process.env.VERCEL_PROJECT_ID) {
+      await provisionDomainOnVercel(targetDomain).catch(() => {});
+    }
+
     const report = await getFullDNSDiagnostics(targetDomain, token);
     
     // Si la verificación TXT fue exitosa, actualizar automáticamente el estado en la base de datos
