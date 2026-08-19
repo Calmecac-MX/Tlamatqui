@@ -27,7 +27,7 @@ function MainAppRouter() {
   // Sync default document title when not viewing a report
   useEffect(() => {
     if (!viewingReportId) {
-      document.title = "Tlamatqui";
+      document.title = "Tlachiālōyan | Tlamatqui";
     }
   }, [viewingReportId]);
 
@@ -43,7 +43,7 @@ function MainAppRouter() {
     }
   }, [isDarkMode]);
 
-  // Sync state with browser navigation and query parameters
+  // Sync state with browser navigation and query parameters for /tlachialoyan
   useEffect(() => {
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
@@ -51,6 +51,11 @@ function MainAppRouter() {
       const sharedParam = params.get("shared") === "true";
       setViewingReportId(reportId);
       setIsSharedMode(sharedParam);
+
+      // Sincronizar slug /tlachialoyan cuando se accede a la administración
+      if (!reportId && window.location.pathname === "/") {
+        window.history.replaceState({}, "", "/tlachialoyan");
+      }
     };
 
     syncFromUrl();
@@ -61,14 +66,14 @@ function MainAppRouter() {
   const handleOpenReport = (id: string) => {
     setViewingReportId(id);
     setIsSharedMode(false); // Direct click from admin is not shared mode
-    const newUrl = `${window.location.origin}${window.location.pathname}?report=${id}`;
+    const newUrl = `${window.location.origin}/tlachialoyan?report=${id}`;
     window.history.pushState({ path: newUrl }, "", newUrl);
   };
 
   const handleCloseReport = () => {
     setViewingReportId(null);
     setIsSharedMode(false);
-    const newUrl = `${window.location.origin}${window.location.pathname}`;
+    const newUrl = `${window.location.origin}/tlachialoyan`;
     window.history.pushState({ path: newUrl }, "", newUrl);
   };
 

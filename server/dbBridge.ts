@@ -55,7 +55,7 @@ const DEFAULT_CONFIG = {
 const DEFAULT_LOGO_CONFIG = {
   id: "default",
   logoType: "text",
-  logoText: "Tlamatqui Diagnostics",
+  logoText: "Tlachiālōyan",
   logoFile: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
   globalEmail: "cesar.ayar19@gmail.com"
 };

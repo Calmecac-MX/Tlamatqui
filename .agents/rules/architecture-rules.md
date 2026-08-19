@@ -52,4 +52,9 @@ El sistema está dividido en dos capas independientes:
    - Requiere las variables de entorno `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` y `SMTP_FROM`.
    - Se integra en el Frontend mediante el modal interactivo [`src/components/SendEmailModal.tsx`](file:///Users/cesarayar/Documents/tlamatqui/src/components/SendEmailModal.tsx).
 
+4. **Identidad del Módulo Administrativo y Ruta /tlachialoyan:**
+   - El panel de administración de la plataforma se denomina oficialmente **Tlachiālōyan**.
+   - El slug de ruta oficial para acceder o navegar al área administrativa en el cliente es **`/tlachialoyan`** (ej. `https://midominio.com/tlachialoyan`).
+
+
 

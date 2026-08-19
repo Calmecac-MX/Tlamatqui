@@ -50,7 +50,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [adminFavicon, setAdminFavicon] = useState<string>("/favicon.ico");
   const [adminText, setAdminText] = useState<string>("");
   const [logoType, setLogoType] = useState<"text" | "logo">("text");
-  const [logoText, setLogoText] = useState<string>("Evolución Diagnostics");
+  const [logoText, setLogoText] = useState<string>("Tlachiālōyan");
   const [logoFile, setLogoFile] = useState<string>("");
   const [globalEmail, setGlobalEmail] = useState<string>("cesar.ayar19@gmail.com");
   const [defaultContactEmail, setDefaultContactEmail] = useState<string>("cesar.ayar19@gmail.com");
@@ -953,13 +953,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                     />
                     <div id="sidebar-fallback-text" className="hidden">
                       <h1 className="text-sm font-bold tracking-tight text-white truncate">
-                        {adminText || "Evolución"}
+                        {adminText || "Tlachiālōyan"}
                       </h1>
                     </div>
                   </div>
                 ) : (
                   <h1 className="text-sm font-bold tracking-tight text-white truncate">
-                    {adminText || "Evolución"}
+                    {adminText || "Tlachiālōyan"}
                   </h1>
                 )}
               </div>

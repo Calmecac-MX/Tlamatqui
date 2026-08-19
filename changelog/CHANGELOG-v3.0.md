@@ -23,6 +23,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar changelog con titulo dinamico de reporte por marca (`4e990c3`)
 - **[changelog]** actualizar changelog con la funcionalidad SMTP (`1b1490b`)
 - **[changelog]** actualizar changelog con registro de Licencia AGPL-3.0 (`a8a6db3`)
 - **[changelog]** actualizar changelog con cambios de Configuración de Branding (`ef436d7`)

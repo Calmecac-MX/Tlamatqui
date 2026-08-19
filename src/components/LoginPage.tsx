@@ -129,7 +129,7 @@ export default function LoginPage({ isDarkMode, toggleDarkMode }: LoginPageProps
                 </span>
               </h2>
               <p className={`text-base md:text-lg leading-relaxed ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
-                Accede al panel de control para auditar tiendas Shopify, detectar fugas por comisiones ocultas, generar simulaciones de ahorro en tiempo real y presentar propuestas ejecutivas de alto impacto.
+                Accede a Tlachiālōyan para auditar tiendas Shopify, detectar fugas por comisiones ocultas, generar simulaciones de ahorro en tiempo real y presentar propuestas ejecutivas de alto impacto.
               </p>
             </div>
 

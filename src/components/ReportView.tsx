@@ -1089,7 +1089,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs text-text-dim-theme hover:text-white hover:bg-surface-hover-theme border border-border-theme/40 transition-all text-left cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5 text-accent-theme" />
-                  <span>Volver al Admin</span>
+                  <span>Volver a Tlachiālōyan</span>
                 </button>
               </div>
             )}
