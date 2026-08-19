@@ -8,7 +8,8 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, PieChart, Pie, Cell
 } from "recharts";
-import { Report } from "../types";
+import { Report, Config } from "../types";
+import { ShareReportModal } from "./ShareReportModal";
 
 /**
  * Propiedades del componente GlobalDashboard.
@@ -40,6 +41,15 @@ export default function GlobalDashboard({
 }: GlobalDashboardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [shareModalReport, setShareModalReport] = useState<Report | null>(null);
+  const [config, setConfig] = useState<Config | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/config")
+      .then(res => res.json())
+      .then(data => setConfig(data))
+      .catch(() => {});
+  }, []);
 
   // Colores adaptativos para gráficas Recharts según el tema activo
   const colors = {
@@ -85,10 +95,15 @@ export default function GlobalDashboard({
    */
   const handleCopyLink = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const reportLink = `${window.location.origin}/?report=${id}&shared=true`;
-    navigator.clipboard.writeText(reportLink);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    const targetReport = reports.find(r => r.id === id) || null;
+    if (targetReport) {
+      setShareModalReport(targetReport);
+    } else {
+      const reportLink = `${window.location.origin}/?report=${id}&shared=true`;
+      navigator.clipboard.writeText(reportLink);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   // Pie Chart Data: Vistos vs No Vistos
@@ -502,6 +517,15 @@ export default function GlobalDashboard({
           Copiar Link de Prueba
         </button>
       </div>
+
+      {shareModalReport && (
+        <ShareReportModal
+          report={shareModalReport}
+          config={config}
+          onClose={() => setShareModalReport(null)}
+          onConfigUpdated={(updated) => setConfig(updated)}
+        />
+      )}
 
     </div>
   );

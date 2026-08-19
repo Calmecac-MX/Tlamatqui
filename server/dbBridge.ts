@@ -1,5 +1,7 @@
 import fs, { promises as fsPromises } from "fs";
 import path from "path";
+import dns from "node:dns/promises";
+import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "../src/lib/prisma.js";
 import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig } from "../src/types.js";
 
@@ -49,7 +51,11 @@ const DEFAULT_CONFIG = {
   brandCard2Title: "Socio Consultor Autorizado",
   brandCard2Desc: "Especialistas de confianza en migración, diseño UX/UI y optimización técnica para asegurar una transición fluida sin perder SEO.",
   brandCard2Logo: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=120&q=80",
-  brandCard2Link: "mailto:cesar.ayar19@gmail.com"
+  brandCard2Link: "mailto:cesar.ayar19@gmail.com",
+  customDomain: "",
+  domainVerificationToken: "tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex"),
+  domainVerified: false,
+  domainVerifiedAt: null
 };
 
 const DEFAULT_LOGO_CONFIG = {
@@ -496,20 +502,29 @@ export async function initializeDatabase() {
  * @returns {Promise<any>} Objeto con la configuración global del panel.
  */
 export async function getDbConfig(): Promise<any> {
+  let config: any = null;
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        const config = await prisma.config.findUnique({ where: { id: "default" } });
-        if (config) return config;
+        config = await prisma.config.findUnique({ where: { id: "default" } });
       } catch (err) {
         console.error("Error reading config from database:", err);
       }
     }
   }
 
-  // Fallback to local files
-  return readJsonAsync(CONFIG_FILE, DEFAULT_CONFIG);
+  if (!config) {
+    config = await readJsonAsync(CONFIG_FILE, DEFAULT_CONFIG);
+  }
+
+  // Ensure token exists
+  if (!config.domainVerificationToken) {
+    config.domainVerificationToken = "tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex");
+    await saveDbConfig(config);
+  }
+
+  return config;
 }
 
 /**
@@ -519,6 +534,7 @@ export async function getDbConfig(): Promise<any> {
  * @returns {Promise<any>} Configuración actualizada y guardada.
  */
 export async function saveDbConfig(config: any): Promise<any> {
+  const currentConfig = await getDbConfig().catch(() => ({}));
   const cleanConfig = {
     adminLogoUrl: config.adminLogoUrl || DEFAULT_CONFIG.adminLogoUrl,
     adminTextUrl: config.adminTextUrl || DEFAULT_CONFIG.adminTextUrl,
@@ -535,6 +551,10 @@ export async function saveDbConfig(config: any): Promise<any> {
     brandCard2Desc: config.brandCard2Desc || null,
     brandCard2Logo: config.brandCard2Logo || null,
     brandCard2Link: config.brandCard2Link || null,
+    customDomain: config.customDomain !== undefined ? config.customDomain : (currentConfig.customDomain || ""),
+    domainVerificationToken: config.domainVerificationToken || currentConfig.domainVerificationToken || ("tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex")),
+    domainVerified: Boolean(config.domainVerified !== undefined ? config.domainVerified : (currentConfig.domainVerified || false)),
+    domainVerifiedAt: config.domainVerifiedAt !== undefined ? config.domainVerifiedAt : (currentConfig.domainVerifiedAt || null),
   };
 
   if (isPrismaEnabled()) {
@@ -563,6 +583,73 @@ export async function saveDbConfig(config: any): Promise<any> {
   // Save to local file as fallback/sync
   await writeJsonAsync(CONFIG_FILE, cleanConfig);
   return cleanConfig;
+}
+
+/**
+ * Consulta los registros TXT de DNS para verificar la propiedad del dominio personalizado.
+ * 
+ * @param {string} rawDomain - Nombre de dominio o subdominio a consultar.
+ * @param {string} expectedToken - Token de verificación guardado en la configuración.
+ * @returns {Promise<{ success: boolean; message: string; config?: any }>} Resultado de la verificación.
+ */
+export async function verifyCustomDomainDNS(rawDomain: string, expectedToken: string): Promise<{ success: boolean; message: string; config?: any }> {
+  if (!rawDomain || typeof rawDomain !== "string") {
+    return { success: false, message: "Ingresa un nombre de dominio válido." };
+  }
+
+  // Sanear el nombre de dominio
+  const cleanDomain = rawDomain.trim().toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "");
+
+  if (!cleanDomain || !cleanDomain.includes(".")) {
+    return { success: false, message: "El formato del dominio no es válido (ejemplo: reportes.miagencia.com)." };
+  }
+
+  const hostsToQuery = [
+    `_tlamatqui-challenge.${cleanDomain}`,
+    cleanDomain
+  ];
+
+  let foundToken = false;
+  let queriedHost = "";
+
+  for (const host of hostsToQuery) {
+    try {
+      const records = await dns.resolveTxt(host);
+      // records es un arreglo de arreglos de cadenas: string[][]
+      const flatRecords = records.map(r => r.join(""));
+      for (const rec of flatRecords) {
+        if (rec.includes(expectedToken) || rec.includes(expectedToken.replace("tlamatqui-verify-sec_", ""))) {
+          foundToken = true;
+          queriedHost = host;
+          break;
+        }
+      }
+      if (foundToken) break;
+    } catch (e) {
+      // Continuar al siguiente host si falla
+    }
+  }
+
+  if (foundToken) {
+    const config = await getDbConfig();
+    config.customDomain = `https://${cleanDomain}`;
+    config.domainVerified = true;
+    config.domainVerifiedAt = new Date().toISOString();
+    const updated = await saveDbConfig(config);
+    return {
+      success: true,
+      message: `¡Dominio verificado con éxito en '${queriedHost}'!`,
+      config: updated
+    };
+  }
+
+  return {
+    success: false,
+    message: `No se encontró el registro TXT requerido en '${cleanDomain}' o '_tlamatqui-challenge.${cleanDomain}'. Verifica el valor e intenta nuevamente tras la propagación DNS.`
+  };
 }
 
 // ==========================================

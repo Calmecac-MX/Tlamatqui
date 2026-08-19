@@ -78,6 +78,10 @@ model Config {
   brandCard2Desc         String?
   brandCard2Logo         String?
   brandCard2Link         String?
+  customDomain           String? @default("")
+  domainVerificationToken String? @default("")
+  domainVerified         Boolean @default(false)
+  domainVerifiedAt       DateTime?
 }
 
 /// Team model representing an agency or team workspace.

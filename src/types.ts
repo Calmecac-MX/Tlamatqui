@@ -203,6 +203,14 @@ export interface Config {
   brandCard2Logo?: string;
   /** Enlace del socio consultor secundario */
   brandCard2Link?: string;
+  /** Dominio personalizado configurado para compartir reportes (ej. https://reportes.miagencia.com) */
+  customDomain?: string;
+  /** Token de verificación para registro TXT DNS */
+  domainVerificationToken?: string;
+  /** Indica si el dominio ha sido verificado mediante TXT DNS */
+  domainVerified?: boolean;
+  /** Fecha ISO de verificación de la propiedad del dominio */
+  domainVerifiedAt?: string;
 }
 
 /**

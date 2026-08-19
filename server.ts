@@ -27,7 +27,8 @@ import {
   getDbPartner,
   saveDbPartner,
   getDbLogoConfig,
-  saveDbLogoConfig
+  saveDbLogoConfig,
+  verifyCustomDomainDNS
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
@@ -616,6 +617,26 @@ app.post("/api/config", async (req: Request, res: Response) => {
     res.json(saved);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/config/verify-domain
+ * @description Verifica la propiedad del dominio personalizado mediante la consulta de registros TXT DNS.
+ */
+app.post("/api/config/verify-domain", async (req: Request, res: Response) => {
+  try {
+    const { domain } = req.body;
+    const config = await getDbConfig();
+    const token = config.domainVerificationToken || "";
+    const targetDomain = domain || config.customDomain || "";
+    const result = await verifyCustomDomainDNS(targetDomain, token);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

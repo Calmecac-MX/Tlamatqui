@@ -8,7 +8,7 @@ import {
   ArrowLeft, ArrowRight, DollarSign, HelpCircle, Shield, 
   Percent, Smartphone, MessageSquare, AlertCircle, TrendingUp, 
   Clock, ExternalLink, Mail, Phone, Lock, Zap, Layers, ChevronLeft, ChevronRight, CheckSquare, X, Menu, Sliders,
-  Eye, EyeOff, Download, Printer, Database, Palette, CreditCard, Truck, Rocket, CheckCircle2, Sparkles, ArrowDown, Calendar
+  Eye, EyeOff, Download, Printer, Database, Palette, CreditCard, Truck, Rocket, CheckCircle2, Sparkles, ArrowDown, Calendar, Share2
 } from "lucide-react";
 import { Report, Tool, ComparisonRow } from "../types";
 import { motion, AnimatePresence } from "motion/react";
@@ -20,6 +20,7 @@ import { formatReportDate, formatAbbreviatedAmount } from "../utils/formatters";
 import { getVisitorId, sendReportInteraction } from "../utils/telemetryHelpers";
 import { ReportPrintPresentation } from "./report/ReportPrintPresentation";
 import SendEmailModal from "./SendEmailModal";
+import { ShareReportModal } from "./ShareReportModal";
 
 /**
  * Propiedades del componente ReportView.
@@ -192,6 +193,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   const [slideDirection, setSlideDirection] = useState<"up" | "down">("down");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
   const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState<boolean>(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [globalConfig, setGlobalConfig] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then(res => res.json())
+      .then(data => setGlobalConfig(data))
+      .catch(() => {});
+  }, []);
   const lastScrollTime = useRef<number>(0);
   const scrollCooldown = 850; // ms
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -1155,6 +1165,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                   >
                     <Mail className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
                     <span>Correo</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm col-span-2"
+                    title="Compartir en Dominio Personalizado"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <span>Compartir Dominio</span>
                   </button>
                 </div>
               </div>
@@ -3289,6 +3308,16 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         reportId={report.id}
         storeName={report.name}
         defaultEmail={report.contactEmail}
+      />
+    )}
+
+    {/* 4. MODAL DE COMPARTIDO EN DOMINIO PERSONALIZADO */}
+    {report && isShareModalOpen && (
+      <ShareReportModal
+        report={report}
+        config={globalConfig}
+        onClose={() => setIsShareModalOpen(false)}
+        onConfigUpdated={(updated) => setGlobalConfig(updated)}
       />
     )}
   </>

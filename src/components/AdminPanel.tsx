@@ -19,6 +19,7 @@ import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } fro
 import { scrapeShopifyStore } from "../lib/scrapper";
 import { useAuth } from "../lib/authContext";
 import SendEmailModal from "./SendEmailModal";
+import { ShareReportModal } from "./ShareReportModal";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -57,6 +58,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [defaultContactWhatsapp, setDefaultContactWhatsapp] = useState<string>("5512345678");
   const [customExchangeRate, setCustomExchangeRate] = useState<number>(18.50);
   const [metricsUpdateInterval, setMetricsUpdateInterval] = useState<number>(3000);
+  const [customDomain, setCustomDomain] = useState<string>("");
+  const [domainVerificationToken, setDomainVerificationToken] = useState<string>("");
+  const [domainVerified, setDomainVerified] = useState<boolean>(false);
+  const [domainVerifiedAt, setDomainVerifiedAt] = useState<string | undefined>(undefined);
+  const [shareModalReport, setShareModalReport] = useState<Report | null>(null);
+  const [globalConfig, setGlobalConfig] = useState<any>(null);
+  const [verifyingDomainConfig, setVerifyingDomainConfig] = useState<boolean>(false);
+  const [domainCheckMessage, setDomainCheckMessage] = useState<{ type: "success" | "error" | null; msg: string }>({ type: null, msg: "" });
   const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [templates, setTemplates] = useState<ComparisonTemplate[]>([]);
@@ -449,6 +458,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setDefaultContactWhatsapp(data.defaultContactWhatsapp || "5512345678");
       setCustomExchangeRate(Number(data.customExchangeRate) || 18.50);
       setMetricsUpdateInterval(data.metricsUpdateInterval !== undefined ? Number(data.metricsUpdateInterval) : 3000);
+      setGlobalConfig(data);
+      setCustomDomain(data.customDomain || "");
+      setDomainVerificationToken(data.domainVerificationToken || "");
+      setDomainVerified(Boolean(data.domainVerified));
+      setDomainVerifiedAt(data.domainVerifiedAt);
       
       const loadedName = data.userName || "César Ayar";
       const loadedEmail = data.userEmail || "cesar.ayar19@gmail.com";
@@ -519,7 +533,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           userEmail,
           userRole,
           userAvatar,
-          metricsUpdateInterval: Number(metricsUpdateInterval) || 3000
+          metricsUpdateInterval: Number(metricsUpdateInterval) || 3000,
+          customDomain
         })
       });
 
@@ -836,12 +851,17 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
-  // Copy Link Helper
+  // Copy Link Helper / Share Modal Activator
   const handleCopyLink = (id: string) => {
-    const reportLink = `${window.location.origin}/?report=${id}&shared=true`;
-    navigator.clipboard.writeText(reportLink);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    const targetReport = reports.find(r => r.id === id) || null;
+    if (targetReport) {
+      setShareModalReport(targetReport);
+    } else {
+      const reportLink = `${window.location.origin}/?report=${id}&shared=true`;
+      navigator.clipboard.writeText(reportLink);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   const activeTeam = teams.find(t => t.id === selectedTeamId) || teams[0] || null;
@@ -2844,6 +2864,94 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           Configura el intervalo en milisegundos (ej. 3000 = 3 segundos) para actualizar la simulación de ventas y visitas en tiempo real en los paneles de Métricas en Vivo de cada reporte.
                         </p>
                       </div>
+
+                      {/* Tarjeta de Dominio Personalizado y Verificación TXT DNS */}
+                      <div className="pt-4 border-t border-border-theme/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">
+                            Dominio Personalizado de Marca (Custom Domain)
+                          </label>
+                          {domainVerified ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                              <ShieldCheck className="w-3.5 h-3.5" /> Verificado {domainVerifiedAt ? `(${new Date(domainVerifiedAt).toLocaleDateString()})` : ""}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Pendiente TXT
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={customDomain} 
+                            onChange={e => setCustomDomain(e.target.value)}
+                            placeholder="https://reportes.miagencia.com"
+                            className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!customDomain) return;
+                              setVerifyingDomainConfig(true);
+                              setDomainCheckMessage({ type: null, msg: "" });
+                              try {
+                                const res = await fetch("/api/config/verify-domain", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ domain: customDomain })
+                                });
+                                const data = await res.json();
+                                if (res.ok && data.success) {
+                                  setDomainCheckMessage({ type: "success", msg: data.message });
+                                  setDomainVerified(true);
+                                  setDomainVerifiedAt(new Date().toISOString());
+                                } else {
+                                  setDomainCheckMessage({ type: "error", msg: data.message || "No se pudo verificar el registro TXT." });
+                                }
+                              } catch (e: any) {
+                                setDomainCheckMessage({ type: "error", msg: "Error al verificar el dominio." });
+                              } finally {
+                                setVerifyingDomainConfig(false);
+                              }
+                            }}
+                            disabled={verifyingDomainConfig || !customDomain}
+                            className="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />
+                            Verificar TXT
+                          </button>
+                        </div>
+
+                        {domainCheckMessage.msg && (
+                          <div className={`p-2.5 rounded-lg text-xs border ${domainCheckMessage.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-rose-500/10 border-rose-500/30 text-rose-300"}`}>
+                            {domainCheckMessage.msg}
+                          </div>
+                        )}
+
+                        <div className="p-3 bg-bg-theme border border-border-theme rounded-lg space-y-1.5 text-xs text-text-dim-theme">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-white">Registro TXT Requerido:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(domainVerificationToken);
+                                alert("Token de verificación copiado al portapapeles.");
+                              }}
+                              className="text-[11px] text-accent-theme hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                            >
+                              <Copy className="w-3 h-3" /> Copiar Token
+                            </button>
+                          </div>
+                          <p className="font-mono text-[11px] text-emerald-400 bg-surface-theme p-2 rounded border border-border-theme break-all select-all">
+                            {domainVerificationToken || "Generando token..."}
+                          </p>
+                          <p className="text-[10px] leading-normal text-text-dim-theme">
+                            Crea un registro TXT en tu proveedor DNS con Nombre <code className="text-white">_tlamatqui-challenge</code> y el Valor anterior. Apunta un registro CNAME a <code className="text-white">tlamatqui.vercel.app</code>.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3671,6 +3779,21 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           reportId={emailModalTarget.reportId}
           storeName={emailModalTarget.storeName}
           defaultEmail={emailModalTarget.contactEmail}
+        />
+      )}
+
+      {/* Modal de Compartido en Dominio Personalizado */}
+      {shareModalReport && (
+        <ShareReportModal
+          report={shareModalReport}
+          config={globalConfig}
+          onClose={() => setShareModalReport(null)}
+          onConfigUpdated={(updated) => {
+            setGlobalConfig(updated);
+            setCustomDomain(updated.customDomain || "");
+            setDomainVerified(Boolean(updated.domainVerified));
+            setDomainVerifiedAt(updated.domainVerifiedAt);
+          }}
         />
       )}
 
