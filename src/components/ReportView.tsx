@@ -209,6 +209,13 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
     }
   };
 
+  // Dynamic tab title: "Reporte de {{marca}} | Tlamatqui"
+  useEffect(() => {
+    if (report && report.name) {
+      document.title = `Reporte de ${report.name} | Tlamatqui`;
+    }
+  }, [report?.name]);
+
   const sendInteraction = async (type: string, details?: any) => {
     await sendReportInteraction(reportId, type, details);
   };
@@ -677,6 +684,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         if (!resReport.ok) throw new Error("Reporte no encontrado");
         const reportData: Report = await resReport.json();
         setReport(reportData);
+        if (reportData.name) {
+          document.title = `Reporte de ${reportData.name} | Tlamatqui`;
+        }
         setComparisonRows(reportData.comparisonRows || []);
         
         // Seed calculator with report values

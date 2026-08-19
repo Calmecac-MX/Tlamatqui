@@ -24,9 +24,11 @@ function MainAppRouter() {
   });
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Sync document title
+  // Sync default document title when not viewing a report
   useEffect(() => {
-    document.title = viewingReportId ? "Tlamatqui | Diagnóstico" : "Tlamatqui";
+    if (!viewingReportId) {
+      document.title = "Tlamatqui";
+    }
   }, [viewingReportId]);
 
   // Sync mode with document body

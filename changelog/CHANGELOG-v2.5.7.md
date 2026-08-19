@@ -1,7 +1,7 @@
 # Extracto Detallado de Cambios - Versión v2.5.7
 
 - **Versión de Actualización:** `v2.5.7`
-- **Fecha de Registro:** `2026-08-18`
+- **Fecha de Registro:** `2026-08-19`
 - **Estándar:** Conventional Commits & Google Release Please
 
 ---
@@ -22,6 +22,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 📚 Documentación
 
+- **[changelog]** actualizar changelog con la funcionalidad SMTP (`1b1490b`)
 - **[changelog]** actualizar changelog con registro de Licencia AGPL-3.0 (`a8a6db3`)
 - **[changelog]** actualizar changelog con cambios de Configuración de Branding (`ef436d7`)
 - **[changelog]** actualizar changelog tras establecer directiva de cerebros (`d501d0f`)
