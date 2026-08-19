@@ -38,6 +38,7 @@ import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema }
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
 import { isSmtpConfigured, sendReportEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
+import { isEncryptionConfigured } from "./server/encryptionService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 
 // Cargar variables de entorno desde archivo .env
@@ -136,6 +137,7 @@ app.get("/api/health", (req: Request, res: Response) => {
     version: BACKEND_VERSION,
     frontendVersion: FRONTEND_VERSION,
     smtpConfigured: isSmtpConfigured(),
+    encryptionConfigured: isEncryptionConfigured(),
     timestamp: new Date().toISOString()
   });
 });

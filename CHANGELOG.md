@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.26 (Frontend) / v2.5.16 (Backend)] - 2026-08-19
+
+### 🚀 Features & Nuevas Funcionalidades
+- **security:** implementar token secreto x-api-secret para comunicacion cliente-servidor (v2.5.26 / v2.5.15) (`b55abeb`)
+
 ## [v2.5.26 (Frontend) / v2.5.15 (Backend)] - 2026-08-19
 
 ### 🚀 Features & Nuevas Funcionalidades
