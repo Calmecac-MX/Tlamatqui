@@ -4,6 +4,32 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.26 (Frontend) / v2.5.15 (Backend)] - 2026-08-19
+
+### 🚀 Features & Nuevas Funcionalidades
+- **changelog:** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
+
+### ⚡ Optimización y Rendimiento
+- **changelog:** optimizar generación de changelogs y reducir peso del repositorio v2.5.25 (`d930dc4`)
+
+### 📚 Documentación
+- **changelog:** actualizar changelog con registro de Licencia AGPL-3.0 (`a8a6db3`)
+- **changelog:** actualizar changelog con cambios de Configuración de Branding (`ef436d7`)
+- **changelog:** actualizar changelog tras establecer directiva de cerebros (`d501d0f`)
+- **changelog:** actualizar changelog con registro de cerebros y datos (`7bbfff4`)
+- **changelog:** actualizar changelog con el titulo Tlamatqui (`6e03064`)
+- **changelog:** actualizar changelog tras revision de .gitignore (`5aca9ed`)
+- **changelog:** sincronizar registro de changelog con ultimo commit (`23b0d7c`)
+- **changelog:** actualizar CHANGELOG.md y extractos por version (`367af3b`)
+- **changelog:** actualizar changelog con regla de Caveman Mode (`a0b0910`)
+- **changelog:** actualizar changelog con la creación del sistema modular de reglas (`50d1ab7`)
+- **changelog:** registrar cambios de versión v2.5.5 en changelogs (`ece4511`)
+- **rules:** actualizar nombre del proyecto a Tlamatqui en la ruta de la IA y documentación (`4248b88`)
+- **changelog:** actualizar changelog raíz y archivos por versión con último commit (`50cc9ce`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- remove legacy project documentation and architecture proposal files (`3f5bc24`)
+
 ## [v2.5.25 (Frontend) / v2.5.14 (Backend)] - 2026-08-19
 
 ### 🚀 Features & Nuevas Funcionalidades

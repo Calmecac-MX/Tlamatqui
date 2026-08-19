@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.25 (Frontend) / v2.5.14 (Backend)  
+> **Versión:** v2.5.26 (Frontend) / v2.5.15 (Backend)  
 > **Archivo de Configuración Principal:** [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md)
 
 Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para garantizar la compatibilidad completa con Antigravity, Gemini y otros agentes de IA.

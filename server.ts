@@ -33,7 +33,7 @@ import {
   resetTeamInviteToken,
   joinTeamViaInviteToken
 } from "./server/dbBridge.js";
-import { requireRole, verifyAuth0Token } from "./server/authMiddleware.js";
+import { requireRole, verifyAuth0Token, verifyApiSecretToken } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
 import { isSmtpConfigured, sendReportEmail, verifySmtpConnection } from "./server/emailService.js";
@@ -88,6 +88,8 @@ const corsOptions: cors.CorsOptions = {
     "Accept",
     "Origin",
     "X-User-Role",
+    "X-API-Secret",
+    "x-api-secret",
     "Access-Control-Allow-Origin",
     "Access-Control-Allow-Headers",
     "Access-Control-Allow-Methods"
@@ -101,6 +103,9 @@ app.options("*", cors(corsOptions));
 
 // Habilitar parser JSON con límite extendido para capturar datos de reportes
 app.use(express.json({ limit: "50mb" }));
+
+// Middleware para validación de token secreto cliente-servidor
+app.use(verifyApiSecretToken);
 
 // Middleware para decodificación y verificación de tokens Bearer Auth0
 app.use(verifyAuth0Token);

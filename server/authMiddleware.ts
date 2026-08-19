@@ -64,3 +64,32 @@ export function verifySession(req: AuthenticatedRequest, res: Response, next: Ne
   next();
 }
 
+/**
+ * Middleware para validar el token secreto de comunicación entre Frontend y Backend.
+ */
+export function verifyApiSecretToken(req: Request, res: Response, next: NextFunction) {
+  const expectedSecret = process.env.API_SECRET_TOKEN;
+
+  // Si no está configurado un token secreto en .env, omitir la verificación (modo transparente)
+  if (!expectedSecret || expectedSecret.trim() === "") {
+    return next();
+  }
+
+  // Permitir la solicitud OPTIONS de pre-flight CORS sin exigir la cabecera en OPTIONS
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+
+  const clientSecret = req.headers["x-api-secret"] as string;
+
+  if (!clientSecret || clientSecret !== expectedSecret) {
+    return res.status(401).json({
+      error: "Acceso no autorizado",
+      message: "Token secreto de API ('x-api-secret') no válido o no proporcionado."
+    });
+  }
+
+  next();
+}
+
+

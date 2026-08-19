@@ -6,6 +6,54 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+const API_SECRET_TOKEN = import.meta.env.VITE_API_SECRET_TOKEN || "";
+
+/**
+ * Obtiene las cabeceras predeterminadas de seguridad para las peticiones HTTP al Backend.
+ */
+export function getApiHeaders(token?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+
+  if (API_SECRET_TOKEN && API_SECRET_TOKEN.trim() !== "") {
+    headers["x-api-secret"] = API_SECRET_TOKEN;
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+/**
+ * Interceptor global de window.fetch para inyectar automáticamente x-api-secret en todas las peticiones a /api.
+ */
+if (typeof window !== "undefined" && window.fetch && API_SECRET_TOKEN) {
+  const originalFetch = window.fetch;
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const urlString = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+
+    // Solo adjuntar la cabecera si la petición va dirigida al Backend REST API (/api o VITE_API_URL)
+    const isBackendRequest =
+      urlString.startsWith("/api") ||
+      urlString.includes("/api/") ||
+      (API_BASE_URL && urlString.startsWith(API_BASE_URL));
+
+    if (isBackendRequest) {
+      init = init || {};
+      const headers = new Headers(init.headers || {});
+      if (!headers.has("x-api-secret")) {
+        headers.set("x-api-secret", API_SECRET_TOKEN);
+      }
+      init.headers = headers;
+    }
+
+    return originalFetch.call(this, input, init);
+  };
+}
 
 /**
  * Obtiene la URL completa del endpoint de la API REST.
@@ -26,16 +74,14 @@ export interface ApiFetchOptions extends RequestInit {
 }
 
 /**
- * Wrapper reutilizable de fetch con manejo de JSON, tokens de Auth0 y cabeceras predeterminadas.
+ * Wrapper reutilizable de fetch con manejo de JSON, tokens de Auth0, token secreto y cabeceras predeterminadas.
  */
 export async function apiFetch<T = any>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { token, headers: customHeaders, ...restOptions } = options;
   const url = getApiUrl(path);
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...getApiHeaders(token),
     ...(customHeaders as Record<string, string> || {}),
   };
 
@@ -54,4 +100,5 @@ export async function apiFetch<T = any>(path: string, options: ApiFetchOptions =
 
   return response.json();
 }
+
 
