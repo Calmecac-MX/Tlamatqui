@@ -21,6 +21,10 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 - **[rules]** crear sistema modular de reglas de IA en .agents/rules/ (`1023197`)
 - **[changelog]** agregar soporte de archivos por versión en changelog/ y regla obligatoria de commits (`9c1618d`)
 
+## ♻️ Refactorización de Código
+
+- **[admin]** renombrar panel de administracion a Tlachiālōyan y establecer slug /tlachialoyan (`b8d3612`)
+
 ## 📚 Documentación
 
 - **[changelog]** actualizar changelog con titulo dinamico de reporte por marca (`4e990c3`)
