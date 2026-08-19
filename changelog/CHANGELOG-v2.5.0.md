@@ -12,6 +12,7 @@ Este archivo contiene el desglose y extracto detallado de todos los cambios, mej
 
 ## 🚀 Features & Nuevas Funcionalidades
 
+- **[ui]** establecer titulo dinamico del reporte web como Reporte de {{marca}} | Tlamatqui (`94939d0`)
 - **[smtp]** implementar servicio de envio de reportes por correo electronico via SMTP (`d7b5ff8`)
 - **[admin]** actualizar etiqueta a Configuración de Branding y remover campo de archivo/URL de logo (`5a77c92`)
 - **[ui]** actualizar el titulo de la pestana a Tlamatqui (`c8b91a4`)
