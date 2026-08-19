@@ -98,7 +98,12 @@ export const ShareReportModal: React.FC<ShareReportModalProps> = ({
     setTimeout(() => setCopiedToken(false), 2200);
   };
 
-  // Ejecutar comprobación DNS desde el backend
+  // Estado del informe multinivel DNS
+  const [dnsReport, setDnsReport] = useState<any>(null);
+  const [provisioning, setProvisioning] = useState<boolean>(false);
+  const [provisionMessage, setProvisionMessage] = useState<{ type: "success" | "error" | null; text: string }>({ type: null, text: "" });
+
+  // Ejecutar comprobación DNS en 4 niveles desde el backend
   const handleVerifyDns = async () => {
     const domainToTest = selectedOption === "custom" ? savedCustomDomain : (adhocDomain || savedCustomDomain || baseDomain);
     if (!domainToTest) {
@@ -113,25 +118,30 @@ export const ShareReportModal: React.FC<ShareReportModalProps> = ({
     setVerificationFeedback({ type: null, message: "" });
 
     try {
-      const res = await fetch("/api/config/verify-domain", {
+      const res = await fetch("/api/config/dns/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: domainToTest })
       });
       const data = await res.json();
 
-      if (res.ok && data.success) {
-        setVerificationFeedback({
-          type: "success",
-          message: data.message || "¡Dominio verificado con éxito!"
-        });
-        if (data.config && onConfigUpdated) {
-          onConfigUpdated(data.config);
+      if (res.ok) {
+        setDnsReport(data);
+        if (data.verified) {
+          setVerificationFeedback({
+            type: "success",
+            message: data.message || "¡Dominio verificado con éxito!"
+          });
+        } else {
+          setVerificationFeedback({
+            type: "error",
+            message: data.message || "Registros DNS incompletos o en proceso de propagación."
+          });
         }
       } else {
         setVerificationFeedback({
           type: "error",
-          message: data.message || "No se pudo verificar el registro TXT en el DNS."
+          message: data.error || "No se pudo consultar el diagnóstico DNS."
         });
       }
     } catch (e: any) {
@@ -141,6 +151,35 @@ export const ShareReportModal: React.FC<ShareReportModalProps> = ({
       });
     } finally {
       setVerifyingDns(false);
+    }
+  };
+
+  // Auto-aprovisionar en la API de Vercel
+  const handleProvisionVercel = async () => {
+    const domainToTest = selectedOption === "custom" ? savedCustomDomain : (adhocDomain || savedCustomDomain || baseDomain);
+    if (!domainToTest) return;
+
+    setProvisioning(true);
+    setProvisionMessage({ type: null, text: "" });
+
+    try {
+      const res = await fetch("/api/config/dns/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: domainToTest })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setProvisionMessage({ type: "success", text: data.message });
+        handleVerifyDns(); // Volver a consultar el informe
+      } else {
+        setProvisionMessage({ type: "error", text: data.message || "No se pudo registrar el dominio en la API del hosting." });
+      }
+    } catch (e: any) {
+      setProvisionMessage({ type: "error", text: "Error de red al intentar registrar el dominio." });
+    } finally {
+      setProvisioning(false);
     }
   };
 
@@ -466,6 +505,52 @@ export const ShareReportModal: React.FC<ShareReportModalProps> = ({
                 </div>
               </div>
 
+              {/* Ficha Diagnóstica de 4 Checkpoints (TXT, CNAME, A, SSL) */}
+              {dnsReport && dnsReport.checkpoints && (
+                <div className="space-y-3 bg-slate-950/80 border border-slate-800 rounded-xl p-4 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      Diagnóstico en Vivo de Red y SSL (4 Checkpoints)
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {dnsReport.cleanDomain}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {dnsReport.checkpoints.map((cp: any) => (
+                      <div
+                        key={cp.key}
+                        className={`p-3 rounded-lg border text-xs space-y-1 ${
+                          cp.status === "success"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                            : cp.status === "warning"
+                            ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                            : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-semibold">
+                          <span>{cp.label}</span>
+                          <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-black/40">
+                            {cp.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-mono opacity-90 truncate">{cp.value || "-"}</p>
+                        <p className="text-[10px] opacity-75 leading-tight">{cp.details}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mensaje de auto-aprovisionamiento */}
+              {provisionMessage.text && (
+                <div className={`p-3 rounded-xl border text-xs ${provisionMessage.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-rose-500/10 border-rose-500/30 text-rose-300"}`}>
+                  {provisionMessage.text}
+                </div>
+              )}
+
               {/* Retroalimentación de Verificación */}
               {verificationFeedback.message && (
                 <div
@@ -484,15 +569,24 @@ export const ShareReportModal: React.FC<ShareReportModalProps> = ({
                 </div>
               )}
 
-              {/* Botón para Comprobar DNS */}
-              <div className="pt-2">
+              {/* Acciones Principales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={handleVerifyDns}
                   disabled={verifyingDns}
                   className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <RefreshCw className={`w-4 h-4 ${verifyingDns ? "animate-spin" : ""}`} />
-                  {verifyingDns ? "Consultando Servidores DNS..." : "Comprobar Registro TXT Ahora"}
+                  {verifyingDns ? "Verificando DNS..." : "Diagnóstico DNS (4 Checkpoints)"}
+                </button>
+
+                <button
+                  onClick={handleProvisionVercel}
+                  disabled={provisioning}
+                  className="w-full py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-emerald-400 border border-emerald-500/30 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className={`w-4 h-4 ${provisioning ? "animate-spin" : ""}`} />
+                  {provisioning ? "Registrando en Vercel..." : "Auto-Registrar en Hosting (Vercel)"}
                 </button>
               </div>
             </div>

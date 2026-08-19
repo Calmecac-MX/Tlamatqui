@@ -34,6 +34,7 @@ import { requireRole, verifyAuth0Token } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
 import { isSmtpConfigured, sendReportEmail, verifySmtpConnection } from "./server/emailService.js";
+import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 
 // Cargar variables de entorno desde archivo .env
@@ -631,6 +632,51 @@ app.post("/api/config/verify-domain", async (req: Request, res: Response) => {
     const token = config.domainVerificationToken || "";
     const targetDomain = domain || config.customDomain || "";
     const result = await verifyCustomDomainDNS(targetDomain, token);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * @route POST /api/config/dns/status
+ * @description Genera el informe completo de diagnóstico DNS en 4 checkpoints (TXT, CNAME, A, SSL).
+ */
+app.post("/api/config/dns/status", async (req: Request, res: Response) => {
+  try {
+    const { domain } = req.body;
+    const config = await getDbConfig();
+    const targetDomain = sanitizeDomain(domain || config.customDomain || "");
+    const token = config.domainVerificationToken || "";
+    const report = await getFullDNSDiagnostics(targetDomain, token);
+    
+    // Si la verificación TXT fue exitosa, actualizar automáticamente el estado en la base de datos
+    if (report.verified && targetDomain) {
+      config.customDomain = `https://${targetDomain}`;
+      config.domainVerified = true;
+      config.domainVerifiedAt = new Date().toISOString();
+      await saveDbConfig(config);
+    }
+    
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/config/dns/provision
+ * @description Da de alta el dominio personalizado en el proyecto de Vercel (o proveedor de hosting) vía API.
+ */
+app.post("/api/config/dns/provision", async (req: Request, res: Response) => {
+  try {
+    const { domain } = req.body;
+    const config = await getDbConfig();
+    const targetDomain = sanitizeDomain(domain || config.customDomain || "");
+    const result = await provisionDomainOnVercel(targetDomain);
     if (!result.success) {
       return res.status(400).json(result);
     }
