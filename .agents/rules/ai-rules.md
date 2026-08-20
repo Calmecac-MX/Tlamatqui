@@ -11,5 +11,8 @@ Por favor, consulta el archivo [`AGENTS.md`](../../AGENTS.md) en la raíz del pr
 Todo agente de IA (Antigravity, Gemini, Claude, etc.) DEBE realizar un `git commit` siguiendo la especificación Conventional Commits (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`) inmediatamente después de cada modificación o entregable finalizado, incluyendo los archivos autogenerados de versión y la carpeta `changelog/`, con el objetivo de mantener alimentado de forma continua el sistema de changelogs por versión.
 
 ## Directiva Obligatoria de Registro en Cerebros y Documentación IA
-Cada cambio, modificación de código, adición de característica o actualización de arquitectura DEBE existir y quedar reflejado explícitamente en los cerebros del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). Queda estrictamente prohibido finalizar una interacción sin actualizar la documentación e inteligencia IA del proyecto.
+Cada cambio, modificación de código, adición de característica o actualización de arquitectura DEBE existir y quedar reflejado explícitamente en los cerebros del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). Queda strictly prohibido finalizar una interacción sin actualizar la documentación e inteligencia IA del proyecto.
+
+## Directiva Obligatoria de Pull Requests y Aprobaciones
+Queda estrictamente prohibido realizar push directos a la rama `main`. Todo cambio o funcionalidad debe enviarse mediante una Pull Request (PR) y requiere aprobación explícita antes de integrarse al flujo de despliegue.
 

@@ -41,6 +41,7 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 - **CI/CD Workflow:** [`.github/workflows/docker-publish.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/docker-publish.yml) (Pipeline unificado: PR Validation -> Release Please -> Docker Build & Push GHCR -> New Release)
 - **Script Local & CLI:** `npm run changelog` | `npm run cli changelog`
 - **Regla Obligatoria:** Todo cambio o entregable DEBE culminar con un `git commit` siguiendo la estructura Conventional Commits `<tipo>(<ámbito>): <descripción>` (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`, `BREAKING CHANGE`) incluyendo versiones y changelogs para nutrir el historial continuo del proyecto.
+- **Política de Pull Requests y Aprobaciones:** Prohibido realizar `push` directos a `main`. Todo cambio debe enviarse vía Pull Request y contar con aprobación previa para integrarse.
 
 ---
 

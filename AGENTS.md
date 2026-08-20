@@ -42,6 +42,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 4. **Verificación Obligatoria:** No des por terminada una tarea sin ejecutar la verificación (`npm run lint` / `npm run build`).
 5. **Commit Obligatorio con Conventional Commits:** Tras realizar cualquier cambio funcional o corrección, se DEBE ejecutar la sincronización de versión (`npm run auto-version`) y realizar un `git commit` estructurado siguiendo Conventional Commits (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`), incluyendo la versión y changelogs (`CHANGELOG.md` y `changelog/CHANGELOG-vx.x.md`), para nutrir continuamente el historial de cambios.
 6. **Sincronización Obligatoria en Cerebros y Documentación IA:** Todo cambio, modificación de comportamiento, ajuste de configuración, variable de entorno o refactorización DEBE quedar registrado de forma explícita en los archivos de contexto e inteligencia del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). Prohibido concluir una tarea sin reflejar las modificaciones en los cerebros de IA del repositorio.
+7. **Política Estricta de Integración vía Pull Request y Aprobación:** Queda estrictamente prohibido realizar `push` directos de código a la rama principal (`main`). Todo cambio, corrección o nueva característica DEBE enviarse obligatoriamente mediante una **Pull Request (PR)** y contar con la revisión y aprobación explícita (*Required Pull Request Reviews*) antes de ser integrado y desencadenar el pipeline de Release y publicación Docker en producción.
 
 ---
 
