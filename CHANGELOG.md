@@ -4,6 +4,18 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.27 (Frontend) / v2.5.18 (Backend)] - 2026-08-20
+
+*Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
+
+## [v2.5.26 (Frontend) / v2.5.18 (Backend)] - 2026-08-20
+
+### 🚀 Features & Nuevas Funcionalidades
+- **security:** aplicar cifrado transparente de datos sensibles en reposo mediante ENCRYPTION_KEY en la capa de persistencia (v2.5.26 / v2.5.17) (`e0319fa`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **prisma:** crear archivo de configuracion prisma.config.ts para soporte oficial de Prisma CLI y Language Server (`562e5f5`)
+
 ## [v2.5.26 (Frontend) / v2.5.17 (Backend)] - 2026-08-19
 
 ### 🚀 Features & Nuevas Funcionalidades

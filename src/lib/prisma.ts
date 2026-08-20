@@ -63,13 +63,7 @@ export function getPrisma(): PrismaClient | null {
   }
 
   if (!prisma) {
-    prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: dbUrl
-        }
-      }
-    });
+    prisma = new PrismaClient();
   }
   return prisma;
 }

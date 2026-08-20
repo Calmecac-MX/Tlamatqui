@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.26 (Frontend) / v2.5.17 (Backend)  
+> **Versión:** v2.5.27 (Frontend) / v2.5.18 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -15,7 +15,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 ### 1.2 Arquitectura Desacoplada (Client / Server)
 - **Backend (API REST Express + Prisma ORM):**
   - **Ubicación:** `server.ts`, directorio `server/`, `prisma/`.
-  - **Tecnologías:** Express 4, TypeScript, Prisma ORM 6, Auth0, Zod, esbuild.
+  - **Tecnologías:** Express 4, TypeScript, Prisma ORM 7 (`prisma@7.9.1`, `@prisma/config`), Auth0, Zod, esbuild.
   - **Puerto Dev:** `http://localhost:4000` (API REST `/api/*`).
   - **Build Output:** `dist/server.cjs`.
 - **Frontend (SPA React 19 + Vite 6):**

@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.26 (Frontend) / v2.5.17 (Backend)  
+> **Versión:** v2.5.27 (Frontend) / v2.5.18 (Backend)  
 > **Archivo de Configuración Principal:** [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md)
 
 Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para garantizar la compatibilidad completa con Antigravity, Gemini y otros agentes de IA.
@@ -10,7 +10,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 ## 1. Contexto Rápido del Repositorio
 - **Nombre:** Tlamatqui
 - **Arquitectura:** Desacoplada (Backend API REST en Express/TypeScript en puerto `4000`, Frontend React 19/Vite 6/Tailwind CSS v4 en puerto `3000`).
-- **Base de Datos:** Prisma ORM 6.
+- **Base de Datos:** Prisma ORM 7 (`prisma@7.9.1`, `@prisma/config`).
 - **Autenticación:** Auth0 (`@auth0/auth0-react` en Frontend y validación JWT en Backend).
 
 ---
