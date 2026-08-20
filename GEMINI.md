@@ -38,7 +38,7 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 
 ## 4. Conventional Commits & Google Release Please
 - **Configuración:** [`release-please-config.json`](file:///Users/cesarayar/Documents/tlamatqui/release-please-config.json) | [`.release-please-manifest.json`](file:///Users/cesarayar/Documents/tlamatqui/.release-please-manifest.json)
-- **CI/CD Workflows:** [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/release-please.yml) | [`.github/workflows/docker-publish.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/docker-publish.yml)
+- **CI/CD Workflow:** [`.github/workflows/docker-publish.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/docker-publish.yml) (Pipeline unificado: PR Validation -> Release Please -> Docker Build & Push GHCR -> New Release)
 - **Script Local & CLI:** `npm run changelog` | `npm run cli changelog`
 - **Regla Obligatoria:** Todo cambio o entregable DEBE culminar con un `git commit` siguiendo la estructura Conventional Commits `<tipo>(<ámbito>): <descripción>` (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`, `BREAKING CHANGE`) incluyendo versiones y changelogs para nutrir el historial continuo del proyecto.
 

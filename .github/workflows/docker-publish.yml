@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Ciclo Completo de CI/CD":" Release Please & Publicación Docker
 
 on:
   push:
@@ -10,24 +10,47 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
   packages: write
   id-token: write
   attestations: write
 
 jobs:
-  build-and-push:
-    name: Build & Push Docker Images
+  # ============================================================================
+  # 1. ETAPA RELEASE-PLEASE: Autogestión de Versión, Changelog y GitHub Release
+  # ============================================================================
+  release-please:
+    name: 📦 Evaluar Release Please & Versionado
     runs-on: ubuntu-latest
-
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      html_url: ${{ steps.release.outputs.html_url }}
     steps:
-      - name: Checkout Repository
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # ============================================================================
+  # 2. ETAPA DOCKER BUILD & PUSH: Construcción y Publicación en GHCR
+  # ============================================================================
+  docker-build-publish:
+    name: 🐳 Construir y Publicar Imágenes Docker (GHCR)
+    needs: release-please
+    if: always() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del Repositorio
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+
+      - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry (GHCR)
+      - name: Iniciar Sesión en GitHub Container Registry (GHCR)
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
@@ -35,21 +58,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ==========================================
-      # 1. Backend Image (API REST)
-      # ==========================================
-      - name: Extract Metadata (Backend)
+      # ------------------------------------------------------------------------
+      # 2.1 Extraer y Construir Imagen Backend (API REST Express)
+      # ------------------------------------------------------------------------
+      - name: Extraer Metadatos (Backend)
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/tlamatqui-backend
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ needs.release-please.outputs.tag_name }},enable=${{ needs.release-please.outputs.release_created == 'true' }}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
 
-      - name: Build and Push Backend Image
+      - name: Construir y Publicar Imagen Backend (API REST)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -60,21 +84,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ==========================================
-      # 2. Frontend Image (Nginx SPA Web Server)
-      # ==========================================
-      - name: Extract Metadata (Frontend)
+      # ------------------------------------------------------------------------
+      # 2.2 Extraer y Construir Imagen Frontend (Nginx SPA Web Server)
+      # ------------------------------------------------------------------------
+      - name: Extraer Metadatos (Frontend)
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/tlamatqui-frontend
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ needs.release-please.outputs.tag_name }},enable=${{ needs.release-please.outputs.release_created == 'true' }}
             type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
 
-      - name: Build and Push Frontend Image
+      - name: Construir y Publicar Imagen Frontend (Nginx SPA)
         uses: docker/build-push-action@v6
         with:
           context: .
