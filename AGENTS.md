@@ -119,7 +119,7 @@ El repositorio utiliza un sistema de **Auto-Versionado Desacoplado Independiente
 
 ## 6. 📝 Reglas de Conventional Commits y Automatización de Changelog (Google Release Please)
 
-El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por la especificación de **Conventional Commits** y **Google Release Please** ([`release-please-config.json`](file:///Users/cesarayar/Documents/tlamatqui/release-please-config.json), [`.release-please-manifest.json`](file:///Users/cesarayar/Documents/tlamatqui/.release-please-manifest.json) y [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/release-please.yml)).
+El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por **Google Release Please** y publicación de imágenes contenedoras en GitHub Container Registry mediante [`.github/workflows/docker-publish.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/docker-publish.yml) (con permisos `packages: write`, `id-token: write` y `attestations: write`).
 
 ### 6.1 Estructura Obligatoria de Commits
 Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir strictly el estándar Conventional Commits:
