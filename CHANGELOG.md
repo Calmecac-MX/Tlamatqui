@@ -4,6 +4,18 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.28 (Frontend) / v2.5.19 (Backend)] - 2026-08-20
+
+### 🚀 Features & Nuevas Funcionalidades
+- **prisma:** actualizar paquete y cliente a Prisma 7.9.1 con soporte para prisma.config.ts (v2.5.27 / v2.5.18) (`5a43e5e`)
+
+### 🐛 Corregido & Bug Fixes
+- **ci:** corregir sintaxis YAML de comillas en titulo de docker-publish workflow (`bd08b33`)
+
+### 📚 Documentación
+- **rules:** añadir regla obligatoria de envio de cambios via PR con aprobacion explicita (`1a35785`)
+- **ci:** actualizar documentacion de cerebros con permisos de docker-publish workflow (`34aaf4b`)
+
 ## [v2.5.27 (Frontend) / v2.5.18 (Backend)] - 2026-08-20
 
 *Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
