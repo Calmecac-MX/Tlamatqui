@@ -1,4 +1,4 @@
-name: Ciclo Completo de CI/CD":" Release Please & Publicación Docker
+name: Ciclo Completo de CI/CD: Release Please & Publicación Docker
 
 on:
   push:
