@@ -1,25 +1,28 @@
-# Tlamatqui
+# Tlamatqui (Monorepo)
 
 Suite de diagnóstico financiero de e-commerce, auditoría de tiendas Shopify, comparativas cuantitativas para Tiendanube, simulación de ahorro en vivo y analítica ejecutiva en tiempo real.
 
 ---
 
-## 🏗️ Arquitectura Desacoplada (Client / Server)
+## 🏗️ Arquitectura Monorepo Desacoplada (NPM Workspaces)
 
-El proyecto cuenta con una arquitectura desacoplada en la que el **Backend (API REST)** y el **Frontend (SPA)** se ejecutan de forma independiente:
+El repositorio está estructurado como un **Monorepo** con aplicaciones totalmente desacopladas utilizando **NPM Workspaces** (`apps/*`):
 
-- **Backend (API REST Express + Prisma ORM / DB Bridge):** Escucha en el puerto `4000` (`http://localhost:4000`), con soporte de CORS y endpoints `/api/*`.
-- **Frontend (React 19 + Vite 6 + Tailwind CSS v4):** Servidor Web SPA independiente en el puerto `3000` (`http://localhost:3000`).
+- 🎨 **`apps/frontend` (`@tlamatqui/frontend`):**  
+  Aplicación SPA independiente basada en **React 19 + Vite 6 + Tailwind CSS v4**. Escucha en el puerto `3000` (`http://localhost:3000`).
+
+- ⚙️ **`apps/backend` (`@tlamatqui/backend`):**  
+  Servidor API REST independiente basado en **Express 4 + TypeScript + Prisma ORM 7**. Escucha en el puerto `4000` (`http://localhost:4000`).
 
 ---
 
 ## 🚀 Inicio Rápido en Desarrollo
 
 ### 1. Requisitos Previos
-- **Node.js:** v18.0.0 o superior.
-- **npm:** v9.0.0 o superior.
+- **Node.js:** `>=24.0.0`
+- **npm:** `>=9.0.0`
 
-### 2. Instalación de Dependencias
+### 2. Instalación de Dependencias del Monorepo
 ```bash
 npm install
 ```
@@ -34,36 +37,36 @@ cp .env.example .env
 ```bash
 npm run dev
 ```
-Este comando ejecuta de forma paralela el servidor **Backend** (`http://localhost:4000`) y el servidor **Frontend** (`http://localhost:3000`).
+Este comando ejecuta de forma paralela el servidor **Backend** (`http://localhost:4000`) y el cliente **Frontend** (`http://localhost:3000`).
 
 ---
 
-## 🛠️ Comandos Disponibles
+## 🛠️ Comandos Principales
 
 | Comando | Descripción |
 | :--- | :--- |
 | `npm run dev` | Ejecuta **Backend** (puerto 4000) y **Frontend** (puerto 3000) en paralelo mediante `concurrently`. |
-| `npm run dev:backend` | Inicia únicamente la API REST Backend en `http://localhost:4000`. |
-| `npm run dev:frontend` | Inicia únicamente el servidor de desarrollo Frontend en `http://localhost:3000`. |
-| `npm run build` | Compila tanto la API Backend (`dist/server.cjs`) como la app Frontend (`dist/`). |
-| `npm run build:backend` | Compila el bundle del Backend en Node.js. |
-| `npm run build:frontend` | Compila el bundle optimizado de producción del Frontend. |
-| `npm run start:backend` | Ejecuta el bundle compilado del Backend en producción. |
-| `npm run cli` | Ejecuta la herramienta de línea de comandos (`list`, `info`, `delete`, `seed`). |
-| `npm run auto-version` | Analiza hashes de archivos en Frontend y Backend e incrementa automáticamente la versión de la capa que sufrió cambios. |
-| `npm run bump:frontend` | Fuerza un incremento de versión (PATCH) en la capa de Frontend. |
-| `npm run bump:backend` | Fuerza un incremento de versión (PATCH) en la capa de Backend. |
-| `npm run bump:both` | Fuerza un incremento de versión en ambas capas simultáneamente. |
+| `npm run dev:backend` | Inicia únicamente la API REST Backend (`apps/backend`) en `http://localhost:4000`. |
+| `npm run dev:frontend` | Inicia únicamente el cliente web Frontend (`apps/frontend`) en `http://localhost:3000`. |
+| `npm run build` | Compila el Frontend (`apps/frontend/dist`) y la API Backend (`apps/backend/dist/server.cjs`). |
+| `npm run build:backend` | Compila únicamente la app Backend. |
+| `npm run build:frontend` | Compila únicamente la app Frontend. |
+| `npm run lint` | Ejecuta la comprobación estricta de tipos de TypeScript (`tsc --noEmit`) en ambos workspaces. |
+| `npm run start:backend` | Ejecuta el servidor Backend compilado en producción. |
+| `npm run cli` | Ejecuta la CLI de administración del Backend (`list`, `info`, `delete`, `seed`). |
+| `npm run auto-version` | Analiza los hashes de código e incrementa las versiones del Frontend y Backend de forma independiente. |
 
 ---
 
-## 📚 Manual Detallado
+## 📚 Documentación Detallada
 
-Para consultar la documentación exhaustiva sobre la base de datos, el diagrama ERD de Prisma, Auth0, los endpoints REST y los módulos del sistema, consulta el archivo **[README-detalles.md](README-detalles.md)**.
+Para consultar la arquitectura profunda, guías de desarrollo, variables de entorno y reglas del proyecto, consulta los siguientes documentos de inteligencia del sistema:
+- **[AGENTS.md](AGENTS.md):** Reglas, directivas de skills y política de Pull Requests.
+- **[README-detalles.md](README-detalles.md):** Manual técnico detallado de la aplicación.
+- **[CHANGELOG.md](CHANGELOG.md):** Historial continuo de cambios y versiones del sistema.
 
 ---
 
 ## 📄 Licencia
 
 Este proyecto está licenciado bajo la **Licencia Pública General GNU Affero v3.0 (AGPL-3.0)**. Consulta el archivo [`LICENSE`](LICENSE) para más información.
-

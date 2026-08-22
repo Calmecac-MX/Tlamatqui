@@ -9,6 +9,7 @@ node_modules/
 # 2. Compilados, Bundles y Caches
 # ==========================================
 dist/
+apps/*/dist/
 build/
 out/
 .vite/
