@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.43 (Frontend) / v2.5.37 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth0:** almacenar metadatos de tokens, expiración y último login en la tabla User (v2.5.43/v2.5.36) (`ee7d4be`)
+
 ## [v2.5.43 (Frontend) / v2.5.36 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

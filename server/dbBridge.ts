@@ -4,7 +4,7 @@ import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
 import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, ApiKeyItem, SystemHealthData } from "./types.js";
-import { encryptData, decryptData } from "./encryptionService.js";
+import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
 
 // Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo)
 async function readJsonAsync<T>(filePath: string, fallback: T): Promise<T> {
@@ -1640,8 +1640,8 @@ export async function getDbUsers(): Promise<UserAccount[]> {
           role: u.role as any,
           avatar: u.avatar || undefined,
           sub: u.sub || undefined,
-          accessToken: u.accessToken || undefined,
-          idToken: u.idToken || undefined,
+          accessToken: u.accessToken ? decryptText(u.accessToken) : undefined,
+          idToken: u.idToken ? decryptText(u.idToken) : undefined,
           tokenExpiresAt: u.tokenExpiresAt ? u.tokenExpiresAt.toISOString() : undefined,
           lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : undefined,
           createdAt: u.createdAt.toISOString(),
@@ -1652,7 +1652,12 @@ export async function getDbUsers(): Promise<UserAccount[]> {
       }
     }
   }
-  return await readJsonAsync<UserAccount[]>(USERS_FILE, []);
+  const rawUsers = await readJsonAsync<UserAccount[]>(USERS_FILE, []);
+  return rawUsers.map((u) => ({
+    ...u,
+    accessToken: u.accessToken ? decryptText(u.accessToken) : undefined,
+    idToken: u.idToken ? decryptText(u.idToken) : undefined
+  }));
 }
 
 /**
@@ -1668,7 +1673,7 @@ export function getConfiguredSuperAdminEmail(): string {
 }
 
 /**
- * Registra un nuevo usuario o sincroniza su perfil y tokens Auth0 en cada inicio de sesión.
+ * Registra un nuevo usuario o sincroniza su perfil y tokens Auth0 cifrados en cada inicio de sesión.
  * REGLA OBLIGATORIA: Si la base de datos de usuarios está vacía (0 usuarios registrados)
  * o el correo coincide con la variable SUPERADMIN_EMAIL en .env, se le otorga automáticamente el rol de "Superusuario".
  */
@@ -1698,12 +1703,16 @@ export async function registerOrSyncUser(userData: {
     ? new Date(userData.lastLoginAt).toISOString()
     : new Date().toISOString();
 
+  // Cifrado transparente AES-256-GCM para tokens Auth0
+  const encryptedAccessToken = userData.accessToken ? encryptText(userData.accessToken) : undefined;
+  const encryptedIdToken = userData.idToken ? encryptText(userData.idToken) : undefined;
+
   // Buscar si el usuario ya existe por email o sub de Auth0
   const existingUserIndex = users.findIndex(
     (u) => (cleanEmail && u.email.toLowerCase() === cleanEmail) || (userData.sub && u.sub === userData.sub)
   );
 
-  // 1. SI EL USUARIO YA EXISTE: Actualizar datos de perfil y tokens de sesión
+  // 1. SI EL USUARIO YA EXISTE: Actualizar datos de perfil y tokens de sesión cifrados
   if (existingUserIndex >= 0) {
     const existingUser = users[existingUserIndex];
     const targetRole = isConfiguredSuperAdmin ? "Superusuario" : existingUser.role;
@@ -1721,7 +1730,14 @@ export async function registerOrSyncUser(userData: {
       updatedAt: new Date().toISOString()
     };
 
-    users[existingUserIndex] = updatedUser;
+    // Para la lista en memoria/JSON guardamos la versión cifrada
+    const updatedUserForStorage = {
+      ...updatedUser,
+      accessToken: encryptedAccessToken || (existingUser.accessToken ? encryptText(existingUser.accessToken) : undefined),
+      idToken: encryptedIdToken || (existingUser.idToken ? encryptText(existingUser.idToken) : undefined)
+    };
+
+    users[existingUserIndex] = updatedUserForStorage;
 
     if (isPrismaEnabled()) {
       const prisma = getPrisma();
@@ -1734,8 +1750,8 @@ export async function registerOrSyncUser(userData: {
               avatar: updatedUser.avatar,
               sub: updatedUser.sub,
               role: targetRole,
-              accessToken: updatedUser.accessToken,
-              idToken: updatedUser.idToken,
+              accessToken: updatedUserForStorage.accessToken,
+              idToken: updatedUserForStorage.idToken,
               tokenExpiresAt: updatedUser.tokenExpiresAt ? new Date(updatedUser.tokenExpiresAt) : null,
               lastLoginAt: new Date(updatedUser.lastLoginAt || new Date())
             }
@@ -1774,7 +1790,13 @@ export async function registerOrSyncUser(userData: {
     updatedAt: new Date().toISOString()
   };
 
-  users.push(newUser);
+  const newUserForStorage = {
+    ...newUser,
+    accessToken: encryptedAccessToken,
+    idToken: encryptedIdToken
+  };
+
+  users.push(newUserForStorage);
 
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
@@ -1788,8 +1810,8 @@ export async function registerOrSyncUser(userData: {
             role: newUser.role as any,
             avatar: newUser.avatar,
             sub: newUser.sub,
-            accessToken: newUser.accessToken,
-            idToken: newUser.idToken,
+            accessToken: encryptedAccessToken,
+            idToken: encryptedIdToken,
             tokenExpiresAt: newUser.tokenExpiresAt ? new Date(newUser.tokenExpiresAt) : null,
             lastLoginAt: newUser.lastLoginAt ? new Date(newUser.lastLoginAt) : new Date()
           }
