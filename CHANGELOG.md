@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.32 (Frontend) / v2.5.24 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **env:** depurar variables de entorno redundantes y ajustar codigo a la estructura unificada fullstack (`031a570`)
+
 ## [v2.5.32 (Frontend) / v2.5.23 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código

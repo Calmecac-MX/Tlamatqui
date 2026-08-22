@@ -828,11 +828,10 @@ if (process.env.NODE_ENV === "production" && process.env.SERVE_STATIC === "true"
 // Iniciar servidor REST API independiente (solo si no se ejecuta en Vercel Serverless)
 if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== "test") {
   app.listen(PORT, "0.0.0.0", () => {
-    const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    console.log(`\x1b[36m[Backend REST API]\x1b[0m Escuchando en ${backendUrl} (Puerto ${PORT})`);
+    console.log(`\x1b[36m[Backend REST API]\x1b[0m Escuchando en puerto ${PORT}`);
     console.log(`\x1b[35m[Frontend Configured]\x1b[0m CORS permitiendo peticiones desde: ${frontendUrl}`);
-    console.log(`\x1b[32m[Health Check]\x1b[0m Endpoint de salud disponible en ${backendUrl}/api/health`);
+    console.log(`\x1b[32m[Health Check]\x1b[0m Endpoint de salud disponible en http://localhost:${PORT}/api/health`);
   });
 }
 

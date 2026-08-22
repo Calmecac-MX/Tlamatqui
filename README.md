@@ -138,7 +138,6 @@ Consulte el archivo [`.env.example`](.env.example) para ver la lista completa. L
 
 ### Backend (Node.js / Express)
 - `PORT`: Puerto de escucha del servidor Express (por defecto `4000`).
-- `BACKEND_URL`: URL pública de la API REST (`http://localhost:4000`).
 - `FRONTEND_URL`: URL pública de la aplicación cliente (`http://localhost:3000`).
 - `CORS_ORIGIN`: Orígenes permitidos para peticiones CORS.
 - `DATABASE_URL`: URI de conexión a PostgreSQL (Prisma ORM 7).
