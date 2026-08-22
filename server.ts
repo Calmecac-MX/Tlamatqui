@@ -46,7 +46,7 @@ import {
 import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema, SendTeamInviteEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
-import { isSmtpConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
+import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
@@ -154,11 +154,14 @@ app.get("/api/health", (req: Request, res: Response) => {
     service: "Tlamatqui Backend REST API",
     version: BACKEND_VERSION,
     frontendVersion: FRONTEND_VERSION,
+    emailConfigured: isEmailConfigured(),
+    brevoConfigured: isBrevoConfigured(),
     smtpConfigured: isSmtpConfigured(),
     encryptionConfigured: isEncryptionConfigured(),
     timestamp: new Date().toISOString()
   });
 });
+
 
 /**
  * @route GET /api/auth/callback
@@ -404,13 +407,18 @@ app.post("/api/superadmin/factory-reset", requireRole(["Superusuario"]), handleF
  * @description Verifica el estado de configuración del servidor SMTP.
  */
 app.get("/api/smtp-status", (req: Request, res: Response) => {
+  const brevoActive = isBrevoConfigured();
   res.json({
-    configured: isSmtpConfigured(),
-    host: process.env.SMTP_HOST || "",
+    configured: isEmailConfigured(),
+    provider: brevoActive ? "Brevo API v3" : (isSmtpConfigured() ? "Nodemailer SMTP" : "Ninguno"),
+    brevoConfigured: brevoActive,
+    smtpConfigured: isSmtpConfigured(),
+    host: brevoActive ? "https://api.brevo.com/v3/smtp/email" : (process.env.SMTP_HOST || ""),
     port: process.env.SMTP_PORT || "587",
-    from: process.env.SMTP_FROM || ""
+    from: process.env.BREVO_SENDER_EMAIL || process.env.SMTP_FROM || ""
   });
 });
+
 
 /**
  * @route POST /api/verify-smtp
@@ -646,11 +654,12 @@ app.post("/api/teams/:id/reset-invite", async (req: Request, res: Response) => {
  */
 app.post("/api/teams/:id/send-invite-email", async (req: Request, res: Response) => {
   try {
-    if (!isSmtpConfigured()) {
+    if (!isEmailConfigured()) {
       return res.status(400).json({
-        error: "El servicio de correo SMTP no está configurado en las variables de entorno del servidor (SMTP_HOST es requerido)."
+        error: "El servicio de correo no está configurado. Por favor configura BREVO_API_KEY o las credenciales SMTP en el servidor."
       });
     }
+
 
     const parseResult = SendTeamInviteEmailRequestSchema.safeParse(req.body);
     if (!parseResult.success) {

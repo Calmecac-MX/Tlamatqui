@@ -28,6 +28,60 @@ export interface SendReportEmailOptions {
   pdfBase64?: string;
 }
 
+export interface BrevoConfig {
+  apiKey: string;
+  senderEmail: string;
+  senderName: string;
+}
+
+/**
+ * Auxiliar para extraer el nombre y correo de una cadena con formato "Nombre <email@dominio.com>".
+ */
+function parseSenderString(fromStr: string): { name?: string; email: string } {
+  const match = fromStr.match(/^(?:"?([^"]*)"?\s)?<([^>]+)>$/);
+  if (match) {
+    return { name: match[1]?.trim() || undefined, email: match[2].trim() };
+  }
+  return { email: fromStr.trim() };
+}
+
+/**
+ * Obtiene la configuración de Brevo API desde las variables de entorno.
+ */
+export function getBrevoConfig(): BrevoConfig {
+  const apiKey = process.env.BREVO_API_KEY || process.env.BREVO_KEY || process.env.SENDINBLUE_API_KEY || "";
+  let senderEmail = process.env.BREVO_SENDER_EMAIL || "";
+  let senderName = process.env.BREVO_SENDER_NAME || "";
+
+  if (!senderEmail) {
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER || "";
+    const parsed = parseSenderString(from);
+    senderEmail = parsed.email || "no-reply@tlamatqui.com";
+    if (!senderName) senderName = parsed.name || "Tlamatqui Diagnostics";
+  }
+
+  return {
+    apiKey,
+    senderEmail,
+    senderName: senderName || "Tlamatqui Diagnostics"
+  };
+}
+
+/**
+ * Comprueba si la API de Brevo está configurada activamente en el entorno.
+ */
+export function isBrevoConfigured(): boolean {
+  const config = getBrevoConfig();
+  return Boolean(config.apiKey && config.apiKey.trim() !== "");
+}
+
+/**
+ * Comprueba si el servicio de correo (Brevo API o SMTP) está configurado en el entorno.
+ */
+export function isEmailConfigured(): boolean {
+  return isBrevoConfigured() || isSmtpConfigured();
+}
+
 /**
  * Obtiene la configuración de SMTP desde las variables de entorno del sistema.
  */
@@ -48,6 +102,70 @@ export function getSmtpConfig(): SmtpConfig {
 export function isSmtpConfigured(): boolean {
   const config = getSmtpConfig();
   return Boolean(config.host && config.host.trim() !== "");
+}
+
+/**
+ * Envía un correo transaccional utilizando la API REST v3 de Brevo (Sendinblue).
+ */
+async function sendEmailViaBrevoApi(payload: {
+  toEmail: string;
+  recipientName?: string;
+  subject: string;
+  htmlContent: string;
+  attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+}): Promise<{ success: boolean; messageId?: string }> {
+  const config = getBrevoConfig();
+  if (!config.apiKey) {
+    throw new Error("La clave de API de Brevo (BREVO_API_KEY) no está configurada.");
+  }
+
+  const brevoPayload: any = {
+    sender: {
+      name: config.senderName,
+      email: config.senderEmail
+    },
+    to: [
+      {
+        email: payload.toEmail,
+        ...(payload.recipientName ? { name: payload.recipientName } : {})
+      }
+    ],
+    subject: payload.subject,
+    htmlContent: payload.htmlContent
+  };
+
+  if (payload.attachments && payload.attachments.length > 0) {
+    brevoPayload.attachment = payload.attachments.map(att => {
+      const cleanBase64 = att.content.includes(",") ? att.content.split(",")[1] : att.content;
+      return {
+        name: att.filename,
+        content: cleanBase64
+      };
+    });
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": config.apiKey,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(brevoPayload)
+  });
+
+  const responseData: any = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const errorMsg = responseData.message || responseData.code || "Error desconocido al enviar correo vía Brevo API";
+    console.error(`\x1b[31m[Brevo API Error]\x1b[0m Status: ${response.status} - ${errorMsg}`);
+    throw new Error(`Error en la API de Brevo (${response.status}): ${errorMsg}`);
+  }
+
+  const messageId = responseData.messageId || responseData.messageIds?.[0] || `brevo_${Date.now()}`;
+  console.log(`\x1b[32m[Brevo API]\x1b[0m Correo enviado exitosamente a ${payload.toEmail}. ID: ${messageId}`);
+
+  return { success: true, messageId };
 }
 
 /**
@@ -75,20 +193,40 @@ function createTransporter() {
 }
 
 /**
- * Verifica la conexión con el servidor SMTP.
+ * Verifica la conexión con el servicio de correo (Brevo API o Servidor SMTP).
  */
 export async function verifySmtpConnection(): Promise<{ success: boolean; message: string }> {
   try {
-    if (!isSmtpConfigured()) {
-      return { success: false, message: "SMTP no está configurado en las variables de entorno (SMTP_HOST es requerido)." };
+    if (isBrevoConfigured()) {
+      const config = getBrevoConfig();
+      const res = await fetch("https://api.brevo.com/v3/account", {
+        method: "GET",
+        headers: {
+          "api-key": config.apiKey,
+          "Accept": "application/json"
+        }
+      });
+      if (res.ok) {
+        const accountData: any = await res.json().catch(() => ({}));
+        const email = accountData.email || config.senderEmail;
+        return { success: true, message: `Conexión exitosa con la API de Brevo (Cuenta: ${email}).` };
+      }
+      const errData: any = await res.json().catch(() => ({}));
+      return { success: false, message: `Error de autenticación con Brevo API (${res.status}): ${errData.message || "Clave API no válida"}` };
     }
+
+    if (!isSmtpConfigured()) {
+      return { success: false, message: "No hay ningún servicio de correo configurado (BREVO_API_KEY o SMTP_HOST son requeridos)." };
+    }
+
     const transporter = createTransporter();
     await transporter.verify();
     return { success: true, message: "Conexión exitosa con el servidor SMTP." };
   } catch (error: any) {
-    return { success: false, message: `Error al verificar la conexión SMTP: ${error.message}` };
+    return { success: false, message: `Error al verificar la conexión de correo: ${error.message}` };
   }
 }
+
 
 /**
  * Construye la plantilla HTML del correo de diagnóstico financiero.
@@ -253,37 +391,53 @@ function buildReportEmailHtml(options: SendReportEmailOptions): string {
  * Envía un diagnóstico financiero por correo electrónico vía SMTP.
  */
 export async function sendReportEmail(options: SendReportEmailOptions): Promise<{ success: boolean; messageId?: string }> {
-  const transporter = createTransporter();
-  const config = getSmtpConfig();
-
   const subject = options.customSubject && options.customSubject.trim() !== ""
     ? options.customSubject
     : `Diagnóstico Financiero y Auditoría de Comercio: ${options.storeName}`;
 
   const htmlContent = buildReportEmailHtml(options);
 
-  const attachments = [];
+  const attachments: Array<{ filename: string; content: string; contentType?: string }> = [];
   if (options.pdfBase64 && options.pdfBase64.trim() !== "") {
     const cleanBase64 = options.pdfBase64.includes(",") ? options.pdfBase64.split(",")[1] : options.pdfBase64;
     attachments.push({
       filename: `Diagnostico-${options.storeName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
-      content: Buffer.from(cleanBase64, "base64"),
+      content: cleanBase64,
       contentType: "application/pdf"
     });
   }
+
+  // Si la API de Brevo está configurada, enviar vía Brevo REST API v3
+  if (isBrevoConfigured()) {
+    return sendEmailViaBrevoApi({
+      toEmail: options.toEmail,
+      subject,
+      htmlContent,
+      attachments
+    });
+  }
+
+  // Fallback a Nodemailer SMTP
+  const transporter = createTransporter();
+  const config = getSmtpConfig();
 
   const info = await transporter.sendMail({
     from: config.from,
     to: options.toEmail,
     subject: subject,
     html: htmlContent,
-    attachments: attachments.length > 0 ? attachments : undefined
+    attachments: attachments.map(att => ({
+      filename: att.filename,
+      content: Buffer.from(att.content, "base64"),
+      contentType: att.contentType
+    }))
   });
 
   console.log(`\x1b[32m[SMTP Email]\x1b[0m Correo enviado exitosamente a ${options.toEmail}. ID: ${info.messageId}`);
 
   return { success: true, messageId: info.messageId };
 }
+
 
 export interface SendTeamInviteEmailOptions {
   toEmail: string;
@@ -469,11 +623,22 @@ function buildTeamInviteEmailHtml(options: SendTeamInviteEmailOptions): string {
  * Envía una invitación por correo electrónico a un nuevo miembro del equipo.
  */
 export async function sendTeamInviteEmail(options: SendTeamInviteEmailOptions): Promise<{ success: boolean; messageId?: string }> {
-  const transporter = createTransporter();
-  const config = getSmtpConfig();
-
   const subject = `Te han invitado a unirte al equipo "${options.teamName}" en Tlamatqui`;
   const htmlContent = buildTeamInviteEmailHtml(options);
+
+  // Si la API de Brevo está configurada, enviar vía Brevo REST API v3
+  if (isBrevoConfigured()) {
+    return sendEmailViaBrevoApi({
+      toEmail: options.toEmail,
+      recipientName: options.recipientName,
+      subject,
+      htmlContent
+    });
+  }
+
+  // Fallback a Nodemailer SMTP
+  const transporter = createTransporter();
+  const config = getSmtpConfig();
 
   const info = await transporter.sendMail({
     from: config.from,
@@ -486,4 +651,5 @@ export async function sendTeamInviteEmail(options: SendTeamInviteEmailOptions): 
 
   return { success: true, messageId: info.messageId };
 }
+
 

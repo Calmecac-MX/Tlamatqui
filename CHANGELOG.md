@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.45 (Frontend) / v2.5.43 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **teams:** agregar envio de invitaciones a miembros por correo electronico (`14c7488`)
+
 ## [v2.5.45 (Frontend) / v2.5.42 (Backend)] - 2026-08-22
 
 ### 🐛 Corregido & Bug Fixes
