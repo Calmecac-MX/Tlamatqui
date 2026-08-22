@@ -1493,18 +1493,18 @@ export default function SuperAdminDashboard({
 
               {selectedUserDetail.idToken && (
                 <div className="space-y-1 pt-1">
-                  <span className="text-[10px] font-bold text-text-dim-theme uppercase block">ID Token JWT (Almacenado)</span>
-                  <div className="p-2 rounded bg-bg-theme border border-border-theme/40 font-mono text-[10px] text-amber-300 truncate">
-                    {selectedUserDetail.idToken}
+                  <span className="text-[10px] font-bold text-text-dim-theme uppercase block">ID Token JWT (Almacenado y Cifrado)</span>
+                  <div className="p-2 rounded bg-bg-theme border border-border-theme/40 font-mono text-xs text-amber-300 tracking-widest">
+                    ••••••••••••••••
                   </div>
                 </div>
               )}
 
               {selectedUserDetail.accessToken && (
                 <div className="space-y-1 pt-1">
-                  <span className="text-[10px] font-bold text-text-dim-theme uppercase block">Access Token JWT (Almacenado)</span>
-                  <div className="p-2 rounded bg-bg-theme border border-border-theme/40 font-mono text-[10px] text-cyan-300 truncate">
-                    {selectedUserDetail.accessToken}
+                  <span className="text-[10px] font-bold text-text-dim-theme uppercase block">Access Token JWT (Almacenado y Cifrado)</span>
+                  <div className="p-2 rounded bg-bg-theme border border-border-theme/40 font-mono text-xs text-cyan-300 tracking-widest">
+                    ••••••••••••••••
                   </div>
                 </div>
               )}

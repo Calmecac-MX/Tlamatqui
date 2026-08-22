@@ -4,6 +4,16 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.44 (Frontend) / v2.5.38 (Backend)] - 2026-08-22
+
+### 📌 Otros Cambios
+- aplicar cifrado transparente AES-256-GCM y enmascaramiento API para tokens Auth0 (v2.5.43/v2.5.37) (`f0eccc8`)
+- agregar allowScripts en package.json para autorizar scripts de instalacion en npm 10+ (`59002b0`)
+- agregar cabeceras de cortafuegos WAF y politicas avanzadas de CORS en vercel.json (`4ce3d29`)
+- optimizar configuracion de vercel.json y tsconfig.json para despliegue serverless (`ea4792b`)
+- actualizar workflow a las ultimas versiones estables de actions (v7 y v5) (`1a161b4`)
+- eliminar docker y actualizar workflow CI/CD con Node.js 24 (`1ad8e86`)
+
 ## [v2.5.43 (Frontend) / v2.5.37 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

@@ -231,8 +231,8 @@ app.get("/api/users", requireRole(["Superusuario", "Administrador"]), async (req
     const users = await getDbUsers();
     const sanitizedUsers = users.map((u) => ({
       ...u,
-      accessToken: u.accessToken ? `${u.accessToken.substring(0, 10)}...[CIFRADO_AES_256_BD]` : undefined,
-      idToken: u.idToken ? `${u.idToken.substring(0, 10)}...[CIFRADO_AES_256_BD]` : undefined
+      accessToken: u.accessToken ? "••••••••••••••••" : undefined,
+      idToken: u.idToken ? "••••••••••••••••" : undefined
     }));
     res.json(sanitizedUsers);
   } catch (err) {
