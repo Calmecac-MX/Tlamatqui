@@ -4,7 +4,7 @@ import {
   Lock, Unlock, RefreshCw, Plus, Trash2, Copy, Check, AlertTriangle, 
   Clock, Zap, CheckCircle2, XCircle, ChevronRight, Terminal, Info, AlertCircle, 
   Eye, EyeOff, Crown, Users, UserCheck, Search, Mail, Calendar, FileText, Sparkles, ExternalLink, User,
-  Globe, UploadCloud, Image as ImageIcon, Save
+  Globe, UploadCloud, Image as ImageIcon, Save, RotateCcw
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SystemHealthData, ApiKeyItem, UserAccount, Team, Report, LogoType } from "../types";
@@ -66,7 +66,7 @@ export default function SuperAdminDashboard({
   onVerifyDomainDNS,
   verifyingDomainConfig = false
 }: SuperAdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"health" | "branding" | "users" | "teams" | "database" | "apikeys" | "apilock">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "branding" | "users" | "teams" | "database" | "apikeys" | "apilock" | "reset">("health");
   const [healthData, setHealthData] = useState<SystemHealthData | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
   const [users, setUsers] = useState<UserAccount[]>([]);
@@ -105,8 +105,10 @@ export default function SuperAdminDashboard({
   const [isTogglingLock, setIsTogglingLock] = useState<boolean>(false);
   const [lockSuccessMsg, setLockSuccessMsg] = useState<string | null>(null);
 
-  // Drag & drop logo state
-  const [isDraggingLogo, setIsDraggingLogo] = useState<boolean>(false);
+  // Factory Reset State
+  const [resetConfirmInput, setResetConfirmInput] = useState<string>("");
+  const [isResettingFactory, setIsResettingFactory] = useState<boolean>(false);
+  const [resetResultMsg, setResetResultMsg] = useState<{ type: "success" | "error" | null; text: string }>({ type: null, text: "" });
 
   // Simulated live server logs
   const [logs, setLogs] = useState<Array<{ id: string; time: string; type: "info" | "warn" | "error" | "success"; text: string }>>([
@@ -364,6 +366,56 @@ export default function SuperAdminDashboard({
     }
   };
 
+  // Handle Factory Reset
+  const handleExecuteFactoryReset = async () => {
+    if (resetConfirmInput.trim() !== "RESTABLECER_FABRICA") {
+      alert('Debes escribir la frase exacta "RESTABLECER_FABRICA" para confirmar.');
+      return;
+    }
+
+    if (!confirm("🚨 ATENCIÓN: Se eliminarán de forma permanente todos los reportes, usuarios, equipos y llaves de API. ¿Deseas continuar?")) {
+      return;
+    }
+
+    setIsResettingFactory(true);
+    setResetResultMsg({ type: null, text: "" });
+
+    try {
+      const res = await fetch("/api/superadmin/factory-reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": userRole || "Superusuario"
+        },
+        body: JSON.stringify({ confirmCode: "RESTABLECER_FABRICA" })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResetResultMsg({ type: "success", text: data.message });
+        setResetConfirmInput("");
+        
+        // Refresh state
+        fetchHealth();
+        fetchUsers();
+        fetchTeams();
+        fetchReports();
+        fetchApiKeys();
+
+        setLogs((prev) => [
+          { id: Date.now().toString(), time: new Date().toLocaleTimeString(), type: "error", text: "💥 RESTABLECIMIENTO A CONFIGURACIÓN DE FÁBRICA EJECUTADO EXITOSAMENTE" },
+          ...prev.slice(0, 15)
+        ]);
+      } else {
+        setResetResultMsg({ type: "error", text: data.message || "Error al ejecutar restablecimiento de fábrica." });
+      }
+    } catch (e) {
+      setResetResultMsg({ type: "error", text: "No se pudo conectar con el servidor para ejecutar el restablecimiento de fábrica." });
+    } finally {
+      setIsResettingFactory(false);
+    }
+  };
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKeyId(id);
@@ -416,7 +468,7 @@ export default function SuperAdminDashboard({
               Centro de Control Global Superusuario
             </h2>
             <p className="text-xs md:text-sm text-text-dim-theme max-w-2xl">
-              Administración exclusiva de Marca Blanca, dominios personalizados, usuarios registrados, equipos de trabajo, estado de infraestructura y control de acceso API.
+              Administración de Marca Blanca, usuarios, equipos, estado de infraestructura, control API y función maestra de restablecimiento de fábrica.
             </p>
           </div>
 
@@ -532,7 +584,19 @@ export default function SuperAdminDashboard({
           }`}
         >
           <Lock className="w-4 h-4 text-rose-400" />
-          <span>Bloqueo Maestro de API</span>
+          <span>Bloqueo Maestro</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("reset")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            activeTab === "reset"
+              ? "bg-rose-600/30 text-rose-200 border border-rose-500/60 shadow-lg shadow-rose-500/20"
+              : "text-rose-400 hover:text-rose-200 hover:bg-rose-500/10"
+          }`}
+        >
+          <RotateCcw className="w-4 h-4 text-rose-400" />
+          <span>Restablecimiento Fábrica</span>
         </button>
       </div>
 
@@ -674,7 +738,6 @@ export default function SuperAdminDashboard({
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Brand Name */}
                 <div className="space-y-4 p-5 rounded-2xl bg-bg-theme/50 border border-border-theme/40">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">Identidad de Marca Blanca</h4>
                   
@@ -744,7 +807,6 @@ export default function SuperAdminDashboard({
                   </div>
                 </div>
 
-                {/* Brand Logos URLs */}
                 <div className="space-y-4 p-5 rounded-2xl bg-bg-theme/50 border border-border-theme/40">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">Logotipos Principales y Secundarios</h4>
 
@@ -783,7 +845,6 @@ export default function SuperAdminDashboard({
                 </div>
               </div>
 
-              {/* Custom Domain Section */}
               <div className="p-5 rounded-2xl bg-slate-950/70 border border-border-theme/50 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -1243,6 +1304,76 @@ export default function SuperAdminDashboard({
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 8: RESTABLECIMIENTO DE FÁBRICA ================= */}
+      {activeTab === "reset" && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="p-6 md:p-8 rounded-3xl border border-rose-600/40 bg-gradient-to-br from-rose-950/50 via-slate-900/90 to-surface-theme backdrop-blur-xl space-y-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-rose-500/20 pb-5">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5 text-rose-400" />
+                  <h3 className="text-xl font-black text-white">Restablecimiento a Configuración de Fábrica (Factory Reset)</h3>
+                </div>
+                <p className="text-xs text-text-dim-theme max-w-2xl">
+                  Acción crítica e irreversible de mantenimiento. Restablece la base de datos completa y los archivos locales al estado semilla original por defecto.
+                </p>
+              </div>
+
+              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                🚨 Zona de Peligro
+              </span>
+            </div>
+
+            {resetResultMsg.text && (
+              <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                resetResultMsg.type === "success"
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                  : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+              }`}>
+                {resetResultMsg.type === "success" ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
+                <span>{resetResultMsg.text}</span>
+              </div>
+            )}
+
+            <div className="space-y-4 p-5 rounded-2xl bg-bg-theme/60 border border-rose-500/20 text-xs text-text-dim-theme space-y-2">
+              <h4 className="font-bold text-white text-xs uppercase tracking-wider">Acciones que ejecutará el restablecimiento:</h4>
+              <ul className="list-disc list-inside space-y-1 text-[11px]">
+                <li>Eliminará de forma permanente todos los <span className="text-white font-semibold">Reportes de Diagnóstico</span> creados.</li>
+                <li>Eliminará todos los <span className="text-white font-semibold">Equipos e Invitaciones</span> de colaboradores.</li>
+                <li>Eliminará todas las cuentas de <span className="text-white font-semibold">Usuarios Registrados</span> (el próximo login asignará el nuevo Superusuario).</li>
+                <li>Revocará y eliminará todas las <span className="text-white font-semibold">API Keys</span> activas.</li>
+                <li>Restablecerá la configuración de <span className="text-white font-semibold">Marca Blanca y Logotipos</span> a valores semilla iniciales.</li>
+                <li>Restablecerá los interruptores de <span className="text-white font-semibold">Bloqueo de API</span>.</li>
+              </ul>
+            </div>
+
+            <div className="space-y-4 max-w-md">
+              <div>
+                <label className="block text-xs font-bold text-white uppercase tracking-wider mb-2">
+                  Escribe <span className="text-rose-400 font-mono font-black">"RESTABLECER_FABRICA"</span> para confirmar:
+                </label>
+                <input
+                  type="text"
+                  value={resetConfirmInput}
+                  onChange={(e) => setResetConfirmInput(e.target.value)}
+                  placeholder="RESTABLECER_FABRICA"
+                  className="w-full text-xs px-4 py-3 rounded-xl border outline-none focus:ring-1 focus:ring-rose-500 bg-bg-theme border-rose-500/30 font-mono text-rose-300 font-bold"
+                />
+              </div>
+
+              <button
+                onClick={handleExecuteFactoryReset}
+                disabled={isResettingFactory || resetConfirmInput.trim() !== "RESTABLECER_FABRICA"}
+                className="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className={`w-4 h-4 ${isResettingFactory ? "animate-spin" : ""}`} />
+                {isResettingFactory ? "Restableciendo Instancia..." : "Restablecer Instancia a Configuración de Fábrica"}
+              </button>
             </div>
           </div>
         </div>

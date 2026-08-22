@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.42 (Frontend) / v2.5.35 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **schema:** simplificar tablas de Prisma y añadir relaciones prudenciales User-Team-Report-ApiKey (v2.5.41/v2.5.34) (`608c689`)
+
 ## [v2.5.41 (Frontend) / v2.5.34 (Backend)] - 2026-08-22
 
 ### 🔧 Tareas Operativas y Mantenimiento

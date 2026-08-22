@@ -2038,3 +2038,59 @@ export async function toggleApiLock(apiLocked: boolean, lockReason?: string): Pr
   return result;
 }
 
+/**
+ * Restablece la instancia completa a su configuración de fábrica (Factory Reset).
+ * Elimina reportes, usuarios, equipos, llaves de API, reinicia bloqueos de API y restaura la semilla inicial.
+ */
+export async function resetInstanceToFactorySettings(): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. Limpieza de archivos JSON locales (Fallback Bridge)
+    await writeJsonAsync(REPORTS_FILE, DEFAULT_REPORTS);
+    await writeJsonAsync(TEAMS_FILE, DEFAULT_TEAMS);
+    await writeJsonAsync(CONFIG_FILE, DEFAULT_CONFIG);
+    await writeJsonAsync(TEMPLATES_FILE, DEFAULT_TEMPLATES);
+    await writeJsonAsync(PARTNERS_FILE, DEFAULT_PARTNER);
+    await writeJsonAsync(LOGO_CONFIG_FILE, DEFAULT_LOGO_CONFIG);
+    await writeJsonAsync(USERS_FILE, []);
+    await writeJsonAsync(API_KEYS_FILE, []);
+    await writeJsonAsync(SYSTEM_SETTINGS_FILE, { id: "default", apiLocked: false, lockReason: "Mantenimiento programado de la API" });
+
+    // 2. Limpieza y re-sembrado en PostgreSQL Prisma ORM
+    if (isPrismaEnabled()) {
+      const prisma = getPrisma();
+      if (prisma) {
+        await prisma.$transaction([
+          prisma.reportTool.deleteMany({}),
+          prisma.reportComparisonRow.deleteMany({}),
+          prisma.reportInteraction.deleteMany({}),
+          prisma.report.deleteMany({}),
+          prisma.teamMember.deleteMany({}),
+          prisma.team.deleteMany({}),
+          prisma.partnerMember.deleteMany({}),
+          prisma.partner.deleteMany({}),
+          prisma.comparisonTemplateRow.deleteMany({}),
+          prisma.comparisonTemplate.deleteMany({}),
+          prisma.apiKey.deleteMany({}),
+          prisma.user.deleteMany({}),
+          prisma.config.deleteMany({}),
+          prisma.logoConfig.deleteMany({}),
+          prisma.systemSetting.deleteMany({})
+        ]);
+
+        await initializeDatabase();
+      }
+    }
+
+    return {
+      success: true,
+      message: "🟢 La instancia ha sido restablecida exitosamente a su configuración de fábrica."
+    };
+  } catch (error: any) {
+    console.error("Error al ejecutar restablecimiento a configuración de fábrica:", error);
+    return {
+      success: false,
+      message: `Error al restablecer la instancia: ${error?.message || "Fallo interno de almacenamiento"}`
+    };
+  }
+}
+

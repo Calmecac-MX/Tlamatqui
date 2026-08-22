@@ -40,7 +40,8 @@ import {
   createDbApiKey,
   deleteDbApiKey,
   getApiLockStatus,
-  toggleApiLock
+  toggleApiLock,
+  resetInstanceToFactorySettings
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
@@ -353,6 +354,34 @@ app.post("/api/superadmin/toggle-api-lock", requireRole(["Superusuario"]), async
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ error: "Error al actualizar el estado de bloqueo de la API." });
+  }
+});
+
+/**
+ * @route POST /api/superadmin/factory-reset
+ * @description Restablece la instancia completa a su configuración de fábrica.
+ */
+app.post("/api/superadmin/factory-reset", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const { confirmCode } = req.body || {};
+    if (confirmCode !== "RESTABLECER_FABRICA") {
+      return res.status(400).json({
+        success: false,
+        message: 'Código de confirmación incorrecto. Escribe "RESTABLECER_FABRICA" para proceder.'
+      });
+    }
+
+    const result = await resetInstanceToFactorySettings();
+    if (result.success) {
+      return res.json(result);
+    } else {
+      return res.status(500).json(result);
+    }
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al ejecutar el restablecimiento de fábrica."
+    });
   }
 });
 
