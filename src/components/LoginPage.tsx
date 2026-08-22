@@ -20,7 +20,9 @@ import {
   KeyRound,
   ExternalLink,
   Building2,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 
 interface LoginPageProps {
@@ -36,7 +38,7 @@ interface LogoConfig {
 }
 
 export default function LoginPage({ isDarkMode, toggleDarkMode }: LoginPageProps) {
-  const { loginWithRedirect, isAuth0Configured, isLoading } = useAuth();
+  const { loginWithRedirect, isAuth0Configured, isLoading, error, clearAuthError } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoConfig, setLogoConfig] = useState<LogoConfig | null>(null);
@@ -189,6 +191,32 @@ export default function LoginPage({ isDarkMode, toggleDarkMode }: LoginPageProps
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>Autenticación Segura mediante Auth0</span>
             </div>
+
+            {/* Alerta de Error de Autenticación de Auth0 */}
+            {error && (
+              <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-left text-xs text-rose-300">
+                <div className="flex items-start gap-2.5 mb-2">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-rose-200 text-sm">Error de Autenticación Auth0</h4>
+                    <p className="mt-1 leading-relaxed opacity-90">{error.message || "Ocurrió un problema al procesar la sesión."}</p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-rose-500/20 flex justify-between items-center">
+                  <span className="text-[11px] opacity-75">Comprueba la configuración de Callback URLs y CORS en Auth0.</span>
+                  <button
+                    onClick={() => {
+                      clearAuthError();
+                      setIsSubmitting(false);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-white font-medium text-[11px] transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Limpiar y Reintentar</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             <p className={`text-xs md:text-sm leading-relaxed mb-8 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
               Haz clic a continuación para ser redirigido al inicio de sesión seguro alojado de Auth0 e ingresar con tus credenciales corporativas.

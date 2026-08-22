@@ -4,6 +4,23 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.34 (Frontend) / v2.5.27 (Backend)] - 2026-08-22
+
+### 🐛 Corregido & Bug Fixes
+- **cors:** resolver conflicto de cabeceras CORS en produccion y vercel (`fc9a791`)
+
+### ♻️ Refactorización de Código
+- **env:** depurar variables obsoletas u opcionales de .env.example (`0c6618f`)
+
+### 📚 Documentación
+- **env:** actualizar campo SMTP_FROM a Reportes Tlamatqui <no-respondas@calmecac.lat> (`b42736e`)
+- **env:** agregar .env.vercel con variables de produccion listas para vercel (`73d9ef3`)
+- **env:** consolidar plantilla .env.example alineada a la arquitectura desacoplada (`61bc622`)
+- **env:** actualizar .env.example para entornos de desarrollo y produccion (`b36c7a8`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **git:** actualizar regla de ignorado para .env.vercel en .gitignore (`45466de`)
+
 ## [v2.5.33 (Frontend) / v2.5.27 (Backend)] - 2026-08-22
 
 ### 🐛 Corregido & Bug Fixes

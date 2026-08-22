@@ -23,11 +23,13 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: AuthUser | null;
+  error: Error | null;
   loginWithRedirect: () => Promise<void>;
   loginWithLock: (options?: LockOptions) => void;
   logout: () => void;
   isAuth0Configured: boolean;
   demoLogin: (customUser?: Partial<AuthUser>) => void;
+  clearAuthError: () => void;
   getAccessTokenSilently?: () => Promise<string>;
 }
 
@@ -80,6 +82,17 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("tn_demo_active");
   };
 
+  const clearAuthError = () => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("code");
+      url.searchParams.delete("state");
+      url.searchParams.delete("error");
+      url.searchParams.delete("error_description");
+      window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ""));
+    }
+  };
+
   // Si Auth0 está activo y el usuario se autenticó vía Auth0
   if (isAuth0Configured && !isDemoActive) {
     const authUser: AuthUser | null = auth0.user
@@ -98,7 +111,9 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           isAuthenticated: auth0.isAuthenticated,
           isLoading: auth0.isLoading,
           user: authUser,
+          error: auth0.error || null,
           loginWithRedirect: async () => {
+            clearAuthError();
             await auth0.loginWithRedirect({
               appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname },
               authorizationParams: {
@@ -107,6 +122,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
             });
           },
           loginWithLock: (options?: LockOptions) => {
+            clearAuthError();
             showAuth0Lock(options);
           },
           logout: () => {
@@ -119,6 +135,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           },
           isAuth0Configured: true,
           demoLogin,
+          clearAuthError,
           getAccessTokenSilently: auth0.getAccessTokenSilently
         }}
       >
@@ -134,9 +151,11 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: isDemoActive && Boolean(demoUser),
         isLoading: false,
         user: demoUser,
+        error: null,
         loginWithRedirect: async () => {
           if (isAuth0Configured) {
             demoLogout();
+            clearAuthError();
             await auth0.loginWithRedirect({
               appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname },
               authorizationParams: {
@@ -150,6 +169,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
         loginWithLock: (options?: LockOptions) => {
           if (isAuth0Configured) {
             demoLogout();
+            clearAuthError();
             showAuth0Lock(options);
           } else {
             demoLogin();
@@ -160,7 +180,8 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           demoLogout();
         },
         isAuth0Configured,
-        demoLogin
+        demoLogin,
+        clearAuthError
       }}
     >
       {children}
