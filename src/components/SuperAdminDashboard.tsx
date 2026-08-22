@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { 
   Activity, Shield, ShieldAlert, Key, Database, Server, Cpu, HardDrive, 
   Lock, Unlock, RefreshCw, Plus, Trash2, Copy, Check, AlertTriangle, 
-  Clock, Zap, CheckCircle2, XCircle, ChevronRight, Terminal, Info, AlertCircle, Eye, EyeOff, Crown
+  Clock, Zap, CheckCircle2, XCircle, ChevronRight, Terminal, Info, AlertCircle, 
+  Eye, EyeOff, Crown, Users, UserCheck, Search, Mail, Calendar, FileText, Sparkles, ExternalLink, User
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { SystemHealthData, ApiKeyItem } from "../types";
+import { SystemHealthData, ApiKeyItem, UserAccount, Team, Report } from "../types";
 
 interface SuperAdminDashboardProps {
   isDarkMode: boolean;
@@ -18,14 +19,31 @@ export default function SuperAdminDashboard({
   userRole,
   userEmail
 }: SuperAdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"health" | "database" | "apikeys" | "apilock">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "database" | "users" | "teams" | "apikeys" | "apilock">("health");
   const [healthData, setHealthData] = useState<SystemHealthData | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
+  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+
   const [isLoadingHealth, setIsLoadingHealth] = useState<boolean>(true);
   const [isLoadingKeys, setIsLoadingKeys] = useState<boolean>(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(true);
+  const [isLoadingTeams, setIsLoadingTeams] = useState<boolean>(true);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string>(new Date().toLocaleTimeString());
+
+  // Search & Filters
+  const [userSearchTerm, setUserSearchTerm] = useState<string>("");
+  const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
+  const [teamSearchTerm, setTeamSearchTerm] = useState<string>("");
+
+  // User Details Modal state
+  const [selectedUserDetail, setSelectedUserDetail] = useState<UserAccount | null>(null);
+  const [isUpdatingUserRole, setIsUpdatingUserRole] = useState<boolean>(false);
+  const [userRoleSuccessMsg, setUserRoleSuccessMsg] = useState<string | null>(null);
 
   // API Key creation modal state
   const [isCreateKeyOpen, setIsCreateKeyOpen] = useState<boolean>(false);
@@ -74,6 +92,53 @@ export default function SuperAdminDashboard({
     }
   };
 
+  // Fetch Users
+  const fetchUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const res = await fetch("/api/users", {
+        headers: { "x-user-role": userRole || "Superusuario" }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    } catch (e) {
+      console.error("Error al obtener usuarios del sistema:", e);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Fetch Teams
+  const fetchTeams = async () => {
+    setIsLoadingTeams(true);
+    try {
+      const res = await fetch("/api/teams");
+      if (res.ok) {
+        const data = await res.json();
+        setTeams(data);
+      }
+    } catch (e) {
+      console.error("Error al obtener equipos:", e);
+    } finally {
+      setIsLoadingTeams(false);
+    }
+  };
+
+  // Fetch Reports
+  const fetchReports = async () => {
+    try {
+      const res = await fetch("/api/reports");
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data);
+      }
+    } catch (e) {
+      console.error("Error al obtener reportes:", e);
+    }
+  };
+
   // Fetch API Keys
   const fetchApiKeys = async () => {
     setIsLoadingKeys(true);
@@ -94,6 +159,9 @@ export default function SuperAdminDashboard({
 
   useEffect(() => {
     fetchHealth();
+    fetchUsers();
+    fetchTeams();
+    fetchReports();
     fetchApiKeys();
   }, []);
 
@@ -102,9 +170,48 @@ export default function SuperAdminDashboard({
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       fetchHealth();
+      fetchUsers();
+      fetchTeams();
     }, 10000);
     return () => clearInterval(interval);
   }, [autoRefresh]);
+
+  // Handle Update User Role
+  const handleUpdateUserRole = async (targetUserId: string, newRole: "Superusuario" | "Administrador" | "Editor" | "Visor") => {
+    setIsUpdatingUserRole(true);
+    try {
+      const res = await fetch(`/api/users/${targetUserId}/role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": userRole || "Superusuario"
+        },
+        body: JSON.stringify({ role: newRole })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUsers((prev) => prev.map((u) => (u.id === targetUserId ? { ...u, role: newRole } : u)));
+        if (selectedUserDetail && selectedUserDetail.id === targetUserId) {
+          setSelectedUserDetail({ ...selectedUserDetail, role: newRole });
+        }
+        setUserRoleSuccessMsg(`¡Rol actualizado a '${newRole}' con éxito!`);
+        setTimeout(() => setUserRoleSuccessMsg(null), 4000);
+
+        setLogs((prev) => [
+          { id: Date.now().toString(), time: new Date().toLocaleTimeString(), type: "success", text: `Rol de usuario ${targetUserId} cambiado a '${newRole}'` },
+          ...prev.slice(0, 15)
+        ]);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Error al actualizar el rol del usuario.");
+      }
+    } catch (e) {
+      alert("No se pudo conectar con el servidor.");
+    } finally {
+      setIsUpdatingUserRole(false);
+    }
+  };
 
   // Handle Create API Key
   const handleCreateApiKey = async (e: React.FormEvent) => {
@@ -131,7 +238,6 @@ export default function SuperAdminDashboard({
         setApiKeys((prev) => [data.apiKey, ...prev]);
         setNewKeyName("");
         
-        // Push log
         setLogs((prev) => [
           { id: Date.now().toString(), time: new Date().toLocaleTimeString(), type: "success", text: `Nueva API Key creada: '${data.apiKey.name}'` },
           ...prev.slice(0, 15)
@@ -146,9 +252,9 @@ export default function SuperAdminDashboard({
     }
   };
 
-  // Handle Revoke/Delete API Key
+  // Handle Revoke API Key
   const handleDeleteKey = async (id: string, name: string) => {
-    if (!confirm(`¿Estás seguro de revocar y eliminar la API Key '${name}'? Las integraciones activas perderán acceso.`)) return;
+    if (!confirm(`¿Estás seguro de revocar la API Key '${name}'?`)) return;
 
     try {
       const res = await fetch(`/api/superadmin/api-keys/${id}`, {
@@ -222,6 +328,17 @@ export default function SuperAdminDashboard({
     return `${days > 0 ? `${days}d ` : ""}${hours}h ${mins}m ${secs}s`;
   };
 
+  // Filtered lists
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || u.email.toLowerCase().includes(userSearchTerm.toLowerCase());
+    const matchesRole = userRoleFilter === "all" || u.role === userRoleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const filteredTeams = teams.filter((t) => {
+    return t.name.toLowerCase().includes(teamSearchTerm.toLowerCase()) || t.ownerEmail.toLowerCase().includes(teamSearchTerm.toLowerCase());
+  });
+
   return (
     <div className="space-y-8 animate-fade-in relative pb-12">
       {/* Header Banner */}
@@ -246,16 +363,20 @@ export default function SuperAdminDashboard({
             </div>
             
             <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
-              Salud, Monitoreo y Control de API
+              Centro de Control Global Superusuario
             </h2>
             <p className="text-xs md:text-sm text-text-dim-theme max-w-2xl">
-              Consola ejecutiva para inspeccionar la infraestructura, verificar latencias de la base de datos, administrar API Keys programáticas y controlar el bloqueo maestro de la API.
+              Inspecciona todos los usuarios registrados, consulta sus detalles completos, administra equipos de trabajo, evalúa la infraestructura en tiempo real y controla el acceso a la API REST.
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={fetchHealth}
+              onClick={() => {
+                fetchHealth();
+                fetchUsers();
+                fetchTeams();
+              }}
               disabled={isLoadingHealth}
               className="px-4 py-2.5 rounded-xl border border-border-theme bg-surface-theme/80 hover:bg-surface-hover-theme text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
             >
@@ -293,6 +414,30 @@ export default function SuperAdminDashboard({
         </button>
 
         <button
+          onClick={() => setActiveTab("users")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            activeTab === "users"
+              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10"
+              : "text-text-dim-theme hover:text-white hover:bg-surface-hover-theme"
+          }`}
+        >
+          <UserCheck className="w-4 h-4 text-emerald-400" />
+          <span>Usuarios del Sistema ({users.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("teams")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            activeTab === "teams"
+              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10"
+              : "text-text-dim-theme hover:text-white hover:bg-surface-hover-theme"
+          }`}
+        >
+          <Users className="w-4 h-4 text-cyan-400" />
+          <span>Equipos ({teams.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("database")}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             activeTab === "database"
@@ -300,8 +445,8 @@ export default function SuperAdminDashboard({
               : "text-text-dim-theme hover:text-white hover:bg-surface-hover-theme"
           }`}
         >
-          <Database className="w-4 h-4 text-cyan-400" />
-          <span>Base de Datos ({healthData?.database.counts.reports || 0} Reportes)</span>
+          <Database className="w-4 h-4 text-purple-400" />
+          <span>Base de Datos</span>
         </button>
 
         <button
@@ -352,7 +497,6 @@ export default function SuperAdminDashboard({
         <div className="space-y-6 animate-fade-in">
           {/* Top Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Status Card */}
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
                 <span className="text-xs font-bold uppercase tracking-wider">Estado Global</span>
@@ -369,7 +513,6 @@ export default function SuperAdminDashboard({
               <p className="text-[11px] text-text-dim-theme">Infraestructura operando sin latencia anómala.</p>
             </div>
 
-            {/* Uptime Card */}
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
                 <span className="text-xs font-bold uppercase tracking-wider">Tiempo de Actividad (Uptime)</span>
@@ -381,7 +524,6 @@ export default function SuperAdminDashboard({
               <p className="text-[11px] text-text-dim-theme">Tiempo activo desde la última inicialización.</p>
             </div>
 
-            {/* Memory RAM RSS */}
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
                 <span className="text-xs font-bold uppercase tracking-wider">Memoria Usada (RSS)</span>
@@ -393,7 +535,6 @@ export default function SuperAdminDashboard({
                 </span>
                 <span className="text-xs text-text-dim-theme">/ Heap {healthData?.memoryUsage.heapUsedMB || 0} MB</span>
               </div>
-              {/* Progress bar */}
               <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                 <div 
                   className="bg-cyan-400 h-full rounded-full transition-all duration-500" 
@@ -402,7 +543,6 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
-            {/* Environment / Node */}
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
                 <span className="text-xs font-bold uppercase tracking-wider">Entorno Servidor</span>
@@ -417,7 +557,7 @@ export default function SuperAdminDashboard({
             </div>
           </div>
 
-          {/* System Audit Event Logs Console */}
+          {/* Console Stream Logs */}
           <div className="p-6 rounded-2xl border border-border-theme bg-slate-950/90 backdrop-blur-md space-y-4 shadow-2xl font-mono">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
@@ -447,10 +587,200 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 2: BASE DE DATOS & MÉTRICAS ================= */}
+      {/* ================= TAB 2: USUARIOS DEL SISTEMA Y DETALLES ================= */}
+      {activeTab === "users" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Controls Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md shadow-xl">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-dim-theme" />
+                <input
+                  type="text"
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  placeholder="Buscar usuario por nombre o correo..."
+                  className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                />
+              </div>
+
+              <select
+                value={userRoleFilter}
+                onChange={(e) => setUserRoleFilter(e.target.value)}
+                className="text-xs px-3 py-2 rounded-xl bg-bg-theme border border-border-theme text-white outline-none cursor-pointer"
+              >
+                <option value="all">Todos los Roles</option>
+                <option value="Superusuario">Superusuario</option>
+                <option value="Administrador">Administrador</option>
+                <option value="Editor">Editor</option>
+                <option value="Visor">Visor</option>
+              </select>
+            </div>
+
+            <span className="text-xs text-text-dim-theme font-semibold">
+              Mostrando <span className="text-white font-bold">{filteredUsers.length}</span> de <span className="text-white font-bold">{users.length}</span> usuarios
+            </span>
+          </div>
+
+          {/* Users Table */}
+          <div className="rounded-2xl border border-border-theme bg-surface-theme/40 overflow-hidden shadow-xl">
+            {isLoadingUsers ? (
+              <div className="p-12 text-center text-xs text-text-dim-theme">Cargando usuarios...</div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="p-12 text-center text-xs text-text-dim-theme">No se encontraron usuarios con el filtro especificado.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-bg-theme/80 border-b border-border-theme/40 text-text-dim-theme uppercase tracking-wider text-[10px] font-bold">
+                    <tr>
+                      <th className="px-5 py-3.5">Usuario</th>
+                      <th className="px-5 py-3.5">Correo Electrónico</th>
+                      <th className="px-5 py-3.5">Rol de Permisos</th>
+                      <th className="px-5 py-3.5">Proveedor Auth</th>
+                      <th className="px-5 py-3.5">Fecha Registro</th>
+                      <th className="px-5 py-3.5 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-theme/20">
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-surface-hover-theme transition-colors">
+                        <td className="px-5 py-4 font-bold text-white">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"}
+                              alt={user.name}
+                              className="w-8 h-8 rounded-full border border-border-theme object-cover shrink-0"
+                            />
+                            <span>{user.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-text-dim-theme font-medium">{user.email}</td>
+                        <td className="px-5 py-4">
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border leading-none ${
+                            user.role === "Superusuario"
+                              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                              : user.role === "Administrador"
+                              ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                              : user.role === "Editor"
+                              ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                              : "bg-slate-500/20 text-slate-300 border-slate-500/40"
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-text-dim-theme font-mono text-[11px]">
+                          {user.sub ? (user.sub.includes("google") ? "Google Auth0" : "Auth0 DB") : "Local Bridge"}
+                        </td>
+                        <td className="px-5 py-4 text-text-dim-theme">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <button
+                            onClick={() => setSelectedUserDetail(user)}
+                            className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[11px] cursor-pointer transition-all flex items-center gap-1.5 ml-auto"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Ver Detalles
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 3: EQUIPOS DEL SISTEMA ================= */}
+      {activeTab === "teams" && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Search Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md shadow-xl">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-dim-theme" />
+              <input
+                type="text"
+                value={teamSearchTerm}
+                onChange={(e) => setTeamSearchTerm(e.target.value)}
+                placeholder="Buscar equipo por nombre o correo del líder..."
+                className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+              />
+            </div>
+
+            <span className="text-xs text-text-dim-theme font-semibold">
+              Total de Equipos: <span className="text-white font-bold">{filteredTeams.length}</span>
+            </span>
+          </div>
+
+          {/* Teams Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTeams.map((team) => {
+              const teamReportsCount = reports.filter((r) => r.teamId === team.id).length;
+              return (
+                <div key={team.id} className="p-6 rounded-2xl border border-border-theme bg-surface-theme/40 relative flex flex-col justify-between gap-5 shadow-xl hover:border-amber-500/40 transition-all">
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={team.image || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80"}
+                      alt={team.name}
+                      className="w-12 h-12 rounded-2xl object-cover border border-border-theme shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-base font-black text-white truncate">{team.name}</h4>
+                      <p className="text-xs text-text-dim-theme truncate mt-0.5">
+                        Líder: <span className="text-white font-semibold">{team.ownerName}</span>
+                      </p>
+                      <p className="text-[11px] text-text-dim-theme truncate">{team.ownerEmail}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border-theme/30 text-center">
+                    <div className="p-2 rounded-xl bg-bg-theme/60 border border-border-theme/40">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme block">Miembros</span>
+                      <span className="text-base font-black text-amber-300">{team.members.length}</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-bg-theme/60 border border-border-theme/40">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme block">Reportes</span>
+                      <span className="text-base font-black text-cyan-300">{teamReportsCount}</span>
+                    </div>
+                  </div>
+
+                  {/* Members badges */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme block">Integrantes:</span>
+                    <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                      {team.members.map((m) => (
+                        <span key={m.id} className="text-[10px] font-medium px-2 py-0.5 rounded bg-surface-hover-theme text-slate-300 border border-border-theme/40" title={`${m.email} (${m.role})`}>
+                          {m.name} ({m.role})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Copy Invite Token */}
+                  {team.inviteToken && (
+                    <button
+                      onClick={() => {
+                        const url = `${window.location.origin}/?inviteTeam=${team.inviteToken}`;
+                        copyToClipboard(url, `team_${team.id}`);
+                      }}
+                      className="w-full py-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme text-text-dim-theme hover:text-white text-xs font-bold border border-border-theme transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      {copiedKeyId === `team_${team.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                      {copiedKeyId === `team_${team.id}` ? "¡Enlace Copiado!" : "Copiar Enlace Invitación"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 4: BASE DE DATOS ================= */}
       {activeTab === "database" && (
         <div className="space-y-6 animate-fade-in">
-          {/* DB Health Status Card */}
           <div className="p-6 md:p-8 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-6 shadow-xl">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-theme/40 pb-5">
               <div className="flex items-center gap-3.5">
@@ -481,7 +811,6 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
-            {/* Record Counts Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl border border-border-theme/50 bg-bg-theme/60 text-center space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme">Reportes Auditados</span>
@@ -515,7 +844,7 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 3: GESTIÓN DE API KEYS ================= */}
+      {/* ================= TAB 5: GESTIÓN DE API KEYS ================= */}
       {activeTab === "apikeys" && (
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md shadow-xl">
@@ -541,7 +870,6 @@ export default function SuperAdminDashboard({
             </button>
           </div>
 
-          {/* API Keys List Table */}
           <div className="rounded-2xl border border-border-theme bg-surface-theme/40 overflow-hidden shadow-xl">
             {isLoadingKeys ? (
               <div className="p-12 text-center text-xs text-text-dim-theme">Cargando API Keys...</div>
@@ -596,7 +924,7 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 4: BLOQUEO MAESTRO DE API ================= */}
+      {/* ================= TAB 6: BLOQUEO MAESTRO DE API ================= */}
       {activeTab === "apilock" && (
         <div className="space-y-6 animate-fade-in">
           <div className="p-6 md:p-8 rounded-3xl border border-rose-500/30 bg-gradient-to-br from-rose-950/30 via-slate-900/90 to-surface-theme backdrop-blur-xl space-y-6 shadow-2xl">
@@ -623,7 +951,6 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
-            {/* Lock Settings Form */}
             <div className="space-y-4 max-w-2xl">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-text-dim-theme mb-2">
@@ -664,7 +991,122 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= MODAL DE CREACIÓN DE API KEY ================= */}
+      {/* ================= MODAL DETALLES DEL USUARIO ================= */}
+      {selectedUserDetail && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-theme border border-border-theme rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl animate-fade-in relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border-theme/40 pb-3">
+              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-amber-400" />
+                Detalles del Usuario
+              </h3>
+              <button
+                onClick={() => setSelectedUserDetail(null)}
+                className="text-text-dim-theme hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {userRoleSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>{userRoleSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Profile Avatar Header */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-bg-theme/60 border border-border-theme/40">
+              <img
+                src={selectedUserDetail.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"}
+                alt={selectedUserDetail.name}
+                className="w-16 h-16 rounded-full object-cover border-2 border-amber-400 shrink-0"
+              />
+              <div className="space-y-1 min-w-0 flex-1">
+                <h4 className="text-base font-black text-white truncate">{selectedUserDetail.name}</h4>
+                <p className="text-xs text-text-dim-theme truncate">{selectedUserDetail.email}</p>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border leading-none ${
+                    selectedUserDetail.role === "Superusuario"
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                      : "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                  }`}>
+                    {selectedUserDetail.role}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Change Role Section */}
+            <div className="space-y-2 p-4 rounded-xl bg-surface-hover-theme/40 border border-border-theme/30">
+              <label className="block text-xs font-bold text-white uppercase tracking-wider">
+                Cambiar Rol de Usuario (Gestión Superusuario)
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedUserDetail.role}
+                  onChange={(e) => handleUpdateUserRole(selectedUserDetail.id, e.target.value as any)}
+                  disabled={isUpdatingUserRole}
+                  className="flex-1 text-xs px-3 py-2 rounded-xl bg-bg-theme border border-border-theme text-white outline-none cursor-pointer"
+                >
+                  <option value="Superusuario">Superusuario (Acceso Total)</option>
+                  <option value="Administrador">Administrador</option>
+                  <option value="Editor">Editor</option>
+                  <option value="Visor">Visor</option>
+                </select>
+              </div>
+            </div>
+
+            {/* User Metadata Fields */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-bg-theme/40 border border-border-theme/30 space-y-0.5">
+                <span className="text-[10px] font-bold text-text-dim-theme uppercase block">ID de Usuario</span>
+                <span className="font-mono text-white text-[11px] break-all">{selectedUserDetail.id}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-bg-theme/40 border border-border-theme/30 space-y-0.5">
+                <span className="text-[10px] font-bold text-text-dim-theme uppercase block">Proveedor Auth0</span>
+                <span className="font-mono text-amber-300 text-[11px] break-all">
+                  {selectedUserDetail.sub || "Sin Sub ID (Local)"}
+                </span>
+              </div>
+            </div>
+
+            {/* Equipos Pertenecientes */}
+            <div className="space-y-2">
+              <h5 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-cyan-400" />
+                Equipos Asociados
+              </h5>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {teams.filter(t => t.ownerEmail === selectedUserDetail.email || t.members.some(m => m.email === selectedUserDetail.email)).length === 0 ? (
+                  <p className="text-xs text-text-dim-theme italic">No pertenece a ningún equipo aún.</p>
+                ) : (
+                  teams
+                    .filter(t => t.ownerEmail === selectedUserDetail.email || t.members.some(m => m.email === selectedUserDetail.email))
+                    .map(t => (
+                      <div key={t.id} className="p-2.5 rounded-lg bg-bg-theme/60 border border-border-theme/40 flex items-center justify-between text-xs">
+                        <span className="font-bold text-white">{t.name}</span>
+                        <span className="text-[10px] text-text-dim-theme">
+                          {t.ownerEmail === selectedUserDetail.email ? "Propietario" : "Miembro"}
+                        </span>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedUserDetail(null)}
+              className="w-full py-2.5 rounded-xl bg-surface-hover-theme text-white text-xs font-bold cursor-pointer"
+            >
+              Cerrar Detalles
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL CREACIÓN API KEY ================= */}
       {isCreateKeyOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-surface-theme border border-border-theme rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-fade-in relative">

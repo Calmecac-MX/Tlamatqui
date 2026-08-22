@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.40 (Frontend) / v2.5.31 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **superadmin:** añadir consola exclusiva de salud, monitoreo, BD, API keys y bloqueo maestro de API (v2.5.39/v2.5.31) (`c1eafeb`)
+
 ## [v2.5.39 (Frontend) / v2.5.31 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades
