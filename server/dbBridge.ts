@@ -6,13 +6,23 @@ import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
 import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, ApiKeyItem, SystemHealthData } from "./types.js";
 import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
 
-// Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo)
+// Caché en memoria RAM para archivos JSON (evita releer de disco e invalidar cifrado AES en cada consulta)
+const jsonMemoryCache = new Map<string, { data: any; mtime: number }>();
+
+// Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo y caché RAM)
 async function readJsonAsync<T>(filePath: string, fallback: T): Promise<T> {
   try {
     if (fs.existsSync(filePath)) {
+      const stats = await fsPromises.stat(filePath);
+      const cached = jsonMemoryCache.get(filePath);
+      if (cached && cached.mtime === stats.mtimeMs) {
+        return cached.data as T;
+      }
       const content = await fsPromises.readFile(filePath, "utf-8");
       const rawData = JSON.parse(content);
-      return decryptData(rawData);
+      const decrypted = decryptData(rawData);
+      jsonMemoryCache.set(filePath, { data: decrypted, mtime: stats.mtimeMs });
+      return decrypted;
     }
   } catch (error) {
     console.error(`Error al leer archivo JSON asíncrono ${filePath}:`, error);
@@ -24,10 +34,13 @@ async function writeJsonAsync<T>(filePath: string, data: T): Promise<void> {
   try {
     const encryptedData = encryptData(data);
     await fsPromises.writeFile(filePath, JSON.stringify(encryptedData, null, 2), "utf-8");
+    const stats = await fsPromises.stat(filePath);
+    jsonMemoryCache.set(filePath, { data, mtime: stats.mtimeMs });
   } catch (error) {
     console.error(`Error al escribir archivo JSON asíncrono ${filePath}:`, error);
   }
 }
+
 
 // File storage paths (for JSON fallback)
 const DATA_DIR = path.join(process.cwd(), "data");

@@ -14,10 +14,11 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom'],
+            icons: ['lucide-react'],
             charts: ['recharts'],
             utils: ['jspdf', 'gsap', 'motion']
           }
+
         }
       }
     },

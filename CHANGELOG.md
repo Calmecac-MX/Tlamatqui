@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.46 (Frontend) / v2.5.44 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **email:** integrar servicio de envio de correos via brevo api v3 (`e2c2548`)
+
 ## [v2.5.45 (Frontend) / v2.5.43 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import RealTimeDashboard from "./RealTimeDashboard";
 import GlobalDashboard from "./GlobalDashboard";
-import TeamDashboard from "./TeamDashboard";
-import SuperAdminDashboard from "./SuperAdminDashboard";
+
+const TeamDashboard = lazy(() => import("./TeamDashboard"));
+const SuperAdminDashboard = lazy(() => import("./SuperAdminDashboard"));
+
 import { 
   Plus, Edit, Trash2, Eye, Copy, Save, Sparkles, AlertTriangle, 
   Settings, User, Phone, Mail, Link as LinkIcon, DollarSign, 
@@ -2338,46 +2340,61 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   isDarkMode={isDarkMode}
                 />
               ) : adminTab === "team" ? (
-                <TeamDashboard 
-                  activeTeam={activeTeam}
-                  onUpdateTeam={handleUpdateTeam}
-                  onDeleteTeam={handleDeleteTeam}
-                  reports={reports}
-                  isDarkMode={isDarkMode}
-                  currentUserEmail={userEmail}
-                  currentUserRole={userRole}
-                  subTab={teamSubTab}
-                  onSubTabChange={setTeamSubTab}
-                />
+                <Suspense fallback={
+                  <div className="p-12 text-center text-text-dim-theme text-xs flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-accent-theme" />
+                    <span>Cargando gestión de equipo...</span>
+                  </div>
+                }>
+                  <TeamDashboard 
+                    activeTeam={activeTeam}
+                    onUpdateTeam={handleUpdateTeam}
+                    onDeleteTeam={handleDeleteTeam}
+                    reports={reports}
+                    isDarkMode={isDarkMode}
+                    currentUserEmail={userEmail}
+                    currentUserRole={userRole}
+                    subTab={teamSubTab}
+                    onSubTabChange={setTeamSubTab}
+                  />
+                </Suspense>
               ) : adminTab === "superadmin" ? (
-                <SuperAdminDashboard
-                  isDarkMode={isDarkMode}
-                  userRole={userRole || authUser?.role}
-                  userEmail={userEmail}
-                  adminText={adminText}
-                  setAdminText={setAdminText}
-                  adminLogo={adminLogo}
-                  setAdminLogo={setAdminLogo}
-                  adminLogo2={adminLogo2}
-                  setAdminLogo2={setAdminLogo2}
-                  adminLogo3={adminLogo3}
-                  setAdminLogo3={setAdminLogo3}
-                  logoType={logoType}
-                  setLogoType={setLogoType}
-                  logoText={logoText}
-                  setLogoText={setLogoText}
-                  globalEmail={globalEmail}
-                  setGlobalEmail={setGlobalEmail}
-                  customDomain={customDomain}
-                  setCustomDomain={setCustomDomain}
-                  domainVerified={domainVerified}
-                  domainVerificationToken={domainVerificationToken}
-                  onSaveConfig={handleSaveConfig}
-                  isSavingConfig={isSavingConfig}
-                  onVerifyDomainDNS={handleVerifyDomainDNS}
-                  verifyingDomainConfig={verifyingDomainConfig}
-                />
+                <Suspense fallback={
+                  <div className="p-12 text-center text-text-dim-theme text-xs flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-accent-theme" />
+                    <span>Cargando panel de superusuario...</span>
+                  </div>
+                }>
+                  <SuperAdminDashboard
+                    isDarkMode={isDarkMode}
+                    userRole={userRole || authUser?.role}
+                    userEmail={userEmail}
+                    adminText={adminText}
+                    setAdminText={setAdminText}
+                    adminLogo={adminLogo}
+                    setAdminLogo={setAdminLogo}
+                    adminLogo2={adminLogo2}
+                    setAdminLogo2={setAdminLogo2}
+                    adminLogo3={adminLogo3}
+                    setAdminLogo3={setAdminLogo3}
+                    logoType={logoType}
+                    setLogoType={setLogoType}
+                    logoText={logoText}
+                    setLogoText={setLogoText}
+                    globalEmail={globalEmail}
+                    setGlobalEmail={setGlobalEmail}
+                    customDomain={customDomain}
+                    setCustomDomain={setCustomDomain}
+                    domainVerified={domainVerified}
+                    domainVerificationToken={domainVerificationToken}
+                    onSaveConfig={handleSaveConfig}
+                    isSavingConfig={isSavingConfig}
+                    onVerifyDomainDNS={handleVerifyDomainDNS}
+                    verifyingDomainConfig={verifyingDomainConfig}
+                  />
+                </Suspense>
               ) : adminTab === "profile" ? (
+
               <div className="space-y-8 animate-fade-in relative">
                 <div className="flex flex-col gap-6 max-w-3xl">
                   {/* Edit Fields Form */}

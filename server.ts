@@ -10,6 +10,8 @@ import express, { Request, Response } from "express";
 import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
+import zlib from "node:zlib";
+
 import {
   initializeDatabase,
   getDbConfig,
@@ -117,8 +119,40 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-// Habilitar parser JSON con límite extendido para capturar datos de reportes
-app.use(express.json({ limit: "50mb" }));
+// Middleware de compresión Gzip nativa para respuestas API superiores a 1KB
+app.use((req: Request, res: Response, next) => {
+  const acceptEncoding = req.headers["accept-encoding"] || "";
+  if (!acceptEncoding.includes("gzip")) {
+    return next();
+  }
+
+  const originalSend = res.send;
+  res.send = function (body: any): Response {
+    if (res.headersSent) {
+      return originalSend.call(this, body);
+    }
+    if (typeof body === "string" || Buffer.isBuffer(body)) {
+      const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body);
+      if (buffer.length > 1024) {
+        try {
+          const compressed = zlib.gzipSync(buffer);
+          res.setHeader("Content-Encoding", "gzip");
+          res.setHeader("Content-Length", compressed.length);
+          return originalSend.call(this, compressed);
+        } catch (e) {
+          console.error("Error al comprimir respuesta Gzip:", e);
+        }
+      }
+    }
+    return originalSend.call(this, body);
+  };
+
+  next();
+});
+
+// Habilitar parser JSON optimizado (límite 15MB suficiente para reportes con imágenes/PDFs)
+app.use(express.json({ limit: "15mb" }));
+
 
 // Middleware para validación de token secreto cliente-servidor
 app.use(verifyApiSecretToken);
