@@ -47,13 +47,17 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 
-// Configuración de Middleware CORS para comunicación cliente-servidor
+// Configuración avanzada de Middleware CORS para comunicación cliente-servidor desacoplada
+const envOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+  : [];
+
 const frontendOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((o) => o.trim()).filter(Boolean)
   : [];
 
-const allowedOrigins: string[] | boolean = frontendOrigins.length > 0
-  ? frontendOrigins
+const allowedOrigins: string[] | boolean = (envOrigins.length > 0 || frontendOrigins.length > 0)
+  ? Array.from(new Set([...envOrigins, ...frontendOrigins]))
   : true;
 
 const corsOptions: cors.CorsOptions = {

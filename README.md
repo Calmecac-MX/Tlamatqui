@@ -139,6 +139,7 @@ Consulte el archivo [`.env.example`](.env.example) para ver la lista completa. L
 ### Backend (Node.js / Express)
 - `PORT`: Puerto de escucha del servidor Express (por defecto `4000`).
 - `FRONTEND_URL`: URL pública de la aplicación cliente para CORS y redirecciones (`http://localhost:3000`).
+- `CORS_ORIGIN`: Orígenes permitidos (separados por coma) para solicitudes CORS.
 - `DATABASE_URL`: URI de conexión a PostgreSQL (Prisma ORM 7).
 - `ENCRYPTION_KEY`: Clave secreta para cifrado criptográfico AES-256-GCM.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`: Credenciales de correo SMTP.

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.32 (Frontend) / v2.5.26 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **env:** depurar CORS_ORIGIN redundante y consolidar plantilla .env.example (`38198b4`)
+
 ## [v2.5.32 (Frontend) / v2.5.25 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código
