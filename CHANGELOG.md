@@ -4,6 +4,17 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.33 (Frontend) / v2.5.26 (Backend)] - 2026-08-22
+
+### 🐛 Corregido & Bug Fixes
+- **vercel:** eliminar el bloque de funciones redundante para resolver el error de coincidencia de patrones en vercel CLI (`349f3eb`)
+
+### ⚡ Optimización y Rendimiento
+- **build:** fijar version de Node a 24.x y optimizar fragmentacion de chunks en Vite para Vercel (`1a3b6eb`)
+
+### ♻️ Refactorización de Código
+- **env:** conservar la variable CORS_ORIGIN para configuracion explicita de origenes (`31cc261`)
+
 ## [v2.5.32 (Frontend) / v2.5.26 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código

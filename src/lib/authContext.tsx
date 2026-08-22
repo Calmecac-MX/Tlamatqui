@@ -100,6 +100,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           user: authUser,
           loginWithRedirect: async () => {
             await auth0.loginWithRedirect({
+              appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname },
               authorizationParams: {
                 redirect_uri: window.location.origin
               }
@@ -137,6 +138,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           if (isAuth0Configured) {
             demoLogout();
             await auth0.loginWithRedirect({
+              appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname },
               authorizationParams: {
                 redirect_uri: window.location.origin
               }
@@ -169,6 +171,11 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
 export function Auth0ProviderWrapper({ children }: { children: React.ReactNode }) {
   const redirectUri = typeof window !== "undefined" ? window.location.origin : "";
 
+  const onRedirectCallback = (appState?: { returnTo?: string }) => {
+    const targetUrl = appState?.returnTo || "/tlachialoyan";
+    window.history.replaceState({}, document.title, targetUrl);
+  };
+
   if (isAuth0Configured) {
     return (
       <Auth0Provider
@@ -178,7 +185,9 @@ export function Auth0ProviderWrapper({ children }: { children: React.ReactNode }
           redirect_uri: redirectUri,
           ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {})
         }}
+        onRedirectCallback={onRedirectCallback}
         cacheLocation="localstorage"
+        useRefreshTokens={true}
       >
         <InnerAuthProvider>{children}</InnerAuthProvider>
       </Auth0Provider>

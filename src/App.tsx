@@ -56,12 +56,15 @@ function MainAppRouter() {
       const reportId = params.get("report");
       const sharedParam = params.get("shared") === "true";
       const inviteToken = params.get("inviteTeam");
+      const hasAuthParams = params.has("code") || params.has("state") || params.has("error");
+
       setViewingReportId(reportId);
       setIsSharedMode(sharedParam);
       setInviteTeamToken(inviteToken);
 
-      // Sincronizar slug /tlachialoyan cuando se accede a la administración
-      if (!reportId && !inviteToken && window.location.pathname === "/") {
+      // Sincronizar slug /tlachialoyan cuando se accede a la administración.
+      // IMPORTANTE: No modificar la URL ni sobreescribir los parámetros si Auth0 está devolviendo el callback (?code=...&state=...)
+      if (!reportId && !inviteToken && window.location.pathname === "/" && !hasAuthParams) {
         window.history.replaceState({}, "", "/tlachialoyan");
       }
     };
