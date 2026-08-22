@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;550;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-color: #0A0A0B;
+  --surface-color: #161618;
+  --surface-hover-color: #1C1C1F;
+  --card-color: #121214;
+  --accent-color: #6366F1;
+  --text-main-color: #F9FAFB;
+  --text-dim-color: #9CA3AF;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-accent-color: rgba(99, 102, 241, 0.3);
+  --green-color: #10B981;
+  --yellow-color: #F59E0B;
+  --red-color: #EF4444;
+}
+
+.light {
+  --bg-color: #FAFAFB;
+  --surface-color: #FFFFFF;
+  --surface-hover-color: #F4F4F7;
+  --card-color: #FFFFFF;
+  --accent-color: #4F46E5;
+  --text-main-color: #09090B;
+  --text-dim-color: #64748B;
+  --border-color: rgba(9, 9, 11, 0.08);
+  --border-accent-color: rgba(79, 70, 229, 0.3);
+  --green-color: #059669;
+  --yellow-color: #D97706;
+  --red-color: #DC2626;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-bg-theme: var(--bg-color);
+  --color-surface-theme: var(--surface-color);
+  --color-surface-hover-theme: var(--surface-hover-color);
+  --color-card-theme: var(--card-color);
+  --color-accent-theme: var(--accent-color);
+  --color-text-main-theme: var(--text-main-color);
+  --color-text-dim-theme: var(--text-dim-color);
+  --color-border-theme: var(--border-color);
+  --color-border-accent-theme: var(--border-accent-color);
+  --color-green-theme: var(--green-color);
+  --color-yellow-theme: var(--yellow-color);
+  --color-red-theme: var(--red-color);
+}
+
+/* Base style resets */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-color);
+  color: #FFFFFF;
+}
+
+.light body {
+  color: #09090B;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+}
+
+/* Sophisticated Dark specific component styles */
+.logo-circle {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent-color), #818CF8);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.report-nav {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-color);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.nav-item {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim-color);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-item.active {
+  background: var(--bg-color);
+  color: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.light .nav-item.active {
+  color: var(--accent-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card-theme {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.stat-box-theme {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-color);
+}
+
+.light .stat-box-theme {
+  background: rgba(0,0,0,0.015);
+}
+
+.stat-label-theme {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim-color);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.stat-value-theme {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.stack-item-theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.stack-item-theme:last-child {
+  border-bottom: none;
+}
+
+.stoplight-theme {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.comparison-table-theme {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.comparison-table-theme th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-dim-color);
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.comparison-table-theme td {
+  padding: 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pill-tiendanube-theme {
+  background: rgba(99,102,241,0.1);
+  color: var(--accent-color);
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(99,102,241,0.2);
+}
+
+.slider-track-theme {
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 3px;
+  position: relative;
+}
+
+.savings-highlight-theme {
+  background: linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent);
+  border-left: 4px solid var(--green-color);
+  padding: 16px;
+  border-radius: 0 12px 12px 0;
+}
+
+/* Custom gorgeous scrollbar for report presentations - hidden */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+* {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Landscape PDF Presentation Print Styles */
+.print-presentation {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+
+  html, body, #root {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #0A0A0B !important;
+    color: #FFFFFF !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide the web SPA interactive container and controls completely */
+  .no-print,
+  nav,
+  header,
+  aside,
+  button,
+  footer,
+  .report-nav,
+  .tooltip-container {
+    display: none !important;
+  }
+
+  /* Show presentation print deck full width and height */
+  .print-presentation {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #0A0A0B !important;
+  }
+
+  /* Page break for each landscape presentation slide */
+  .print-slide {
+    page-break-before: auto !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
+    box-sizing: border-box !important;
+    padding: 2.25rem 3.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    overflow: hidden !important;
+    background-color: #0A0A0B !important;
+    color: #FFFFFF !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

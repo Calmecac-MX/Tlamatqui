@@ -1,0 +1,17 @@
+{
+  "adminLogoUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+  "adminTextUrl": "Tlamatqui Diagnostics",
+  "appUrl": "http://localhost:3000",
+  "defaultContactEmail": "cesar.ayar19@gmail.com",
+  "defaultContactWhatsapp": "5512345678",
+  "customExchangeRate": 18.5,
+  "userName": "César Ayar",
+  "userEmail": "cesar.ayar19@gmail.com",
+  "userRole": "Administrador",
+  "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80",
+  "metricsUpdateInterval": 3000,
+  "brandCard2Title": "Socio Consultor Autorizado",
+  "brandCard2Desc": "Especialistas de confianza en migración, diseño UX/UI y optimización técnica para asegurar una transición fluida sin perder SEO.",
+  "brandCard2Logo": "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=120&q=80",
+  "brandCard2Link": "mailto:cesar.ayar19@gmail.com"
+}

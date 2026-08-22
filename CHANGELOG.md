@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.30 (Frontend) / v2.5.20 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** integrar servicio y widget modal de Auth0 Lock (`a6dace1`)
+
+### 📚 Documentación
+- **auth:** actualizar documentacion e instalacion de paquetes de auth0-lock (`1332813`)
+
 ## [v2.5.29 (Frontend) / v2.5.19 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

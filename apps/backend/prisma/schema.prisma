@@ -1,0 +1,258 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS (Representing exact model types)
+// ==========================================
+
+enum Role {
+  Administrador
+  Editor
+  Visor
+}
+
+enum ShopifyPlan {
+  basic
+  grow
+  advanced
+  plus
+  custom
+}
+
+enum TiendanubePlan {
+  basic
+  tiendanube
+  advanced
+  evolution
+}
+
+enum CostType {
+  exact
+  range
+}
+
+enum Currency {
+  MXN
+  USD
+}
+
+enum Semaphore {
+  green
+  yellow
+  red
+}
+
+enum LogoType {
+  text
+  logo
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+/// Configuration model representing the global diagnostic panel parameters.
+model Config {
+  id                     String @id @default("default")
+  adminLogoUrl           String
+  adminLogo2Url          String? @default("")
+  adminLogo3Url          String? @default("")
+  adminTextUrl           String
+  appUrl                 String
+  defaultContactEmail    String
+  defaultContactWhatsapp String
+  customExchangeRate     Float
+  userName               String
+  userEmail              String
+  userRole               Role   @default(Administrador)
+  userAvatar             String
+  metricsUpdateInterval  Int
+  brandCard2Title        String?
+  brandCard2Desc         String?
+  brandCard2Logo         String?
+  brandCard2Link         String?
+  customDomain           String? @default("")
+  domainVerificationToken String? @default("")
+  domainVerified         Boolean @default(false)
+  domainVerifiedAt       DateTime?
+}
+
+/// Team model representing an agency or team workspace.
+model Team {
+  id         String       @id
+  name       String
+  image      String?
+  ownerName  String
+  ownerEmail String
+  members     TeamMember[]
+  reports     Report[]
+  inviteToken String?      @default("")
+  inviteRole  Role         @default(Visor)
+  createdAt   DateTime     @default(now())
+}
+
+/// Individual members belonging to a team.
+model TeamMember {
+  id       String  @id
+  name     String
+  email    String
+  role     Role    @default(Visor)
+  avatar   String?
+  teamId   String
+  team     Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+}
+
+/// Standard templates used to pre-populate comparison tables.
+model ComparisonTemplate {
+  id   String                  @id
+  name String
+  rows ComparisonTemplateRow[]
+}
+
+/// Rows belonging to a standard comparison template.
+model ComparisonTemplateRow {
+  id         String             @id
+  variable   String
+  shopify    String
+  tiendanube String
+  pillText   String
+  templateId String
+  template   ComparisonTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+/// Full diagnostic reports prepared for e-commerce clients.
+model Report {
+  id                     String                 @id
+  name                   String
+  logo                   String?
+  tagline                String?
+  fugasCantidad          Int?
+  fugasRangoMin          Float?
+  fugasRangoMax          Float?
+  visitasMensuales       Int
+  gmv                    Float
+  shopifyFee             Float?
+  msi                    String?
+  businessUrl            String?
+  shopifyPlan            ShopifyPlan            @default(grow)
+  shopifyPlanCustomFee   Float?
+  shopifyPlanCustomPrice Float?
+  shopifyAppsCostUSD     Float?
+  shopifyAppsCostMXN     Float?
+  tiendanubePlan         TiendanubePlan         @default(evolution)
+  tools                  ReportTool[]
+  comparisonRows         ReportComparisonRow[]
+  contactEmail           String
+  contactWhatsapp        String
+  adminLogos             Json                   // Array of logo URLs: string[]
+  brandCard1Title        String?
+  brandCard1Desc         String?
+  brandCard1Logo         String?
+  brandCard1Link         String?
+  brandCard2Title        String?
+  brandCard2Desc         String?
+  brandCard2Logo         String?
+  brandCard2Link         String?
+  finalSlideMainLogo     String?
+  createdAt              DateTime               @default(now())
+  viewCount              Int                    @default(0)
+  openCount              Int                    @default(0)
+  uniqueVisitors         Int                    @default(0)
+  uniqueVisitorIds       Json?                  // Array of string visitor IDs: string[]
+  interactions           ReportInteraction?
+  teamId                 String?
+  team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([teamId])
+}
+
+/// E-commerce app/tools diagnosed within a specific report as leakage points.
+model ReportTool {
+  id          String    @id
+  name        String
+  category    String
+  costType    CostType  @default(exact)
+  costExact   Float     @default(0)
+  costMin     Float     @default(0)
+  costMax     Float     @default(0)
+  currency    Currency  @default(USD)
+  semaphore   Semaphore @default(green)
+  url         String?
+  description String?
+  logo        String?
+  reportId    String
+  report      Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+/// Active comparison table rows configured for a specific report.
+model ReportComparisonRow {
+  id         String @id
+  variable   String
+  shopify    String
+  tiendanube String
+  pillText   String
+  reportId   String
+  report     Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+/// Real-time interaction log counters and metrics for an individual report.
+model ReportInteraction {
+  id                     String @id @default(uuid())
+  reportId               String @unique
+  report                 Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  slideViews             Json   // Record<string, number> mapping slide name to view count
+  whatsappClicks         Int    @default(0)
+  toolClicks             Int    @default(0)
+  calculatorInteractions Int    @default(0)
+  timeSpentSeconds       Int    @default(0)
+}
+
+/// Partner brand and team configuration model.
+model Partner {
+  id          String          @id @default("default")
+  name        String          @default("Socio Principal")
+  logo        String          @default("https://logo.clearbit.com/tiendanube.com")
+  description String          @default("Socio Estratégico en Migraciones y Optimización")
+  link        String?         @default("https://www.tiendanube.com.mx")
+  members     PartnerMember[]
+}
+
+/// Members belonging to a partner brand with specific roles.
+model PartnerMember {
+  id        String  @id @default(uuid())
+  name      String
+  email     String
+  role      String  @default("Lector") // "Lector" or "Lector y Comentarista"
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+}
+
+/// Logo configuration model to set logo type (text or logo), logo content/file, and global contact email.
+model LogoConfig {
+  id          String   @id @default("default")
+  logoType    LogoType @default(text)
+  logoText    String?
+  logoFile    String?
+  globalEmail String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

@@ -1,0 +1,155 @@
+[
+  {
+    "id": "ginebra-evolucion",
+    "name": "Ginebra",
+    "logo": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+    "tagline": "Hemos detectado que estás perdiendo margen operativo en comisiones ocultas y aplicaciones redundantes.",
+    "fugasCantidad": 4,
+    "fugasRangoMin": 12000,
+    "fugasRangoMax": 45000,
+    "visitasMensuales": 45000,
+    "gmv": 450000,
+    "shopifyFee": 14900,
+    "msi": "3, 6, 9 meses sin intereses",
+    "shopifyPlan": "grow",
+    "shopifyPlanCustomFee": 1,
+    "shopifyPlanCustomPrice": 52,
+    "shopifyAppsCostUSD": 434.97,
+    "tiendanubePlan": "evolution",
+    "tools": [
+      {
+        "id": "tool-1",
+        "name": "Klaviyo",
+        "category": "Marketing & Automatización",
+        "costType": "exact",
+        "costExact": 120,
+        "costMin": 0,
+        "costMax": 0,
+        "currency": "USD",
+        "semaphore": "yellow",
+        "url": "https://www.klaviyo.com",
+        "description": "Automatización de emails, flujos de carritos abandonados y segmentación.",
+        "logo": "https://logo.clearbit.com/klaviyo.com"
+      },
+      {
+        "id": "tool-2",
+        "name": "Loox",
+        "category": "Reviews & Social Proof",
+        "costType": "range",
+        "costExact": 0,
+        "costMin": 29.99,
+        "costMax": 99.99,
+        "currency": "USD",
+        "semaphore": "green",
+        "url": "https://loox.io",
+        "description": "Prueba social interactiva con fotos de clientes comprando. Reemplazable nativamente en Tiendanube con apps gratuitas.",
+        "logo": "https://logo.clearbit.com/loox.io"
+      },
+      {
+        "id": "tool-3",
+        "name": "Infinite Options",
+        "category": "Conversión & Checkout",
+        "costType": "exact",
+        "costExact": 14.99,
+        "costMin": 0,
+        "costMax": 0,
+        "currency": "USD",
+        "semaphore": "green",
+        "url": "https://apps.shopify.com/infinite-options",
+        "description": "Personalización avanzada de variantes. Tiendanube permite propiedades de variante infinitas integradas.",
+        "logo": "https://logo.clearbit.com/shopcircle.co"
+      },
+      {
+        "id": "tool-4",
+        "name": "Bold Subscriptions",
+        "category": "Suscripciones",
+        "costType": "range",
+        "costExact": 0,
+        "costMin": 49.99,
+        "costMax": 199.99,
+        "currency": "USD",
+        "semaphore": "red",
+        "url": "https://boldcommerce.com",
+        "description": "Módulo de compras recurrentes. Representa costo oculto y cargos extras de pasarela.",
+        "logo": "https://logo.clearbit.com/boldcommerce.com"
+      }
+    ],
+    "comparisonRows": [
+      {
+        "id": "row-1",
+        "variable": "Facturación",
+        "shopify": "Pesificada en USD + 16% IVA",
+        "tiendanube": "100% Pesificada en MXN Factura Local",
+        "pillText": "Ahorro Fiscal"
+      },
+      {
+        "id": "row-2",
+        "variable": "Soporte",
+        "shopify": "Ticket / Chat por bot (inglés)",
+        "tiendanube": "Soporte 1-1 en español vía WhatsApp local",
+        "pillText": "Soporte Humano"
+      },
+      {
+        "id": "row-3",
+        "variable": "Servidor",
+        "shopify": "Estabilidad global estándar",
+        "tiendanube": "Infraestructura en la nube optimizada para LatAm",
+        "pillText": "AWS Infra"
+      },
+      {
+        "id": "row-4",
+        "variable": "Punto de Venta",
+        "shopify": "POS Pro con cobro extra por sucursal",
+        "tiendanube": "Integraciones locales nativas sin costo extra",
+        "pillText": "Integración POS"
+      },
+      {
+        "id": "row-5",
+        "variable": "Comisión de transacción",
+        "shopify": "Cobro de 1.0% por transacción",
+        "tiendanube": "0% comisión por transacción en todos los planes",
+        "pillText": "0% Comisión"
+      },
+      {
+        "id": "row-6",
+        "variable": "MSI",
+        "shopify": "Configuración a través de apps y comisiones extra",
+        "tiendanube": "Configuración nativa directa en pasarela local",
+        "pillText": "MSI Nativos"
+      }
+    ],
+    "contactEmail": "cesar.ayar19@gmail.com",
+    "contactWhatsapp": "5512345678",
+    "adminLogos": [
+      "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
+    ],
+    "brandCard1Title": "Tiendanube",
+    "brandCard1Desc": "La plataforma de comercio electrónico líder en América Latina con más de 120,000 tiendas activas y Pago Nube con 0% comisión por transacción.",
+    "brandCard1Logo": "https://logo.clearbit.com/tiendanube.com",
+    "brandCard1Link": "https://www.tiendanube.com.mx",
+    "brandCard2Title": "Socio Consultor Autorizado",
+    "brandCard2Desc": "Especialistas de confianza en migración, diseño UX/UI y optimización técnica para asegurar una transición fluida sin perder SEO.",
+    "brandCard2Logo": "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=120&q=80",
+    "brandCard2Link": "mailto:cesar.ayar19@gmail.com",
+    "finalSlideMainLogo": "https://logo.clearbit.com/tiendanube.com",
+    "createdAt": "2026-07-08T10:00:00.000Z",
+    "viewCount": 24,
+    "openCount": 0,
+    "uniqueVisitors": 1,
+    "uniqueVisitorIds": [
+      "vstr_1k2usnpa5bgh"
+    ],
+    "interactions": {
+      "slideViews": {
+        "Portada": 16
+      },
+      "whatsappClicks": 0,
+      "toolClicks": 0,
+      "calculatorInteractions": 12,
+      "timeSpentSeconds": 28190
+    },
+    "teamId": "team-default"
+  }
+]
