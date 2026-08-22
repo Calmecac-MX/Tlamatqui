@@ -16,12 +16,12 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 ---
 
 ## 2. Uso Obligatorio de Skills Instaladas
-Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para ver las 21 skills y sus directivas de ejecución:
+Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para ver las 22 skills y sus directivas de ejecución:
 - `investigate-first`: Diagnóstico con evidencia previa.
 - `surgical-patch`: Correcciones quirúrgicas de bugs.
 - `safe-refactor`: Refactorización con garantía de comportamiento.
 - `lean-build`: Construcción delgada de nuevas características.
-- `migration`: Migraciones seguras y reversibles.
+- `migration` / `prisma`: Migraciones seguras, esquemas de Prisma ORM 7 y despliegue de DB.
 - `verify-and-stop`: Verificación con linters y pruebas antes de concluir.
 - `author-auth0-skill`: Patrones y guías de Auth0.
 - `commit-writer`: Guía para redacción de commits estructurados bajo Conventional Commits y Release Please.

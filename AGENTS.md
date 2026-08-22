@@ -49,7 +49,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 
 ## 3. 🧰 Matriz de Skills Instaladas y Directrices de Uso
 
-El repositorio cuenta con 21 skills especializadas en `.agents/skills/`. A continuación se detalla su uso obligatorio según el flujo de trabajo:
+El repositorio cuenta con 22 skills especializadas en `.agents/skills/`. A continuación se detalla su uso obligatorio según el flujo de trabajo:
 
 | Categoría | Skill | Cuándo Invocar / Activar | Directiva de Ejecución |
 | :--- | :--- | :--- | :--- |
@@ -57,7 +57,7 @@ El repositorio cuenta con 21 skills especializadas en `.agents/skills/`. A conti
 | **Parches** | `surgical-patch` | Solución de bugs específicos o pequeños ajustes de comportamiento. | Modificar el código en la capa más estrecha posible sin alterar código no relacionado. |
 | **Refactor** | `safe-refactor` | Reestructuración de módulos, extracción de componentes o refactorización. | Preservar el comportamiento funcional y validar con `npm run lint`. |
 | **Nuevas Features** | `lean-build` | Desarrollo de nuevos endpoints, páginas o componentes. | Evitar sobre-ingeniería, reutilizar librerías existentes y establecer un límite de alcance claro. |
-| **Migraciones** | `migration` | Cambios en esquemas de Prisma DB, variables de entorno o contratos de API. | Diseñar migraciones reversibles con estrategia de rollback y compatibilidad hacia atrás. |
+| **Migraciones / DB** | `migration` / `prisma` | Cambios en esquemas de Prisma DB, generación de clientes, `db push` o migraciones. | Usar `npx prisma validate/generate/db push/migrate dev` y mantener compatibilidad hacia atrás. |
 | **Verificación** | `verify-and-stop` | Finalización de tareas, comprobación de builds o auditoría de entregables. | Probar que el código compila y funciona, reportar evidencias y detener la ejecución. |
 | **Auth0** | `author-auth0-skill` | Creación o actualización de documentación/patrones Auth0 en React o Express. | Seguir la estructura estandarizada de rutas, componentes y validaciones Auth0. |
 | **Eficiencia Tokens** | `caveman` | Reducción de consumo de tokens durante la interacción. | Hablar de forma concisa manteniendo 100% la precisión técnica. |
