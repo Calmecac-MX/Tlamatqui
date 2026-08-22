@@ -4,6 +4,12 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.36 (Frontend) / v2.5.28 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **config:** habilitar arquitectura de dominio único Same-Origin para API REST y Frontend (v2.5.35/v2.5.28) (`f6224e9`)
+- **auth:** agregar endpoint GET /api/auth/callback y soporte de rutas de callback (v2.5.35/v2.5.28) (`cad72fa`)
+
 ## [v2.5.35 (Frontend) / v2.5.28 (Backend)] - 2026-08-22
 
 ### 🐛 Corregido & Bug Fixes

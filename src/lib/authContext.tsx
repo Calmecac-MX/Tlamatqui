@@ -49,11 +49,11 @@ const isAuth0Configured = Boolean(
 
 // Usuario de demostración por defecto
 const DEFAULT_DEMO_USER: AuthUser = {
-  name: "César Ayar",
-  email: "cesar.ayar19@gmail.com",
+  name: "Usuario Demo",
+  email: "demo@tlamatqui.com",
   picture: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
   role: "Administrador",
-  sub: "demo|cesar-ayar-001"
+  sub: "demo|user-001"
 };
 
 function InnerAuthProvider({ children }: { children: React.ReactNode }) {
@@ -97,7 +97,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
   if (isAuth0Configured && !isDemoActive) {
     const authUser: AuthUser | null = auth0.user
       ? {
-          name: auth0.user.name || auth0.user.nickname || "Usuario Auth0",
+          name: auth0.user.name || auth0.user.nickname || (auth0.user.email ? auth0.user.email.split("@")[0] : "Usuario Auth0"),
           email: auth0.user.email || "",
           picture: auth0.user.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
           role: (auth0.user as any)["https://evolucion.mx/role"] || "Administrador",

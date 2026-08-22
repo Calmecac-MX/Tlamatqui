@@ -243,20 +243,42 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [isDraggingFavicon, setIsDraggingFavicon] = useState<boolean>(false);
   const [faviconError, setFaviconError] = useState<string | null>(null);
 
-  // User Profile States
-  const [userName, setUserName] = useState<string>("César Ayar");
-  const [userEmail, setUserEmail] = useState<string>("cesar.ayar19@gmail.com");
-  const [userRole, setUserRole] = useState<string>("Administrador");
-  const [userAvatar, setUserAvatar] = useState<string>("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
+  // User Profile States (Sincronizado dinámicamente con Auth0 / Modo Multi-usuario)
+  const [userName, setUserName] = useState<string>(() => authUser?.name || "Usuario");
+  const [userEmail, setUserEmail] = useState<string>(() => authUser?.email || "");
+  const [userRole, setUserRole] = useState<string>(() => authUser?.role || "Administrador");
+  const [userAvatar, setUserAvatar] = useState<string>(() => authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
   const [isDraggingAvatar, setIsDraggingAvatar] = useState<boolean>(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
 
   const [savedProfile, setSavedProfile] = useState({
-    name: "César Ayar",
-    email: "cesar.ayar19@gmail.com",
-    role: "Administrador",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
+    name: authUser?.name || "Usuario",
+    email: authUser?.email || "",
+    role: authUser?.role || "Administrador",
+    avatar: authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
   });
+
+  // Sincronizar dinámicamente los datos del perfil cuando el usuario autenticado en Auth0 cambie
+  useEffect(() => {
+    if (authUser) {
+      const activeName = authUser.name || (authUser.email ? authUser.email.split("@")[0] : "Usuario Auth0");
+      const activeEmail = authUser.email || "";
+      const activeRole = authUser.role || "Administrador";
+      const activeAvatar = authUser.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
+
+      setUserName(activeName);
+      setUserEmail(activeEmail);
+      setUserRole(activeRole);
+      setUserAvatar(activeAvatar);
+
+      setSavedProfile({
+        name: activeName,
+        email: activeEmail,
+        role: activeRole,
+        avatar: activeAvatar
+      });
+    }
+  }, [authUser]);
 
   const isProfileModified = 
     userName !== savedProfile.name ||
@@ -467,10 +489,10 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setDomainVerified(Boolean(data.domainVerified));
       setDomainVerifiedAt(data.domainVerifiedAt);
       
-      const loadedName = data.userName || "César Ayar";
-      const loadedEmail = data.userEmail || "cesar.ayar19@gmail.com";
-      const loadedRole = data.userRole || "Administrador";
-      const loadedAvatar = data.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
+      const loadedName = authUser?.name || data.userName || "Usuario";
+      const loadedEmail = authUser?.email || data.userEmail || "";
+      const loadedRole = authUser?.role || data.userRole || "Administrador";
+      const loadedAvatar = authUser?.picture || data.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
 
       setUserName(loadedName);
       setUserEmail(loadedEmail);
@@ -492,7 +514,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           setLogoType(logoData.logoType || "text");
           setLogoText(logoData.logoText || "Evolución Diagnostics");
           setLogoFile(logoData.logoFile || "");
-          setGlobalEmail(logoData.globalEmail || "cesar.ayar19@gmail.com");
+          setGlobalEmail(logoData.globalEmail || authUser?.email || "");
         }
       } catch (err) {
         console.error("Error fetching logo-config", err);
@@ -503,20 +525,20 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setAdminLogo3("");
       setAdminFavicon("/favicon.ico");
       setAdminText("Evolución Diagnostics");
-      setDefaultContactEmail("cesar.ayar19@gmail.com");
+      setDefaultContactEmail(authUser?.email || "");
       setDefaultContactWhatsapp("5512345678");
       setCustomExchangeRate(18.50);
       setMetricsUpdateInterval(3000);
-      setUserName("César Ayar");
-      setUserEmail("cesar.ayar19@gmail.com");
-      setUserRole("Administrador");
-      setUserAvatar("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
+      setUserName(authUser?.name || "Usuario");
+      setUserEmail(authUser?.email || "");
+      setUserRole(authUser?.role || "Administrador");
+      setUserAvatar(authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
       
       setSavedProfile({
-        name: "César Ayar",
-        email: "cesar.ayar19@gmail.com",
-        role: "Administrador",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
+        name: authUser?.name || "Usuario",
+        email: authUser?.email || "",
+        role: authUser?.role || "Administrador",
+        avatar: authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
       });
     }
   };
@@ -2485,8 +2507,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         </div>
                         
                         <div className="space-y-1 w-full min-w-0">
-                          <h3 className="font-bold text-base text-white truncate">{userName || "César Ayar"}</h3>
-                          <p className="text-xs text-text-dim-theme truncate">{userEmail || "cesar.ayar19@gmail.com"}</p>
+                          <h3 className="font-bold text-base text-white truncate">{userName || "Usuario"}</h3>
+                          <p className="text-xs text-text-dim-theme truncate">{userEmail}</p>
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-theme/10 text-accent-theme text-xs font-semibold mt-2 border border-accent-theme/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-accent-theme animate-pulse"></span>
                             {userRole || "Administrador"}
@@ -2526,8 +2548,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                     </div>
                     
                     <div className="space-y-1 w-full min-w-0">
-                      <h3 className="font-bold text-base text-white truncate">{userName || "César Ayar"}</h3>
-                      <p className="text-xs text-text-dim-theme truncate">{userEmail || "cesar.ayar19@gmail.com"}</p>
+                      <h3 className="font-bold text-base text-white truncate">{userName || "Usuario"}</h3>
+                      <p className="text-xs text-text-dim-theme truncate">{userEmail}</p>
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-theme/10 text-accent-theme text-xs font-semibold mt-2 border border-accent-theme/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-accent-theme animate-pulse"></span>
                         {userRole || "Administrador"}
