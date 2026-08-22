@@ -4,7 +4,7 @@
  * Exporta la aplicación Express configurada en server.ts para atender peticiones /api/*.
  */
 
-import app from "../server.ts";
+import app from "../server.js";
 
 export const config = {
   maxDuration: 15,
