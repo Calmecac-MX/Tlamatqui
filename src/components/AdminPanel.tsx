@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import RealTimeDashboard from "./RealTimeDashboard";
 import GlobalDashboard from "./GlobalDashboard";
 import TeamDashboard from "./TeamDashboard";
+import SuperAdminDashboard from "./SuperAdminDashboard";
 import { 
   Plus, Edit, Trash2, Eye, Copy, Save, Sparkles, AlertTriangle, 
   Settings, User, Phone, Mail, Link as LinkIcon, DollarSign, 
@@ -72,7 +73,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [templates, setTemplates] = useState<ComparisonTemplate[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [adminTab, setAdminTab] = useState<"reports" | "dashboard" | "config" | "profile" | "team">("dashboard");
+  const [adminTab, setAdminTab] = useState<"reports" | "dashboard" | "config" | "profile" | "team" | "superadmin">("dashboard");
   const [teamSubTab, setTeamSubTab] = useState<"dashboard" | "members" | "settings" | "partners">("dashboard");
   const [selectedLiveMetricsReport, setSelectedLiveMetricsReport] = useState<Report | null>(null);
 
@@ -1227,6 +1228,30 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   <span>Mi Equipo</span>
                 </button>
 
+                {/* Submenu for Superusuario Central Console */}
+                {(userRole === "Superusuario" || authUser?.role === "Superusuario") && (
+                  <button
+                    onClick={() => {
+                      setAdminTab("superadmin");
+                      setEditingReport(null);
+                      setSelectedLiveMetricsReport(null);
+                      if (window.innerWidth < 768) setIsSidebarExpanded(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                      adminTab === "superadmin" && !editingReport
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-md shadow-amber-500/10"
+                        : "text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10"
+                    }`}
+                    title="Centro de Salud, Monitoreo y API Superusuario"
+                  >
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Centro Superusuario</span>
+                    <span className="ml-auto text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300 border border-amber-500/40">
+                      SU
+                    </span>
+                  </button>
+                )}
+
                 {/* Submenu for team items inside AdminPanel sidebar */}
                 {adminTab === "team" && !editingReport && (
                   <div className="pl-6 pr-2 py-1 space-y-1 ml-4 border-l border-border-theme/40 animate-fade-in">
@@ -2298,6 +2323,12 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   currentUserRole={userRole}
                   subTab={teamSubTab}
                   onSubTabChange={setTeamSubTab}
+                />
+              ) : adminTab === "superadmin" ? (
+                <SuperAdminDashboard
+                  isDarkMode={isDarkMode}
+                  userRole={userRole || authUser?.role}
+                  userEmail={userEmail}
                 />
               ) : adminTab === "profile" ? (
               <div className="space-y-8 animate-fade-in relative">

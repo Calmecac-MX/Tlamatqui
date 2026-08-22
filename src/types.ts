@@ -302,3 +302,49 @@ export interface LogoConfig {
   updatedAt?: string;
 }
 
+/**
+ * Representa una llave de API (API Key) para integraciones externas o programáticas.
+ */
+export interface ApiKeyItem {
+  id: string;
+  name: string;
+  maskedKey: string;
+  rawToken?: string;
+  status: "active" | "revoked";
+  createdByName?: string;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+/**
+ * Métricas de salud, monitoreo y estado de la base de datos para Superusuarios.
+ */
+export interface SystemHealthData {
+  status: "healthy" | "warning" | "degraded";
+  uptimeSeconds: number;
+  memoryUsage: {
+    rssMB: number;
+    heapTotalMB: number;
+    heapUsedMB: number;
+    externalMB: number;
+  };
+  database: {
+    status: "connected" | "disconnected" | "fallback_json";
+    provider: string;
+    latencyMs: number;
+    counts: {
+      reports: number;
+      teams: number;
+      users: number;
+      templates: number;
+    };
+  };
+  serverInfo: {
+    nodeVersion: string;
+    platform: string;
+    environment: string;
+    apiLocked: boolean;
+    lockReason?: string;
+  };
+}
+

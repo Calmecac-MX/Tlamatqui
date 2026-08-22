@@ -269,3 +269,24 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+/// API Key management for external/programmatic API integrations.
+model ApiKey {
+  id            String    @id @default(uuid())
+  name          String
+  keyHash       String    @unique
+  maskedKey     String
+  status        String    @default("active") // "active" | "revoked"
+  createdByName String?
+  lastUsedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+/// Global system settings and operational switches (e.g., API Lock).
+model SystemSetting {
+  id         String   @id @default("default")
+  apiLocked  Boolean  @default(false)
+  lockReason String?  @default("Mantenimiento programado de la API")
+  updatedAt  DateTime @updatedAt
+}
+

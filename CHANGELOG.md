@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.39 (Frontend) / v2.5.31 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** permitir selección de rol en invitaciones con restricción exclusiva para Superusuario (v2.5.38/v2.5.30) (`aa840a1`)
+
 ## [v2.5.38 (Frontend) / v2.5.30 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

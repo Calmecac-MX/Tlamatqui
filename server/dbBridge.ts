@@ -3,7 +3,7 @@ import path from "path";
 import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
-import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount } from "./types.js";
+import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, ApiKeyItem, SystemHealthData } from "./types.js";
 import { encryptData, decryptData } from "./encryptionService.js";
 
 // Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo)
@@ -38,6 +38,8 @@ const LOGO_CONFIG_FILE = path.join(DATA_DIR, "logo_config.json");
 const TEAMS_FILE = path.join(DATA_DIR, "teams.json");
 const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
+const API_KEYS_FILE = path.join(DATA_DIR, "api_keys.json");
+const SYSTEM_SETTINGS_FILE = path.join(DATA_DIR, "system_settings.json");
 
 // Define defaults
 const DEFAULT_CONFIG = {
@@ -1780,5 +1782,238 @@ export async function updateUserRole(userId: string, newRole: "Superusuario" | "
 
   await writeJsonAsync(USERS_FILE, users);
   return users[userIndex];
+}
+
+// ============================================================================
+// FUNCIONALIDADES EXCLUSIVAS DE SUPERUSUARIO: SALUD, MONITOREO Y ACCESO API
+// ============================================================================
+
+/**
+ * Obtiene las métricas en tiempo real del estado de salud del sistema y la base de datos.
+ */
+export async function getSystemHealthStatus(): Promise<SystemHealthData> {
+  const startTime = Date.now();
+  let dbStatus: "connected" | "disconnected" | "fallback_json" = "fallback_json";
+  let dbProvider = "JSON Encrypted Storage Bridge";
+  let dbLatencyMs = 0;
+  let reportCount = 0;
+  let teamCount = 0;
+  let userCount = 0;
+  let templateCount = 0;
+
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        const pingStart = Date.now();
+        await prisma.$queryRaw`SELECT 1`;
+        dbLatencyMs = Date.now() - pingStart;
+        dbStatus = "connected";
+        dbProvider = "PostgreSQL (Prisma ORM)";
+
+        reportCount = await prisma.report.count();
+        teamCount = await prisma.team.count();
+        userCount = await prisma.user.count();
+        templateCount = await prisma.comparisonTemplate.count();
+      } catch (err) {
+        console.error("Prisma health check failed:", err);
+        dbStatus = "disconnected";
+        dbLatencyMs = Date.now() - startTime;
+      }
+    }
+  }
+
+  if (dbStatus !== "connected") {
+    const reports = await readJsonAsync<any[]>(REPORTS_FILE, []);
+    const teams = await readJsonAsync<any[]>(TEAMS_FILE, []);
+    const users = await getDbUsers();
+    const templates = await readJsonAsync<any[]>(TEMPLATES_FILE, []);
+    reportCount = reports.length;
+    teamCount = teams.length;
+    userCount = users.length;
+    templateCount = templates.length;
+    dbLatencyMs = Date.now() - startTime;
+  }
+
+  const mem = process.memoryUsage();
+  const lockInfo = await getApiLockStatus();
+
+  return {
+    status: dbStatus === "disconnected" ? "degraded" : lockInfo.apiLocked ? "warning" : "healthy",
+    uptimeSeconds: Math.floor(process.uptime()),
+    memoryUsage: {
+      rssMB: Math.round((mem.rss / 1024 / 1024) * 100) / 100,
+      heapTotalMB: Math.round((mem.heapTotal / 1024 / 1024) * 100) / 100,
+      heapUsedMB: Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100,
+      externalMB: Math.round(((mem.external || 0) / 1024 / 1024) * 100) / 100
+    },
+    database: {
+      status: dbStatus,
+      provider: dbProvider,
+      latencyMs: dbLatencyMs,
+      counts: {
+        reports: reportCount,
+        teams: teamCount,
+        users: userCount,
+        templates: templateCount
+      }
+    },
+    serverInfo: {
+      nodeVersion: process.version,
+      platform: `${process.platform} ${process.arch}`,
+      environment: process.env.NODE_ENV || "development",
+      apiLocked: lockInfo.apiLocked,
+      lockReason: lockInfo.lockReason
+    }
+  };
+}
+
+/**
+ * Obtiene el listado de API Keys registradas.
+ */
+export async function getDbApiKeys(): Promise<ApiKeyItem[]> {
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        const keys = await prisma.apiKey.findMany({
+          orderBy: { createdAt: "desc" }
+        });
+        return keys.map((k: any) => ({
+          id: k.id,
+          name: k.name,
+          maskedKey: k.maskedKey,
+          status: k.status as any,
+          createdByName: k.createdByName || undefined,
+          lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : undefined,
+          createdAt: k.createdAt.toISOString()
+        }));
+      } catch (err) {
+        console.error("Error al leer API keys en Prisma:", err);
+      }
+    }
+  }
+  return await readJsonAsync<ApiKeyItem[]>(API_KEYS_FILE, []);
+}
+
+/**
+ * Crea una nueva API Key para integraciones externas.
+ */
+export async function createDbApiKey(name: string, createdByName?: string): Promise<{ apiKey: ApiKeyItem; rawToken: string }> {
+  const rawToken = `tlm_live_${crypto.randomBytes(24).toString("hex")}`;
+  const maskedKey = `${rawToken.substring(0, 12)}...${rawToken.substring(rawToken.length - 4)}`;
+  const keyHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const newId = `key_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+  const newKey: ApiKeyItem = {
+    id: newId,
+    name: name.trim() || "Integración API",
+    maskedKey,
+    rawToken,
+    status: "active",
+    createdByName: createdByName || "Superusuario",
+    createdAt: new Date().toISOString()
+  };
+
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        await prisma.apiKey.create({
+          data: {
+            id: newId,
+            name: newKey.name,
+            keyHash,
+            maskedKey,
+            status: "active",
+            createdByName: newKey.createdByName
+          }
+        });
+      } catch (err) {
+        console.error("Error al crear API Key en Prisma:", err);
+      }
+    }
+  }
+
+  const existing = await readJsonAsync<ApiKeyItem[]>(API_KEYS_FILE, []);
+  existing.unshift(newKey);
+  await writeJsonAsync(API_KEYS_FILE, existing);
+
+  return { apiKey: newKey, rawToken };
+}
+
+/**
+ * Elimina o revoca una API Key existente.
+ */
+export async function deleteDbApiKey(id: string): Promise<boolean> {
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        await prisma.apiKey.delete({ where: { id } });
+      } catch (err) {
+        console.error("Error al eliminar API key en Prisma:", err);
+      }
+    }
+  }
+
+  const existing = await readJsonAsync<ApiKeyItem[]>(API_KEYS_FILE, []);
+  const filtered = existing.filter((k) => k.id !== id);
+  await writeJsonAsync(API_KEYS_FILE, filtered);
+  return true;
+}
+
+/**
+ * Obtiene el estado actual del bloqueo global de la API.
+ */
+export async function getApiLockStatus(): Promise<{ apiLocked: boolean; lockReason: string }> {
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        const setting = await prisma.systemSetting.findUnique({ where: { id: "default" } });
+        if (setting) {
+          return {
+            apiLocked: setting.apiLocked,
+            lockReason: setting.lockReason || "Mantenimiento programado de la API"
+          };
+        }
+      } catch (err) {
+        console.error("Error al leer SystemSetting en Prisma:", err);
+      }
+    }
+  }
+
+  const fallback = await readJsonAsync<{ apiLocked: boolean; lockReason: string }>(SYSTEM_SETTINGS_FILE, {
+    apiLocked: false,
+    lockReason: "Mantenimiento programado de la API"
+  });
+  return fallback;
+}
+
+/**
+ * Bloquea o desbloquea el acceso global a la API REST.
+ */
+export async function toggleApiLock(apiLocked: boolean, lockReason?: string): Promise<{ apiLocked: boolean; lockReason: string }> {
+  const cleanReason = lockReason?.trim() || "Mantenimiento programado de la API";
+  const result = { apiLocked, lockReason: cleanReason };
+
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        await prisma.systemSetting.upsert({
+          where: { id: "default" },
+          update: { apiLocked, lockReason: cleanReason },
+          create: { id: "default", apiLocked, lockReason: cleanReason }
+        });
+      } catch (err) {
+        console.error("Error al actualizar SystemSetting en Prisma:", err);
+      }
+    }
+  }
+
+  await writeJsonAsync(SYSTEM_SETTINGS_FILE, result);
+  return result;
 }
 

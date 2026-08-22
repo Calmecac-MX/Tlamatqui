@@ -34,9 +34,15 @@ import {
   joinTeamViaInviteToken,
   getDbUsers,
   registerOrSyncUser,
-  updateUserRole
+  updateUserRole,
+  getSystemHealthStatus,
+  getDbApiKeys,
+  createDbApiKey,
+  deleteDbApiKey,
+  getApiLockStatus,
+  toggleApiLock
 } from "./server/dbBridge.js";
-import { requireRole, verifyAuth0Token, verifyApiSecretToken } from "./server/authMiddleware.js";
+import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
 import { isSmtpConfigured, sendReportEmail, verifySmtpConnection } from "./server/emailService.js";
@@ -118,6 +124,9 @@ app.use(verifyApiSecretToken);
 
 // Middleware para decodificación y verificación de tokens Bearer Auth0
 app.use(verifyAuth0Token);
+
+// Middleware para verificar bloqueo global de la API REST activado por el Superusuario
+app.use(verifyApiLock);
 
 
 /**
@@ -251,6 +260,99 @@ app.patch("/api/users/:id/role", requireRole(["Superusuario", "Administrador"]),
     res.json({ success: true, user: updated });
   } catch (err) {
     res.status(500).json({ error: "Error al actualizar rol del usuario." });
+  }
+});
+
+// ============================================================================
+// RUTAS EXCLUSIVAS DE SUPERUSUARIO (SALUD, MONITOREO, BASE DE DATOS, API KEYS Y BLOQUEO)
+// ============================================================================
+
+/**
+ * @route GET /api/superadmin/health
+ * @description Obtiene el reporte en tiempo real de salud del sistema, servidor, RAM y base de datos.
+ */
+app.get("/api/superadmin/health", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const health = await getSystemHealthStatus();
+    res.json(health);
+  } catch (err: any) {
+    res.status(500).json({ error: "Error al obtener diagnóstico de salud del sistema." });
+  }
+});
+
+/**
+ * @route GET /api/superadmin/api-keys
+ * @description Obtiene la lista de API Keys generadas.
+ */
+app.get("/api/superadmin/api-keys", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const keys = await getDbApiKeys();
+    res.json(keys);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener llaves de API." });
+  }
+});
+
+/**
+ * @route POST /api/superadmin/api-keys
+ * @description Genera una nueva API Key de integración programática.
+ */
+app.post("/api/superadmin/api-keys", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const { name, createdByName } = req.body;
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ error: "Nombre descriptivo de la API Key es requerido." });
+    }
+
+    const created = await createDbApiKey(name, createdByName);
+    res.json({ success: true, ...created });
+  } catch (err) {
+    res.status(500).json({ error: "Error al generar la API Key." });
+  }
+});
+
+/**
+ * @route DELETE /api/superadmin/api-keys/:id
+ * @description Revoca / elimina una API Key existente.
+ */
+app.delete("/api/superadmin/api-keys/:id", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await deleteDbApiKey(id);
+    res.json({ success: true, message: "API Key eliminada o revocada exitosamente." });
+  } catch (err) {
+    res.status(500).json({ error: "Error al revocar la API Key." });
+  }
+});
+
+/**
+ * @route GET /api/superadmin/api-lock
+ * @description Obtiene el estado actual del bloqueo global de la API.
+ */
+app.get("/api/superadmin/api-lock", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const status = await getApiLockStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: "Error al consultar estado de bloqueo de API." });
+  }
+});
+
+/**
+ * @route POST /api/superadmin/toggle-api-lock
+ * @description Bloquea o desbloquea el acceso global a la API REST.
+ */
+app.post("/api/superadmin/toggle-api-lock", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+  try {
+    const { apiLocked, lockReason } = req.body;
+    if (typeof apiLocked !== "boolean") {
+      return res.status(400).json({ error: "Parámetro 'apiLocked' (booleano) es requerido." });
+    }
+
+    const result = await toggleApiLock(apiLocked, lockReason);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: "Error al actualizar el estado de bloqueo de la API." });
   }
 });
 

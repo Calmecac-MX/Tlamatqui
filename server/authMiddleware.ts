@@ -98,4 +98,40 @@ export function verifyApiSecretToken(req: Request, res: Response, next: NextFunc
   next();
 }
 
+/**
+ * Middleware para verificar el estado de bloqueo global de la API REST.
+ * Si el Superusuario activa el bloqueo, impide el acceso a usuarios no-Superusuario.
+ */
+export async function verifyApiLock(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (
+    req.path === "/api/health" ||
+    req.path === "/api/auth/callback" ||
+    req.path === "/api/users/sync" ||
+    req.path.startsWith("/api/superadmin/")
+  ) {
+    return next();
+  }
+
+  const userRole = (req.headers["x-user-role"] as string) || req.userRole;
+  if (userRole === "Superusuario") {
+    return next();
+  }
+
+  try {
+    const { getApiLockStatus } = await import("./dbBridge.js");
+    const lockInfo = await getApiLockStatus();
+    if (lockInfo && lockInfo.apiLocked) {
+      return res.status(503).json({
+        error: "API Bloqueada",
+        message: lockInfo.lockReason || "La API REST se encuentra temporalmente en modo de mantenimiento por el Superusuario.",
+        apiLocked: true
+      });
+    }
+  } catch (err) {
+    console.error("Error al verificar estado de bloqueo de API:", err);
+  }
+
+  next();
+}
+
 
