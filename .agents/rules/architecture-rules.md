@@ -4,7 +4,7 @@ Este documento establece los principios de diseño arquitectónico y normas tecn
 
 ---
 
-## 1. 🏗️ Arquitectura Desacoplada Client / Server
+## 1. 🏗️ Arquitectura Unificada Fullstack (Client / Server Single App)
 
 El sistema está dividido en dos capas independientes:
 

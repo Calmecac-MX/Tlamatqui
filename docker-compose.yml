@@ -1,71 +1,57 @@
 version: '3.8'
 
 services:
-  # ==========================================
-  # 1. Servicio de Base de Datos PostgreSQL
-  # ==========================================
+  # Base de Datos PostgreSQL
   postgres:
     image: postgres:16-alpine
     container_name: tlamatqui-postgres
-    restart: unless-stopped
+    restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
-      POSTGRES_DB: ${POSTGRES_DB:-tlamatqui_diagnostics}
+      POSTGRES_USER: tlamatqui_user
+      POSTGRES_PASSWORD: tlamatqui_password
+      POSTGRES_DB: tlamatqui_db
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U tlamatqui_user -d tlamatqui_db"]
+      interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 5s
 
-  # ==========================================
-  # 2. Servicio Backend REST API (Node Express)
-  # ==========================================
+  # Servidor REST API Backend Express
   backend:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
-    container_name: tlamatqui-backend-api
-    restart: unless-stopped
+    container_name: tlamatqui-backend
+    restart: always
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://tlamatqui_user:tlamatqui_password@postgres:5432/tlamatqui_db?sslmode=disable
+      FRONTEND_URL: http://localhost:3000
+      CORS_ORIGIN: http://localhost:3000
     ports:
       - "4000:4000"
-    environment:
-      - PORT=4000
-      - NODE_ENV=production
-      - SERVE_STATIC=false
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-tlamatqui_diagnostics}?schema=public
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80,http://localhost:3000}
-      - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-}
-      - VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-}
-    volumes:
-      - app_data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
 
-  # ==========================================
-  # 3. Servicio Frontend Web Server (Nginx)
-  # ==========================================
+  # Cliente Web Frontend Nginx SPA
   frontend:
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
-    container_name: tlamatqui-frontend-web
-    restart: unless-stopped
+      args:
+        VITE_API_URL: http://localhost:4000
+    container_name: tlamatqui-frontend
+    restart: always
     ports:
-      - "80:80"
       - "3000:80"
     depends_on:
       - backend
 
 volumes:
-  pg_data:
-    driver: local
-  app_data:
-    driver: local
+  postgres_data:
