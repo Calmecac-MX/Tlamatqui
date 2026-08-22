@@ -222,6 +222,10 @@ export interface UserAccount {
   role: UserRole;
   avatar?: string;
   sub?: string;
+  accessToken?: string;
+  idToken?: string;
+  tokenExpiresAt?: string;
+  lastLoginAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -347,4 +351,3 @@ export interface SystemHealthData {
     lockReason?: string;
   };
 }
-

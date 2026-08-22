@@ -196,7 +196,7 @@ app.get("/api/auth/callback", (req: Request, res: Response) => {
  */
 app.post("/api/users/sync", async (req: Request, res: Response) => {
   try {
-    const { email, name, avatar, sub } = req.body;
+    const { email, name, avatar, sub, accessToken, idToken, tokenExpiresAt, lastLoginAt } = req.body;
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return res.status(400).json({ error: "Email válido es requerido para la sincronización de usuario." });
     }
@@ -205,7 +205,11 @@ app.post("/api/users/sync", async (req: Request, res: Response) => {
       email,
       name,
       avatar,
-      sub
+      sub,
+      accessToken,
+      idToken,
+      tokenExpiresAt,
+      lastLoginAt
     });
 
     res.json({

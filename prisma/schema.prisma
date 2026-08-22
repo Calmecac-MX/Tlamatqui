@@ -69,6 +69,10 @@ model User {
   role            Role         @default(Visor)
   avatar          String?
   sub             String?      @unique
+  accessToken     String?
+  idToken         String?
+  tokenExpiresAt  DateTime?
+  lastLoginAt     DateTime?    @default(now())
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 

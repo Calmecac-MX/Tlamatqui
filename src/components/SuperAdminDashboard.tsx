@@ -1455,6 +1455,59 @@ export default function SuperAdminDashboard({
                   {selectedUserDetail.sub || "Sin Sub ID (Local)"}
                 </span>
               </div>
+
+              <div className="p-3 rounded-xl bg-bg-theme/40 border border-border-theme/30 space-y-0.5 col-span-2">
+                <span className="text-[10px] font-bold text-text-dim-theme uppercase block">Último Inicio de Sesión</span>
+                <span className="font-mono text-cyan-300 text-[11px]">
+                  {selectedUserDetail.lastLoginAt ? new Date(selectedUserDetail.lastLoginAt).toLocaleString() : "Sin registro de login"}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-950/70 border border-border-theme/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  Estado de Tokens Auth0 en BD
+                </span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${
+                  selectedUserDetail.tokenExpiresAt && new Date(selectedUserDetail.tokenExpiresAt) > new Date()
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                    : selectedUserDetail.tokenExpiresAt
+                    ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                    : "bg-slate-500/20 text-slate-400 border-slate-500/40"
+                }`}>
+                  {selectedUserDetail.tokenExpiresAt && new Date(selectedUserDetail.tokenExpiresAt) > new Date()
+                    ? "🟢 Token Vigente"
+                    : selectedUserDetail.tokenExpiresAt
+                    ? "🔴 Token Expirado"
+                    : "⚪ Sin Token Almacenado"}
+                </span>
+              </div>
+
+              {selectedUserDetail.tokenExpiresAt && (
+                <p className="text-[11px] text-text-dim-theme">
+                  Expiración: <span className="text-white font-mono">{new Date(selectedUserDetail.tokenExpiresAt).toLocaleString()}</span>
+                </p>
+              )}
+
+              {selectedUserDetail.idToken && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[10px] font-bold text-text-dim-theme uppercase block">ID Token JWT (Almacenado)</span>
+                  <div className="p-2 rounded bg-bg-theme border border-border-theme/40 font-mono text-[10px] text-amber-300 truncate">
+                    {selectedUserDetail.idToken}
+                  </div>
+                </div>
+              )}
+
+              {selectedUserDetail.accessToken && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[10px] font-bold text-text-dim-theme uppercase block">Access Token JWT (Almacenado)</span>
+                  <div className="p-2 rounded bg-bg-theme border border-border-theme/40 font-mono text-[10px] text-cyan-300 truncate">
+                    {selectedUserDetail.accessToken}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

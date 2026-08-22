@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.43 (Frontend) / v2.5.36 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **superadmin:** implementar función y panel de Restablecimiento a Configuración de Fábrica (v2.5.42/v2.5.35) (`699b4d9`)
+
 ## [v2.5.42 (Frontend) / v2.5.35 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código

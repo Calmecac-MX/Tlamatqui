@@ -1640,6 +1640,10 @@ export async function getDbUsers(): Promise<UserAccount[]> {
           role: u.role as any,
           avatar: u.avatar || undefined,
           sub: u.sub || undefined,
+          accessToken: u.accessToken || undefined,
+          idToken: u.idToken || undefined,
+          tokenExpiresAt: u.tokenExpiresAt ? u.tokenExpiresAt.toISOString() : undefined,
+          lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : undefined,
           createdAt: u.createdAt.toISOString(),
           updatedAt: u.updatedAt.toISOString()
         }));
@@ -1664,7 +1668,7 @@ export function getConfiguredSuperAdminEmail(): string {
 }
 
 /**
- * Registra un nuevo usuario o sincroniza su perfil en cada inicio de sesión.
+ * Registra un nuevo usuario o sincroniza su perfil y tokens Auth0 en cada inicio de sesión.
  * REGLA OBLIGATORIA: Si la base de datos de usuarios está vacía (0 usuarios registrados)
  * o el correo coincide con la variable SUPERADMIN_EMAIL en .env, se le otorga automáticamente el rol de "Superusuario".
  */
@@ -1674,6 +1678,10 @@ export async function registerOrSyncUser(userData: {
   avatar?: string;
   sub?: string;
   role?: "Superusuario" | "Administrador" | "Editor" | "Visor";
+  accessToken?: string;
+  idToken?: string;
+  tokenExpiresAt?: string | Date;
+  lastLoginAt?: string | Date;
 }): Promise<UserAccount> {
   const users = await getDbUsers();
   const cleanEmail = userData.email.trim().toLowerCase();
@@ -1683,12 +1691,19 @@ export async function registerOrSyncUser(userData: {
     configuredSuperAdminEmail && cleanEmail === configuredSuperAdminEmail
   );
 
+  const formattedExpiresAt = userData.tokenExpiresAt
+    ? new Date(userData.tokenExpiresAt).toISOString()
+    : undefined;
+  const formattedLastLoginAt = userData.lastLoginAt
+    ? new Date(userData.lastLoginAt).toISOString()
+    : new Date().toISOString();
+
   // Buscar si el usuario ya existe por email o sub de Auth0
   const existingUserIndex = users.findIndex(
     (u) => (cleanEmail && u.email.toLowerCase() === cleanEmail) || (userData.sub && u.sub === userData.sub)
   );
 
-  // 1. SI EL USUARIO YA EXISTE: Preservar su rol o promoverlo a Superusuario si coincide con SUPERADMIN_EMAIL en .env
+  // 1. SI EL USUARIO YA EXISTE: Actualizar datos de perfil y tokens de sesión
   if (existingUserIndex >= 0) {
     const existingUser = users[existingUserIndex];
     const targetRole = isConfiguredSuperAdmin ? "Superusuario" : existingUser.role;
@@ -1699,6 +1714,10 @@ export async function registerOrSyncUser(userData: {
       avatar: userData.avatar || existingUser.avatar,
       sub: userData.sub || existingUser.sub,
       role: targetRole,
+      accessToken: userData.accessToken || existingUser.accessToken,
+      idToken: userData.idToken || existingUser.idToken,
+      tokenExpiresAt: formattedExpiresAt || existingUser.tokenExpiresAt,
+      lastLoginAt: formattedLastLoginAt,
       updatedAt: new Date().toISOString()
     };
 
@@ -1714,7 +1733,11 @@ export async function registerOrSyncUser(userData: {
               name: updatedUser.name,
               avatar: updatedUser.avatar,
               sub: updatedUser.sub,
-              role: targetRole
+              role: targetRole,
+              accessToken: updatedUser.accessToken,
+              idToken: updatedUser.idToken,
+              tokenExpiresAt: updatedUser.tokenExpiresAt ? new Date(updatedUser.tokenExpiresAt) : null,
+              lastLoginAt: new Date(updatedUser.lastLoginAt || new Date())
             }
           });
         } catch (err) {
@@ -1727,8 +1750,6 @@ export async function registerOrSyncUser(userData: {
   }
 
   // 2. SI ES UN USUARIO NUEVO:
-  // REGLA CLAVE: Si count == 0 (no hay ningún usuario registrado) o su correo coincide con SUPERADMIN_EMAIL en .env, asignar "Superusuario".
-  // Si no, asignar el rol solicitado o "Visor" por defecto.
   const isFirstUserInSystem = users.length === 0;
   const assignedRole: "Superusuario" | "Administrador" | "Editor" | "Visor" = (isFirstUserInSystem || isConfiguredSuperAdmin)
     ? "Superusuario"
@@ -1745,6 +1766,10 @@ export async function registerOrSyncUser(userData: {
     role: assignedRole,
     avatar: userData.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
     sub: userData.sub || undefined,
+    accessToken: userData.accessToken || undefined,
+    idToken: userData.idToken || undefined,
+    tokenExpiresAt: formattedExpiresAt || undefined,
+    lastLoginAt: formattedLastLoginAt,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -1762,7 +1787,11 @@ export async function registerOrSyncUser(userData: {
             name: newUser.name,
             role: newUser.role as any,
             avatar: newUser.avatar,
-            sub: newUser.sub
+            sub: newUser.sub,
+            accessToken: newUser.accessToken,
+            idToken: newUser.idToken,
+            tokenExpiresAt: newUser.tokenExpiresAt ? new Date(newUser.tokenExpiresAt) : null,
+            lastLoginAt: newUser.lastLoginAt ? new Date(newUser.lastLoginAt) : new Date()
           }
         });
       } catch (err) {

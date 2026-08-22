@@ -95,27 +95,61 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
 
   const [syncedRole, setSyncedRole] = useState<string | null>(null);
 
-  // Sincronizar automáticamente el usuario con el Backend para detectar si es el primer usuario (Superusuario)
+  // Sincronizar automáticamente el usuario y sus tokens con el Backend
   useEffect(() => {
-    if (isAuth0Configured && !isDemoActive && auth0.isAuthenticated && auth0.user && auth0.user.email) {
-      fetch("/api/users/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: auth0.user.email,
-          name: auth0.user.name || auth0.user.nickname,
-          avatar: auth0.user.picture,
-          sub: auth0.user.sub
-        })
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data && data.user && data.user.role) {
-            setSyncedRole(data.user.role);
+    const syncUserDataAndTokens = async () => {
+      if (isAuth0Configured && !isDemoActive && auth0.isAuthenticated && auth0.user && auth0.user.email) {
+        try {
+          let idTokenRaw: string | undefined = undefined;
+          let tokenExpiresAt: string | undefined = undefined;
+          let accessTokenRaw: string | undefined = undefined;
+
+          try {
+            const claims = await auth0.getIdTokenClaims();
+            if (claims) {
+              idTokenRaw = claims.__raw;
+              if (claims.exp) {
+                tokenExpiresAt = new Date(claims.exp * 1000).toISOString();
+              }
+            }
+          } catch (e) {
+            console.warn("No se pudo extraer IdTokenClaims:", e);
           }
-        })
-        .catch((err) => console.error("Error al sincronizar rol de usuario con backend:", err));
-    }
+
+          try {
+            accessTokenRaw = await auth0.getAccessTokenSilently();
+          } catch (e) {
+            // Ignorar si no hay audience configurado
+          }
+
+          const res = await fetch("/api/users/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: auth0.user.email,
+              name: auth0.user.name || auth0.user.nickname,
+              avatar: auth0.user.picture,
+              sub: auth0.user.sub,
+              accessToken: accessTokenRaw,
+              idToken: idTokenRaw,
+              tokenExpiresAt: tokenExpiresAt,
+              lastLoginAt: new Date().toISOString()
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.user && data.user.role) {
+              setSyncedRole(data.user.role);
+            }
+          }
+        } catch (err) {
+          console.error("Error al sincronizar rol y tokens de usuario con backend:", err);
+        }
+      }
+    };
+
+    syncUserDataAndTokens();
   }, [auth0.isAuthenticated, auth0.user?.email, auth0.user?.sub, isAuth0Configured, isDemoActive]);
 
   // Si Auth0 está activo y el usuario se autenticó vía Auth0
