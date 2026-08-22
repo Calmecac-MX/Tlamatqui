@@ -5,7 +5,7 @@
 
 [![Versión Frontend](https://img.shields.io/badge/Frontend-v2.5.31-blue.svg)](src/version.ts)
 [![Versión Backend](https://img.shields.io/badge/Backend-v2.5.22-green.svg)](server/version.ts)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24.0.0-brightgreen.svg)](package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-v24.0.0-brightgreen.svg)](package.json)
 [![React](https://img.shields.io/badge/React-v19.0-61dafb.svg)](src/App.tsx)
 [![Express](https://img.shields.io/badge/Express-v4.21-000000.svg)](server.ts)
 [![Prisma](https://img.shields.io/badge/Prisma-v7.9.1-2D3748.svg)](prisma/schema.prisma)
@@ -18,7 +18,7 @@
 El repositorio está estructurado bajo una **Arquitectura Unificada Fullstack** en una sola raíz desacoplada:
 
 - 🎨 **Cliente Frontend (SPA React 19 + Vite 6):**
-  - **Ubicación:** Directores [`src/`](src/), [`index.html`](index.html), [`vite.config.ts`](vite.config.ts).
+  - **Ubicación:** Directorios [`src/`](src/), [`index.html`](index.html), [`vite.config.ts`](vite.config.ts).
   - **Puerto Dev:** `http://localhost:3000`.
   - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, Auth0 (`@auth0/auth0-react`), Auth0 Lock, Lucide React, GSAP / Motion.
 
@@ -32,7 +32,7 @@ El repositorio está estructurado bajo una **Arquitectura Unificada Fullstack** 
 ## 🚀 Inicio Rápido en Desarrollo
 
 ### 1. Requisitos Previos
-- **Node.js:** `>=24.0.0`
+- **Node.js:** `24.x` (`>=24.0.0`)
 - **npm:** `>=9.0.0`
 
 ### 2. Instalación de Dependencias
@@ -82,6 +82,9 @@ tlamatqui/
 ├── .agents/                 # Reglas, directivas y 21 skills del sistema para IA
 │   ├── rules/               # Reglas de arquitectura, calidad, commits y skills
 │   └── skills/              # Matriz de skills especializadas (surgical-patch, lean-build, etc.)
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml        # Workflow de CI/CD automatizado (Node 24, Lint, Build & Release Please)
 ├── api/                     # Punto de entrada Serverless para Vercel Functions (api/index.ts)
 ├── cli.ts                   # Herramienta CLI de administración de datos y reportes
 ├── data/                    # Almacenamiento local JSON con fallback híbrido para persistencia
@@ -90,11 +93,6 @@ tlamatqui/
 │   ├── partners.json
 │   ├── reports.json
 │   └── teams.json
-├── docker/                  # Configuración de contenedores Docker
-│   ├── Dockerfile.backend   # Multi-stage build para la API REST Node.js
-│   ├── Dockerfile.frontend  # Multi-stage build con Vite + Nginx SPA
-│   └── nginx.conf           # Configuración Nginx con proxy a /api y fallback SPA
-├── docker-compose.yml       # Orquestación local (PostgreSQL + Backend + Frontend)
 ├── openapi.json             # Especificación OpenAPI 3.0 de la API REST
 ├── prisma/                  # Esquema y migraciones de Prisma ORM 7
 │   └── schema.prisma
@@ -121,7 +119,7 @@ tlamatqui/
 │   ├── version.ts           # Metadatos de versión autogenerados del Frontend
 │   ├── App.tsx              # Componente raíz y enrutador principal
 │   ├── main.tsx             # Punto de montaje React DOM y Auth0Provider
-│   └── index.css            # Estilos mundiales con Tailwind CSS v4
+│   └── index.css            # Estilos globales con Tailwind CSS v4
 ├── index.html               # Plantilla HTML5 principal
 ├── vite.config.ts           # Configuración de compilación Vite 6 y servidor dev
 └── version.json             # Registro global de hashes y números de versión
@@ -169,18 +167,17 @@ El área ejecutiva de administración se encuentra disponible en la ruta client-
 
 ---
 
-## 🐳 Despliegue con Docker y CI/CD
+## ⚙️ Integración Continua (CI/CD con Node.js 24)
 
-### Despliegue Local con Docker Compose
-Puedes iniciar el entorno completo (PostgreSQL + Backend + Frontend Nginx) ejecutando:
-```bash
-docker-compose up --build -d
-```
+El pipeline de integración continua está configurado mediante **GitHub Actions** ([`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)):
 
-### CI/CD en GitHub Actions
-El flujo [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml) ejecuta automáticamente:
-1. **Release Please Action (`v4`):** Evalúa commits, gestiona el número de versión semántica, actualiza [`CHANGELOG.md`](CHANGELOG.md) y crea lanzamientos en GitHub.
-2. **Build & Push GHCR:** Compila imágenes Docker multi-stage (`ghcr.io/cesar-ayar/tlamatqui-backend` y `ghcr.io/cesar-ayar/tlamatqui-frontend`) y las publica en GitHub Container Registry.
+1. **Etapa 1 - CI Build & Lint (`Node.js 24`):**
+   - Ejecuta `actions/checkout@v4` y `actions/setup-node@v4` especificando **Node.js 24**.
+   - Genera el cliente Prisma con `npx prisma generate`.
+   - Verifica los tipos estáticos con `npm run lint` (`tsc --noEmit`).
+   - Compila la aplicación completa con `npm run build`.
+2. **Etapa 2 - Release Please:**
+   - Ejecuta `googleapis/release-please-action@v4` en pushes a `main` para automatizar versiones semánticas y actualizar [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 

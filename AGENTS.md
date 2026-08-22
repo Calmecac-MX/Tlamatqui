@@ -43,7 +43,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 4. **Verificación Obligatoria:** No des por terminada una tarea sin ejecutar la verificación (`npm run lint` / `npm run build`).
 5. **Commit Obligatorio con Conventional Commits:** Tras realizar cualquier cambio funcional o corrección, se DEBE ejecutar la sincronización de versión (`npm run auto-version`) y realizar un `git commit` estructurado siguiendo Conventional Commits (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`), incluyendo la versión y changelogs (`CHANGELOG.md` y `changelog/CHANGELOG-vx.x.md`), para nutrir continuamente el historial de cambios.
 6. **Sincronización Obligatoria en Cerebros y Documentación IA:** Todo cambio, modificación de comportamiento, ajuste de configuración, variable de entorno o refactorización DEBE quedar registrado de forma explícita en los archivos de contexto e inteligencia del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). Prohibido concluir una tarea sin reflejar las modificaciones en los cerebros de IA del repositorio.
-7. **Política Estricta de Integración vía Pull Request y Aprobación:** Queda estrictamente prohibido realizar `push` directos de código a la rama principal (`main`). Todo cambio, corrección o nueva característica DEBE enviarse obligatoriamente mediante una **Pull Request (PR)** y contar con la revisión y aprobación explícita (*Required Pull Request Reviews*) antes de ser integrado y desencadenar el pipeline de Release y publicación Docker en producción.
+7. **Política Estricta de Integración vía Pull Request y Aprobación:** Queda estrictamente prohibido realizar `push` directos de código a la rama principal (`main`). Todo cambio, corrección o nueva característica DEBE enviarse obligatoriamente mediante una **Pull Request (PR)** y contar con la revisión y aprobación explícita (*Required Pull Request Reviews*) antes de ser integrado y desencadenar el pipeline de CI/CD en producción.
 
 ---
 
@@ -121,7 +121,7 @@ El repositorio utiliza un sistema de **Auto-Versionado Desacoplado Independiente
 
 ## 6. 📝 Reglas de Conventional Commits y Automatización de Changelog (Google Release Please)
 
-El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por **Google Release Please** y publicación de imágenes contenedoras en GitHub Container Registry mediante [`.github/workflows/docker-publish.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/docker-publish.yml) (con permisos `packages: write`, `id-token: write` y `attestations: write`).
+El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por **Google Release Please** y pipeline de CI/CD (con Node.js 24, Lint y Build) mediante [`.github/workflows/ci-cd.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/ci-cd.yml).
 
 ### 6.1 Estructura Obligatoria de Commits
 Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir strictly el estándar Conventional Commits:
@@ -147,7 +147,7 @@ Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir
 
 ### 6.3 Automatización del Changelog
 1. **Generación Local:** Ejecuta `npm run changelog` o `npm run cli changelog` para actualizar [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) antes de enviar PRs o finalizar entregables.
-2. **Generación Automática en CI/CD:** El workflow de GitHub Actions [`.github/workflows/release-please.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/release-please.yml) ejecuta `google-github-actions/release-please-action@v4` en la rama `main` para crear PRs automáticas de versión y release notes.
+2. **Generación Automática en CI/CD:** El workflow de GitHub Actions [`.github/workflows/ci-cd.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/ci-cd.yml) ejecuta `google-github-actions/release-please-action@v4` en la rama `main` para crear PRs automáticas de versión y release notes.
 3. **Integración con Auto-Versioner:** Al ejecutar `npm run changelog`, ejecuta siempre `npm run auto-version` para asegurar la sincronización de hashes de Backend y Frontend.
 4. **Commit Obligatorio por Cambio:** En cada tarea o ajuste finalizado, la IA o el desarrollador DEBE realizar un `git commit` estructurado bajo Conventional Commits para que el historial alimente continuamente `CHANGELOG.md` y los archivos individuales en `changelog/CHANGELOG-vx.x.md`.
 
