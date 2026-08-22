@@ -12,16 +12,17 @@ Este documento establece las normas de desarrollo, la arquitectura del proyecto 
 ### 1.1 Propósito del Sistema
 Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métricas operativas de tiendas (Shopify vs. Tiendanube), simula ahorros en tiempo real y ofrece analítica ejecutiva.
 
-### 1.2 Arquitectura Desacoplada (Client / Server)
-- **Backend (API REST Express + Prisma ORM):**
-  - **Ubicación:** `server.ts`, directorio `server/`, `prisma/`.
+### 1.2 Arquitectura Monorepo Desacoplada (NPM Workspaces)
+- **Backend (`apps/backend` / `@tlamatqui/backend`):**
+  - **Ubicación:** `apps/backend/server.ts`, `apps/backend/server/`, `apps/backend/prisma/`, `apps/backend/data/`.
   - **Tecnologías:** Express 4, TypeScript, Prisma ORM 7 (`prisma@7.9.1`, `@prisma/config`), Auth0, Zod, esbuild.
   - **Puerto Dev:** `http://localhost:4000` (API REST `/api/*`).
-  - **Build Output:** `dist/server.cjs`.
-- **Frontend (SPA React 19 + Vite 6):**
-  - **Ubicación:** `src/`, `index.html`, `vite.config.ts`.
-  - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Lucide React, GSAP / Motion.
+  - **Build Output:** `apps/backend/dist/server.cjs`.
+- **Frontend (`apps/frontend` / `@tlamatqui/frontend`):**
+  - **Ubicación:** `apps/frontend/src/`, `apps/frontend/index.html`, `apps/frontend/vite.config.ts`.
+  - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Auth0 Lock, Lucide React, GSAP / Motion.
   - **Puerto Dev:** `http://localhost:3000`.
+  - **Build Output:** `apps/frontend/dist/`.
 
 ### 1.3 Comandos Principales de Desarrollo
 - **Desarrollo Simultáneo (Backend + Frontend):** `npm run dev`
