@@ -8,7 +8,7 @@
     {
       "id": "part-memb-1",
       "name": "Juan Pérez",
-      "email": "juan.perez@tiendanube.com.mx",
+      "email": "$enc$gcm$c7ace6b69b9dfa78188e0756:5a76837dfcb6ab4e503aeeb2cf96c10c:9fb6c4c709f5d4bd3a7c2e0405100095921aead3c324cba6c458cf4f",
       "role": "Lector y Comentarista",
       "partnerId": "default"
     }

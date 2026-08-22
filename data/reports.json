@@ -2,6 +2,7 @@
   {
     "id": "ginebra-evolucion",
     "name": "Ginebra",
+    "teamId": "team-default",
     "logo": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
     "tagline": "Hemos detectado que estás perdiendo margen operativo en comisiones ocultas y aplicaciones redundantes.",
     "fugasCantidad": 4,
@@ -14,7 +15,8 @@
     "shopifyPlan": "grow",
     "shopifyPlanCustomFee": 1,
     "shopifyPlanCustomPrice": 52,
-    "shopifyAppsCostUSD": 434.97,
+    "shopifyAppsCostUSD": 164.98,
+    "shopifyAppsCostMXN": 3052.13,
     "tiendanubePlan": "evolution",
     "tools": [
       {
@@ -118,8 +120,8 @@
         "pillText": "MSI Nativos"
       }
     ],
-    "contactEmail": "cesar.ayar19@gmail.com",
-    "contactWhatsapp": "5512345678",
+    "contactEmail": "$enc$gcm$88fcf60709f42dacac6c2b48:87f727f406df97bccb4731a1e4a61e62:f89a108ddeabec34ed6e02485e1f8872197b85eb4644",
+    "contactWhatsapp": "$enc$gcm$5d1c7b463f65fd3d776c1a52:ffb0824497d96da84499501a644c2bb9:c39d01f038ecfebd21ba",
     "adminLogos": [
       "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
       "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
@@ -135,21 +137,16 @@
     "brandCard2Link": "mailto:cesar.ayar19@gmail.com",
     "finalSlideMainLogo": "https://logo.clearbit.com/tiendanube.com",
     "createdAt": "2026-07-08T10:00:00.000Z",
-    "viewCount": 24,
+    "viewCount": 0,
     "openCount": 0,
-    "uniqueVisitors": 1,
-    "uniqueVisitorIds": [
-      "vstr_1k2usnpa5bgh"
-    ],
+    "uniqueVisitors": 0,
+    "uniqueVisitorIds": [],
     "interactions": {
-      "slideViews": {
-        "Portada": 16
-      },
+      "slideViews": {},
       "whatsappClicks": 0,
       "toolClicks": 0,
-      "calculatorInteractions": 12,
-      "timeSpentSeconds": 28190
-    },
-    "teamId": "team-default"
+      "calculatorInteractions": 0,
+      "timeSpentSeconds": 0
+    }
   }
 ]

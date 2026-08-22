@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.44 (Frontend) / v2.5.40 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **api:** habilitar endpoint dedicado POST /api/factory-reset para ejecuciones programáticas (v2.5.44/v2.5.39) (`6f8d811`)
+
 ## [v2.5.44 (Frontend) / v2.5.39 (Backend)] - 2026-08-22
 
 ### 📌 Otros Cambios

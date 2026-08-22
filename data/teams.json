@@ -4,26 +4,26 @@
     "name": "Equipo Evolución",
     "image": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
     "ownerName": "César Ayar",
-    "ownerEmail": "cesar.ayar19@gmail.com",
+    "ownerEmail": "$enc$gcm$3102b25aea2cac187e294e68:aef5c7e3e70a7eadc155ac82f1748ba2:4ee9e51ab92cc2bd67afa79bbe7c2e8b6ed947553a2f",
     "members": [
       {
         "id": "member-1",
         "name": "César Ayar",
-        "email": "cesar.ayar19@gmail.com",
+        "email": "$enc$gcm$8ad5fa16da75fe0dbf0aa483:35d3ca15b5f2f321542abdeb1e202f9d:6303aae33bdcf5ce3b6fecacc8a95d321879009e76a5",
         "role": "Administrador",
         "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
       },
       {
         "id": "member-2",
         "name": "Sofía Ruiz",
-        "email": "sofia.ruiz@evolucion.mx",
+        "email": "$enc$gcm$39debc7c6eb9011f09f45c2e:16fd62efc64596483588a478bc51f47d:761230071eb4bffcab42a33ec5b630e11f3afa83b4e6e9",
         "role": "Editor",
         "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
       },
       {
         "id": "member-3",
         "name": "Mateo Gómez",
-        "email": "mateo.gomez@evolucion.mx",
+        "email": "$enc$gcm$197be38d8ba423cb8acb7e47:5d4d899fcfce77edad79639574762a3b:0d37ad4b091a98c49c60b2c8ddc54721022a044bd297f98e",
         "role": "Visor",
         "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80"
       }
