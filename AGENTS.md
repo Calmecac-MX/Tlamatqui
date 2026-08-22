@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.30 (Frontend) / v2.5.21 (Backend)  
+> **Versión:** v2.5.31 (Frontend) / v2.5.22 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -12,17 +12,17 @@ Este documento establece las normas de desarrollo, la arquitectura del proyecto 
 ### 1.1 Propósito del Sistema
 Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métricas operativas de tiendas (Shopify vs. Tiendanube), simula ahorros en tiempo real y ofrece analítica ejecutiva.
 
-### 1.2 Arquitectura Monorepo Desacoplada (NPM Workspaces)
-- **Backend (`apps/backend` / `@tlamatqui/backend`):**
-  - **Ubicación:** `apps/backend/server.ts`, `apps/backend/server/`, `apps/backend/prisma/`, `apps/backend/data/`.
+### 1.2 Arquitectura Unificada Fullstack (Client / Server Single App)
+- **Backend (API REST Express + Prisma ORM):**
+  - **Ubicación:** `server.ts`, `server/`, `prisma/`, `data/`.
   - **Tecnologías:** Express 4, TypeScript, Prisma ORM 7 (`prisma@7.9.1`, `@prisma/config`), Auth0, Zod, esbuild.
   - **Puerto Dev:** `http://localhost:4000` (API REST `/api/*`).
-  - **Build Output:** `apps/backend/dist/server.cjs`.
-- **Frontend (`apps/frontend` / `@tlamatqui/frontend`):**
-  - **Ubicación:** `apps/frontend/src/`, `apps/frontend/index.html`, `apps/frontend/vite.config.ts`.
+  - **Build Output:** `dist/server.cjs`.
+- **Frontend (SPA React 19 + Vite 6):**
+  - **Ubicación:** `src/`, `index.html`, `vite.config.ts`.
   - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Auth0 Lock, Lucide React, GSAP / Motion.
   - **Puerto Dev:** `http://localhost:3000`.
-  - **Build Output:** `apps/frontend/dist/`.
+  - **Build Output:** `dist/`.
 
 ### 1.3 Comandos Principales de Desarrollo
 - **Desarrollo Simultáneo (Backend + Frontend):** `npm run dev`
