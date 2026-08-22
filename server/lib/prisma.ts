@@ -7,6 +7,8 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
 let prisma: PrismaClient | null = null;
 
@@ -47,7 +49,9 @@ export function getPrisma(): PrismaClient | null {
       if (dbUrl.startsWith("prisma://") || dbUrl.startsWith("prisma+postgres://")) {
         prisma = new PrismaClient({ accelerateUrl: dbUrl });
       } else {
-        prisma = new PrismaClient();
+        const pool = new pg.Pool({ connectionString: dbUrl });
+        const adapter = new PrismaPg(pool);
+        prisma = new PrismaClient({ adapter });
       }
     } catch (err) {
       console.error("[Prisma Singleton Error] Fallback a JSON Bridge:", err);

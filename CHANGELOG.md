@@ -4,6 +4,15 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.44 (Frontend) / v2.5.41 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **skills:** añadir la skill de prisma para antigravity (`e12c18d`)
+
+### 🐛 Corregido & Bug Fixes
+- **vercel:** corregir especificador de importación en api/index.ts (../server.js) para evitar ERR_MODULE_NOT_FOUND en Serverless Functions (`a386cb6`)
+- **serverless:** asegurar fallback seguro en PrismaClient singleton e invocar restablecimiento (v2.5.44/v2.5.40) (`1b9b640`)
+
 ## [v2.5.44 (Frontend) / v2.5.40 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades
