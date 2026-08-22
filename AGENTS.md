@@ -147,7 +147,7 @@ Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir
 
 ### 6.3 Automatización del Changelog
 1. **Generación Local:** Ejecuta `npm run changelog` o `npm run cli changelog` para actualizar [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) antes de enviar PRs o finalizar entregables.
-2. **Generación Automática en CI/CD:** El workflow de GitHub Actions [`.github/workflows/ci-cd.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/ci-cd.yml) ejecuta `google-github-actions/release-please-action@v4` en la rama `main` para crear PRs automáticas de versión y release notes.
+2. **Generación Automática en CI/CD:** El workflow de GitHub Actions [`.github/workflows/ci-cd.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/ci-cd.yml) ejecuta `googleapis/release-please-action@v5` en la rama `main` para crear PRs automáticas de versión y release notes.
 3. **Integración con Auto-Versioner:** Al ejecutar `npm run changelog`, ejecuta siempre `npm run auto-version` para asegurar la sincronización de hashes de Backend y Frontend.
 4. **Commit Obligatorio por Cambio:** En cada tarea o ajuste finalizado, la IA o el desarrollador DEBE realizar un `git commit` estructurado bajo Conventional Commits para que el historial alimente continuamente `CHANGELOG.md` y los archivos individuales en `changelog/CHANGELOG-vx.x.md`.
 
