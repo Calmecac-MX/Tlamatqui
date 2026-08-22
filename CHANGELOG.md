@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.35 (Frontend) / v2.5.28 (Backend)] - 2026-08-22
+
+### 🐛 Corregido & Bug Fixes
+- **auth:** prevenir bucle de redirección en Auth0 y desplegar alertas de error (v2.5.34) (`7e46676`)
+
 ## [v2.5.34 (Frontend) / v2.5.27 (Backend)] - 2026-08-22
 
 ### 🐛 Corregido & Bug Fixes

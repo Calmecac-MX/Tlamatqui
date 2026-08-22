@@ -148,6 +148,35 @@ app.get("/api/health", (req: Request, res: Response) => {
 });
 
 /**
+ * @route GET /api/auth/callback
+ * @description Endpoint de callback para Auth0. Procesa la respuesta de redirección y redirige al usuario al Frontend.
+ */
+app.get("/api/auth/callback", (req: Request, res: Response) => {
+  const { code, state, error, error_description } = req.query;
+  const rawFrontend = process.env.FRONTEND_URL || "http://localhost:3000";
+  const primaryFrontend = rawFrontend.split(",")[0].trim().replace(/\/+$/, "");
+
+  try {
+    const targetUrl = new URL("/tlachialoyan", primaryFrontend);
+
+    if (error) {
+      targetUrl.searchParams.set("error", String(error));
+      if (error_description) {
+        targetUrl.searchParams.set("error_description", String(error_description));
+      }
+    } else {
+      if (code) targetUrl.searchParams.set("code", String(code));
+      if (state) targetUrl.searchParams.set("state", String(state));
+    }
+
+    return res.redirect(targetUrl.toString());
+  } catch (err) {
+    console.error("[Auth0 Callback Endpoint Error]", err);
+    return res.redirect(`${primaryFrontend}/tlachialoyan`);
+  }
+});
+
+/**
  * @route GET /api/smtp-status
  * @description Verifica el estado de configuración del servidor SMTP.
  */

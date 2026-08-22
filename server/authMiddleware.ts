@@ -80,6 +80,11 @@ export function verifyApiSecretToken(req: Request, res: Response, next: NextFunc
     return next();
   }
 
+  // Rutas públicas exentas de verificación de token de API
+  if (req.path === "/api/health" || req.path === "/api/auth/callback") {
+    return next();
+  }
+
   const clientSecret = req.headers["x-api-secret"] as string;
 
   if (!clientSecret || clientSecret !== expectedSecret) {

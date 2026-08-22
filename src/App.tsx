@@ -64,7 +64,8 @@ function MainAppRouter() {
 
       // Sincronizar slug /tlachialoyan cuando se accede a la administración.
       // IMPORTANTE: No modificar la URL ni sobreescribir los parámetros si Auth0 está devolviendo el callback (?code=...&state=...)
-      if (!reportId && !inviteToken && window.location.pathname === "/" && !hasAuthParams) {
+      const isCallbackPath = window.location.pathname === "/" || window.location.pathname === "/callback" || window.location.pathname === "/auth/callback";
+      if (!reportId && !inviteToken && isCallbackPath && !hasAuthParams) {
         window.history.replaceState({}, "", "/tlachialoyan");
       }
     };
