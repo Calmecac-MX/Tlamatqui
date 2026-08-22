@@ -229,9 +229,18 @@ app.patch("/api/users/:id/role", requireRole(["Superusuario", "Administrador"]),
   try {
     const { id } = req.params;
     const { role } = req.body;
+    const requesterRole = (req.headers["x-user-role"] as string) || (req as any).userRole || "Administrador";
 
     if (!role || !["Superusuario", "Administrador", "Editor", "Visor"].includes(role)) {
       return res.status(400).json({ error: "Rol no válido. Opciones permitidas: Superusuario, Administrador, Editor, Visor." });
+    }
+
+    // REGLA DE SEGURIDAD: Únicamente un Superusuario puede asignar u otorgar el rol de Superusuario
+    if (role === "Superusuario" && requesterRole !== "Superusuario") {
+      return res.status(403).json({
+        error: "Acceso denegado",
+        message: "Únicamente un Superusuario puede asignar u otorgar el rol de Superusuario a otros usuarios."
+      });
     }
 
     const updated = await updateUserRole(id, role as any);

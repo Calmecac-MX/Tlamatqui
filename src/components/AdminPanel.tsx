@@ -2295,6 +2295,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   reports={reports}
                   isDarkMode={isDarkMode}
                   currentUserEmail={userEmail}
+                  currentUserRole={userRole}
                   subTab={teamSubTab}
                   onSubTabChange={setTeamSubTab}
                 />
@@ -2338,10 +2339,12 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           onChange={e => setUserRole(e.target.value)}
                           className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white cursor-pointer"
                         >
+                          {(userRole === "Superusuario" || authUser?.role === "Superusuario") && (
+                            <option value="Superusuario">Superusuario</option>
+                          )}
                           <option value="Administrador">Administrador</option>
-                          <option value="Consultor Principal">Consultor Principal</option>
-                          <option value="Analista de E-commerce">Analista de E-commerce</option>
-                          <option value="Socio Director">Socio Director</option>
+                          <option value="Editor">Editor</option>
+                          <option value="Visor">Visor</option>
                         </select>
                       </div>
 

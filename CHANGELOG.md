@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.38 (Frontend) / v2.5.30 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** asignación automática del rol de Superusuario al primer usuario creado (v2.5.37/v2.5.29) (`37da546`)
+
 ## [v2.5.37 (Frontend) / v2.5.29 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

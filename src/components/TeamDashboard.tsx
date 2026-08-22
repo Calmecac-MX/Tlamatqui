@@ -22,6 +22,8 @@ interface TeamDashboardProps {
   isDarkMode: boolean;
   /** Correo del usuario autenticado actual */
   currentUserEmail: string;
+  /** Rol del usuario autenticado actual (Superusuario, Administrador, etc.) */
+  currentUserRole?: string;
   /** Subpestaña activa controlada desde el componente padre */
   subTab?: "dashboard" | "members" | "settings" | "partners";
   /** Función para notificar el cambio de subpestaña */
@@ -40,6 +42,7 @@ export default function TeamDashboard({
   reports,
   isDarkMode,
   currentUserEmail,
+  currentUserRole,
   subTab: controlledSubTab,
   onSubTabChange
 }: TeamDashboardProps) {
@@ -608,7 +611,10 @@ export default function TeamDashboard({
                       onChange={e => setNewMemberRole(e.target.value as any)}
                       className="w-full text-xs px-3 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white cursor-pointer"
                     >
-                      <option value="Administrador">Administrador (Control total)</option>
+                      {currentUserRole === "Superusuario" && (
+                        <option value="Superusuario">Superusuario (Control Total del Sistema)</option>
+                      )}
+                      <option value="Administrador">Administrador (Control total del equipo)</option>
                       <option value="Editor">Editor (Modifica diagnósticos)</option>
                       <option value="Visor">Visor (Sólo lectura)</option>
                     </select>
@@ -671,6 +677,9 @@ export default function TeamDashboard({
                             onChange={e => setIsEditingMember({ ...isEditingMember, role: e.target.value as any })}
                             className="text-xs px-2 py-1 rounded bg-bg-theme border border-border-theme text-white outline-none cursor-pointer"
                           >
+                            {currentUserRole === "Superusuario" && (
+                              <option value="Superusuario">Superusuario</option>
+                            )}
                             <option value="Administrador">Administrador</option>
                             <option value="Editor">Editor</option>
                             <option value="Visor">Visor</option>
@@ -840,10 +849,14 @@ export default function TeamDashboard({
                               const updated = { ...activeTeam, inviteRole: e.target.value as any };
                               await onUpdateTeam(updated);
                             }}
-                            className="text-xs px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-white outline-none"
+                            className="text-xs px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-white outline-none cursor-pointer"
                           >
-                            <option value="Visor">Visor</option>
+                            {currentUserRole === "Superusuario" && (
+                              <option value="Superusuario">Superusuario</option>
+                            )}
+                            <option value="Administrador">Administrador</option>
                             <option value="Editor">Editor</option>
+                            <option value="Visor">Visor</option>
                           </select>
                         </div>
 
