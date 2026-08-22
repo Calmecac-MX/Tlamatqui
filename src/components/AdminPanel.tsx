@@ -1437,7 +1437,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                     <span className="font-extrabold text-xs text-white truncate leading-snug group-hover:text-accent-theme transition-colors">
                       {userName}
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shrink-0 leading-none">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border shrink-0 leading-none ${
+                      userRole === "Superusuario"
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                        : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+                    }`}>
                       {userRole || "Administrador"}
                     </span>
                   </div>

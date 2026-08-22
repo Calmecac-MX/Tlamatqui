@@ -93,6 +93,31 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const [syncedRole, setSyncedRole] = useState<string | null>(null);
+
+  // Sincronizar automáticamente el usuario con el Backend para detectar si es el primer usuario (Superusuario)
+  useEffect(() => {
+    if (isAuth0Configured && !isDemoActive && auth0.isAuthenticated && auth0.user && auth0.user.email) {
+      fetch("/api/users/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: auth0.user.email,
+          name: auth0.user.name || auth0.user.nickname,
+          avatar: auth0.user.picture,
+          sub: auth0.user.sub
+        })
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.user && data.user.role) {
+            setSyncedRole(data.user.role);
+          }
+        })
+        .catch((err) => console.error("Error al sincronizar rol de usuario con backend:", err));
+    }
+  }, [auth0.isAuthenticated, auth0.user?.email, auth0.user?.sub, isAuth0Configured, isDemoActive]);
+
   // Si Auth0 está activo y el usuario se autenticó vía Auth0
   if (isAuth0Configured && !isDemoActive) {
     const authUser: AuthUser | null = auth0.user
@@ -100,7 +125,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           name: auth0.user.name || auth0.user.nickname || (auth0.user.email ? auth0.user.email.split("@")[0] : "Usuario Auth0"),
           email: auth0.user.email || "",
           picture: auth0.user.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-          role: (auth0.user as any)["https://evolucion.mx/role"] || "Administrador",
+          role: syncedRole || (auth0.user as any)["https://evolucion.mx/role"] || "Administrador",
           sub: auth0.user.sub
         }
       : null;

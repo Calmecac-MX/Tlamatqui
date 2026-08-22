@@ -190,7 +190,7 @@ export interface Config {
   /** Correo del usuario administrador principal */
   userEmail: string;
   /** Rol del usuario administrador */
-  userRole: "Administrador" | "Editor" | "Visor";
+  userRole: "Superusuario" | "Administrador" | "Editor" | "Visor";
   /** Avatar del usuario administrador */
   userAvatar: string;
   /** Intervalo en milisegundos para refrescar métricas en vivo */
@@ -211,6 +211,19 @@ export interface Config {
   domainVerified?: boolean;
   /** Fecha ISO de verificación de la propiedad del dominio */
   domainVerifiedAt?: string;
+}
+
+export type UserRole = "Superusuario" | "Administrador" | "Editor" | "Visor";
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar?: string;
+  sub?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -243,7 +256,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "Administrador" | "Editor" | "Visor";
+  role: "Superusuario" | "Administrador" | "Editor" | "Visor";
   avatar?: string;
 }
 
@@ -260,7 +273,7 @@ export interface Team {
   /** Token secreto único para el enlace de invitación al equipo */
   inviteToken?: string;
   /** Rol asignado por defecto a los miembros que se unan vía enlace */
-  inviteRole?: "Administrador" | "Editor" | "Visor";
+  inviteRole?: "Superusuario" | "Administrador" | "Editor" | "Visor";
   createdAt: string;
 }
 

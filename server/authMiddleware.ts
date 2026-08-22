@@ -37,12 +37,13 @@ export function verifyAuth0Token(req: AuthenticatedRequest, res: Response, next:
  * Middleware para validar el rol del usuario (RBAC).
  * En desarrollo/local sin Auth0 estricto, permite la operación de forma transparente.
  */
-export function requireRole(allowedRoles: Array<"Administrador" | "Editor" | "Visor">) {
+export function requireRole(allowedRoles: Array<"Superusuario" | "Administrador" | "Editor" | "Visor">) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     // Extraer rol de la cabecera X-User-Role o token si se pasa desde el frontend
     const userRole = (req.headers["x-user-role"] as string) || req.userRole || "Administrador";
 
-    if (allowedRoles.includes(userRole as any)) {
+    // El rol Superusuario tiene permisos universales implícitos en cualquier operación
+    if (userRole === "Superusuario" || allowedRoles.includes(userRole as any)) {
       return next();
     }
 
@@ -81,7 +82,7 @@ export function verifyApiSecretToken(req: Request, res: Response, next: NextFunc
   }
 
   // Rutas públicas exentas de verificación de token de API
-  if (req.path === "/api/health" || req.path === "/api/auth/callback") {
+  if (req.path === "/api/health" || req.path === "/api/auth/callback" || req.path === "/api/users/sync") {
     return next();
   }
 

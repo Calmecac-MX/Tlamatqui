@@ -14,6 +14,7 @@ generator client {
 // ==========================================
 
 enum Role {
+  Superusuario
   Administrador
   Editor
   Visor
@@ -254,5 +255,17 @@ model LogoConfig {
   globalEmail String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// User account registered in the platform.
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(Visor)
+  avatar    String?
+  sub       String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 

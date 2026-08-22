@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.37 (Frontend) / v2.5.29 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** habilitar sincronización dinámica de perfiles multi-usuario Auth0 (v2.5.36/v2.5.28) (`47d1cf2`)
+
 ## [v2.5.36 (Frontend) / v2.5.28 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

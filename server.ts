@@ -31,7 +31,10 @@ import {
   verifyCustomDomainDNS,
   getTeamByInviteToken,
   resetTeamInviteToken,
-  joinTeamViaInviteToken
+  joinTeamViaInviteToken,
+  getDbUsers,
+  registerOrSyncUser,
+  updateUserRole
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token, verifyApiSecretToken } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
@@ -173,6 +176,72 @@ app.get("/api/auth/callback", (req: Request, res: Response) => {
   } catch (err) {
     console.error("[Auth0 Callback Endpoint Error]", err);
     return res.redirect(`${primaryFrontend}/tlachialoyan`);
+  }
+});
+
+/**
+ * @route POST /api/users/sync
+ * @description Sincroniza o registra un usuario al iniciar sesión.
+ * REGLA: Si la lista de usuarios está vacía, le otorga automáticamente el rol de Superusuario al primer usuario.
+ */
+app.post("/api/users/sync", async (req: Request, res: Response) => {
+  try {
+    const { email, name, avatar, sub } = req.body;
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return res.status(400).json({ error: "Email válido es requerido para la sincronización de usuario." });
+    }
+
+    const syncedUser = await registerOrSyncUser({
+      email,
+      name,
+      avatar,
+      sub
+    });
+
+    res.json({
+      success: true,
+      user: syncedUser
+    });
+  } catch (err: any) {
+    console.error("Error al sincronizar usuario:", err);
+    res.status(500).json({ error: "Error interno al sincronizar el usuario." });
+  }
+});
+
+/**
+ * @route GET /api/users
+ * @description Obtiene el listado completo de usuarios del sistema (Requiere rol Administrador o Superusuario).
+ */
+app.get("/api/users", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
+  try {
+    const users = await getDbUsers();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener usuarios del sistema." });
+  }
+});
+
+/**
+ * @route PATCH /api/users/:id/role
+ * @description Actualiza el rol de un usuario existente (Requiere permisos de Superusuario o Administrador).
+ */
+app.patch("/api/users/:id/role", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role || !["Superusuario", "Administrador", "Editor", "Visor"].includes(role)) {
+      return res.status(400).json({ error: "Rol no válido. Opciones permitidas: Superusuario, Administrador, Editor, Visor." });
+    }
+
+    const updated = await updateUserRole(id, role as any);
+    if (!updated) {
+      return res.status(404).json({ error: "Usuario no encontrado." });
+    }
+
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(500).json({ error: "Error al actualizar rol del usuario." });
   }
 });
 

@@ -290,7 +290,7 @@ export default function TeamDashboard({
   };
 
   // Handle Edit Member Role
-  const handleSaveMemberRole = async (memberId: string, role: "Administrador" | "Editor" | "Visor") => {
+  const handleSaveMemberRole = async (memberId: string, role: "Superusuario" | "Administrador" | "Editor" | "Visor") => {
     const updatedTeam = {
       ...activeTeam,
       members: activeTeam.members.map(m => m.id === memberId ? { ...m, role } : m)

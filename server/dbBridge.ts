@@ -3,7 +3,7 @@ import path from "path";
 import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
-import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig } from "./types.js";
+import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount } from "./types.js";
 import { encryptData, decryptData } from "./encryptionService.js";
 
 // Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo)
@@ -37,6 +37,7 @@ const CONFIG_FILE = path.join(DATA_DIR, "config.json");
 const LOGO_CONFIG_FILE = path.join(DATA_DIR, "logo_config.json");
 const TEAMS_FILE = path.join(DATA_DIR, "teams.json");
 const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
+const USERS_FILE = path.join(DATA_DIR, "users.json");
 
 // Define defaults
 const DEFAULT_CONFIG = {
@@ -1613,5 +1614,171 @@ export async function saveDbLogoConfig(logoConfig: any): Promise<any> {
   const result = { id: "default", ...cleanConfig };
   await writeJsonAsync(LOGO_CONFIG_FILE, result);
   return result;
+}
+
+// ============================================================================
+// GESTIÓN Y PERSISTENCIA MULTI-USUARIO (REGLA: PRIMER USUARIO = SUPERUSUARIO)
+// ============================================================================
+
+/**
+ * Obtiene el listado completo de usuarios registrados en el sistema.
+ */
+export async function getDbUsers(): Promise<UserAccount[]> {
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        const users = await prisma.user.findMany({
+          orderBy: { createdAt: "asc" }
+        });
+        return users.map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          role: u.role as any,
+          avatar: u.avatar || undefined,
+          sub: u.sub || undefined,
+          createdAt: u.createdAt.toISOString(),
+          updatedAt: u.updatedAt.toISOString()
+        }));
+      } catch (err) {
+        console.error("Error al obtener usuarios con Prisma:", err);
+      }
+    }
+  }
+  return await readJsonAsync<UserAccount[]>(USERS_FILE, []);
+}
+
+/**
+ * Registra un nuevo usuario o sincroniza su perfil en cada inicio de sesión.
+ * REGLA OBLIGATORIA: Si la base de datos de usuarios está vacía (0 usuarios registrados),
+ * se otorga automáticamente el rol de "Superusuario" al primer usuario creado.
+ */
+export async function registerOrSyncUser(userData: {
+  email: string;
+  name?: string;
+  avatar?: string;
+  sub?: string;
+  role?: "Superusuario" | "Administrador" | "Editor" | "Visor";
+}): Promise<UserAccount> {
+  const users = await getDbUsers();
+  const cleanEmail = userData.email.trim().toLowerCase();
+  
+  // Buscar si el usuario ya existe por email o sub de Auth0
+  const existingUserIndex = users.findIndex(
+    (u) => (cleanEmail && u.email.toLowerCase() === cleanEmail) || (userData.sub && u.sub === userData.sub)
+  );
+
+  // 1. SI EL USUARIO YA EXISTE: Preservar su rol asignado previamente
+  if (existingUserIndex >= 0) {
+    const existingUser = users[existingUserIndex];
+    const updatedUser: UserAccount = {
+      ...existingUser,
+      name: userData.name || existingUser.name,
+      avatar: userData.avatar || existingUser.avatar,
+      sub: userData.sub || existingUser.sub,
+      updatedAt: new Date().toISOString()
+    };
+
+    users[existingUserIndex] = updatedUser;
+
+    if (isPrismaEnabled()) {
+      const prisma = getPrisma();
+      if (prisma) {
+        try {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name: updatedUser.name,
+              avatar: updatedUser.avatar,
+              sub: updatedUser.sub
+            }
+          });
+        } catch (err) {
+          console.error("Error al actualizar usuario en Prisma:", err);
+        }
+      }
+    }
+    await writeJsonAsync(USERS_FILE, users);
+    return updatedUser;
+  }
+
+  // 2. SI ES UN USUARIO NUEVO:
+  // REGLA CLAVE: Si count == 0 (no hay ningún usuario registrado), asignar "Superusuario".
+  // Si no, asignar el rol solicitado o "Visor" por defecto.
+  const isFirstUserInSystem = users.length === 0;
+  const assignedRole: "Superusuario" | "Administrador" | "Editor" | "Visor" = isFirstUserInSystem
+    ? "Superusuario"
+    : (userData.role || "Visor");
+
+  if (isFirstUserInSystem) {
+    console.log(`\x1b[33m[User Manager]\x1b[0m ¡Primer usuario creado en el sistema! Otorgando rol de Superusuario a: ${cleanEmail}`);
+  }
+
+  const newUser: UserAccount = {
+    id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    email: cleanEmail,
+    name: userData.name || cleanEmail.split("@")[0] || "Usuario",
+    role: assignedRole,
+    avatar: userData.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+    sub: userData.sub || undefined,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  users.push(newUser);
+
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        await prisma.user.create({
+          data: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role as any,
+            avatar: newUser.avatar,
+            sub: newUser.sub
+          }
+        });
+      } catch (err) {
+        console.error("Error al crear usuario en Prisma:", err);
+      }
+    }
+  }
+
+  await writeJsonAsync(USERS_FILE, users);
+  return newUser;
+}
+
+/**
+ * Actualiza el rol de un usuario existente (Requiere permisos de Superusuario o Administrador).
+ */
+export async function updateUserRole(userId: string, newRole: "Superusuario" | "Administrador" | "Editor" | "Visor"): Promise<UserAccount | null> {
+  const users = await getDbUsers();
+  const userIndex = users.findIndex((u) => u.id === userId || u.email === userId);
+
+  if (userIndex < 0) return null;
+
+  users[userIndex].role = newRole;
+  users[userIndex].updatedAt = new Date().toISOString();
+
+  if (isPrismaEnabled()) {
+    const prisma = getPrisma();
+    if (prisma) {
+      try {
+        await prisma.user.update({
+          where: { id: users[userIndex].id },
+          data: { role: newRole as any }
+        });
+      } catch (err) {
+        console.error("Error al actualizar rol en Prisma:", err);
+      }
+    }
+  }
+
+  await writeJsonAsync(USERS_FILE, users);
+  return users[userIndex];
 }
 
