@@ -367,16 +367,18 @@ app.post("/api/superadmin/toggle-api-lock", requireRole(["Superusuario"]), async
 });
 
 /**
+ * @route POST /api/factory-reset
  * @route POST /api/superadmin/factory-reset
- * @description Restablece la instancia completa a su configuración de fábrica.
+ * @description Endpoint dedicado para restablecer la instancia completa a su configuración de fábrica.
+ * @access Private (Superusuario / Requiere confirmCode: "RESTABLECER_FABRICA")
  */
-app.post("/api/superadmin/factory-reset", requireRole(["Superusuario"]), async (req: Request, res: Response) => {
+const handleFactoryResetEndpoint = async (req: Request, res: Response) => {
   try {
     const { confirmCode } = req.body || {};
     if (confirmCode !== "RESTABLECER_FABRICA") {
       return res.status(400).json({
         success: false,
-        message: 'Código de confirmación incorrecto. Escribe "RESTABLECER_FABRICA" para proceder.'
+        message: 'Código de confirmación incorrecto. Envía { "confirmCode": "RESTABLECER_FABRICA" } en el cuerpo JSON para proceder.'
       });
     }
 
@@ -392,7 +394,10 @@ app.post("/api/superadmin/factory-reset", requireRole(["Superusuario"]), async (
       message: "Error del servidor al ejecutar el restablecimiento de fábrica."
     });
   }
-});
+};
+
+app.post("/api/factory-reset", requireRole(["Superusuario"]), handleFactoryResetEndpoint);
+app.post("/api/superadmin/factory-reset", requireRole(["Superusuario"]), handleFactoryResetEndpoint);
 
 /**
  * @route GET /api/smtp-status

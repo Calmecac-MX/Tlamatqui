@@ -107,6 +107,7 @@ export async function verifyApiLock(req: AuthenticatedRequest, res: Response, ne
     req.path === "/api/health" ||
     req.path === "/api/auth/callback" ||
     req.path === "/api/users/sync" ||
+    req.path === "/api/factory-reset" ||
     req.path.startsWith("/api/superadmin/")
   ) {
     return next();

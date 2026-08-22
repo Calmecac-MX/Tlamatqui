@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.44 (Frontend) / v2.5.39 (Backend)] - 2026-08-22
+
+### 📌 Otros Cambios
+- formatear representación de tokens de Auth0 como puntos tipo contraseña (••••••••••••••••) (v2.5.44/v2.5.38) (`8907a5b`)
+
 ## [v2.5.44 (Frontend) / v2.5.38 (Backend)] - 2026-08-22
 
 ### 📌 Otros Cambios
