@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.32 (Frontend) / v2.5.25 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **env:** eliminar variable redundante BACKEND_URL (`0c2b20d`)
+
 ## [v2.5.32 (Frontend) / v2.5.24 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código
