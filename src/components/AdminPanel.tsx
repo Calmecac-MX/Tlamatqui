@@ -592,6 +592,31 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
+  const handleVerifyDomainDNS = async () => {
+    if (!customDomain) return;
+    setVerifyingDomainConfig(true);
+    setDomainCheckMessage({ type: null, msg: "" });
+    try {
+      const res = await fetch("/api/config/verify-domain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: customDomain })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDomainCheckMessage({ type: "success", msg: data.message });
+        setDomainVerified(true);
+        setDomainVerifiedAt(new Date().toISOString());
+      } else {
+        setDomainCheckMessage({ type: "error", msg: data.message || "No se pudo verificar el registro TXT." });
+      }
+    } catch (e: any) {
+      setDomainCheckMessage({ type: "error", msg: "Error al verificar el dominio." });
+    } finally {
+      setVerifyingDomainConfig(false);
+    }
+  };
+
   const fetchReports = async () => {
     try {
       setLoading(true);
@@ -2329,6 +2354,28 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   isDarkMode={isDarkMode}
                   userRole={userRole || authUser?.role}
                   userEmail={userEmail}
+                  adminText={adminText}
+                  setAdminText={setAdminText}
+                  adminLogo={adminLogo}
+                  setAdminLogo={setAdminLogo}
+                  adminLogo2={adminLogo2}
+                  setAdminLogo2={setAdminLogo2}
+                  adminLogo3={adminLogo3}
+                  setAdminLogo3={setAdminLogo3}
+                  logoType={logoType}
+                  setLogoType={setLogoType}
+                  logoText={logoText}
+                  setLogoText={setLogoText}
+                  globalEmail={globalEmail}
+                  setGlobalEmail={setGlobalEmail}
+                  customDomain={customDomain}
+                  setCustomDomain={setCustomDomain}
+                  domainVerified={domainVerified}
+                  domainVerificationToken={domainVerificationToken}
+                  onSaveConfig={handleSaveConfig}
+                  isSavingConfig={isSavingConfig}
+                  onVerifyDomainDNS={handleVerifyDomainDNS}
+                  verifyingDomainConfig={verifyingDomainConfig}
                 />
               ) : adminTab === "profile" ? (
               <div className="space-y-8 animate-fade-in relative">
@@ -2619,9 +2666,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   {/* Branding Panel */}
                   <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 backdrop-blur-md flex flex-col justify-between space-y-6">
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-2 border-b border-border-theme/30 pb-2">
-                        <Sparkles className="w-4 h-4 text-accent-theme" />
-                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Marca Blanca (Branding)</h3>
+                      <div className="flex items-center justify-between border-b border-border-theme/30 pb-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-accent-theme" />
+                          <h3 className="font-bold text-sm text-white uppercase tracking-wider">Marca Blanca (Branding)</h3>
+                        </div>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                          Reservado Superusuario
+                        </span>
                       </div>
 
                       {/* Brand Name */}

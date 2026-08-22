@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.41 (Frontend) / v2.5.31 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **superadmin:** agregar gestión de usuarios, vista de equipos y modal de detalles de usuario para Superusuario (v2.5.40/v2.5.31) (`2908175`)
+
 ## [v2.5.40 (Frontend) / v2.5.31 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

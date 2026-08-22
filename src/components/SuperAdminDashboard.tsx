@@ -3,23 +3,70 @@ import {
   Activity, Shield, ShieldAlert, Key, Database, Server, Cpu, HardDrive, 
   Lock, Unlock, RefreshCw, Plus, Trash2, Copy, Check, AlertTriangle, 
   Clock, Zap, CheckCircle2, XCircle, ChevronRight, Terminal, Info, AlertCircle, 
-  Eye, EyeOff, Crown, Users, UserCheck, Search, Mail, Calendar, FileText, Sparkles, ExternalLink, User
+  Eye, EyeOff, Crown, Users, UserCheck, Search, Mail, Calendar, FileText, Sparkles, ExternalLink, User,
+  Globe, UploadCloud, Image as ImageIcon, Save
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { SystemHealthData, ApiKeyItem, UserAccount, Team, Report } from "../types";
+import { SystemHealthData, ApiKeyItem, UserAccount, Team, Report, LogoType } from "../types";
 
 interface SuperAdminDashboardProps {
   isDarkMode: boolean;
   userRole?: string;
   userEmail: string;
+  
+  // White-Label Branding Props
+  adminText?: string;
+  setAdminText?: (val: string) => void;
+  adminLogo?: string;
+  setAdminLogo?: (val: string) => void;
+  adminLogo2?: string;
+  setAdminLogo2?: (val: string) => void;
+  adminLogo3?: string;
+  setAdminLogo3?: (val: string) => void;
+  logoType?: LogoType;
+  setLogoType?: (val: LogoType) => void;
+  logoText?: string;
+  setLogoText?: (val: string) => void;
+  globalEmail?: string;
+  setGlobalEmail?: (val: string) => void;
+  customDomain?: string;
+  setCustomDomain?: (val: string) => void;
+  domainVerified?: boolean;
+  domainVerificationToken?: string;
+  onSaveConfig?: (e: React.FormEvent) => Promise<void>;
+  isSavingConfig?: boolean;
+  onVerifyDomainDNS?: () => Promise<void>;
+  verifyingDomainConfig?: boolean;
 }
 
 export default function SuperAdminDashboard({
   isDarkMode,
   userRole,
-  userEmail
+  userEmail,
+  adminText = "",
+  setAdminText,
+  adminLogo = "",
+  setAdminLogo,
+  adminLogo2 = "",
+  setAdminLogo2,
+  adminLogo3 = "",
+  setAdminLogo3,
+  logoType = "text",
+  setLogoType,
+  logoText = "",
+  setLogoText,
+  globalEmail = "",
+  setGlobalEmail,
+  customDomain = "",
+  setCustomDomain,
+  domainVerified = false,
+  domainVerificationToken = "",
+  onSaveConfig,
+  isSavingConfig = false,
+  onVerifyDomainDNS,
+  verifyingDomainConfig = false
 }: SuperAdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"health" | "database" | "users" | "teams" | "apikeys" | "apilock">("health");
+  const [activeTab, setActiveTab] = useState<"health" | "branding" | "users" | "teams" | "database" | "apikeys" | "apilock">("health");
   const [healthData, setHealthData] = useState<SystemHealthData | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
   const [users, setUsers] = useState<UserAccount[]>([]);
@@ -57,6 +104,9 @@ export default function SuperAdminDashboard({
   const [lockReason, setLockReason] = useState<string>("Mantenimiento programado de la API REST");
   const [isTogglingLock, setIsTogglingLock] = useState<boolean>(false);
   const [lockSuccessMsg, setLockSuccessMsg] = useState<string | null>(null);
+
+  // Drag & drop logo state
+  const [isDraggingLogo, setIsDraggingLogo] = useState<boolean>(false);
 
   // Simulated live server logs
   const [logs, setLogs] = useState<Array<{ id: string; time: string; type: "info" | "warn" | "error" | "success"; text: string }>>([
@@ -366,7 +416,7 @@ export default function SuperAdminDashboard({
               Centro de Control Global Superusuario
             </h2>
             <p className="text-xs md:text-sm text-text-dim-theme max-w-2xl">
-              Inspecciona todos los usuarios registrados, consulta sus detalles completos, administra equipos de trabajo, evalúa la infraestructura en tiempo real y controla el acceso a la API REST.
+              Administración exclusiva de Marca Blanca, dominios personalizados, usuarios registrados, equipos de trabajo, estado de infraestructura y control de acceso API.
             </p>
           </div>
 
@@ -411,6 +461,18 @@ export default function SuperAdminDashboard({
         >
           <Activity className="w-4 h-4 text-amber-400" />
           <span>Salud y Servidor</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("branding")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            activeTab === "branding"
+              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10"
+              : "text-text-dim-theme hover:text-white hover:bg-surface-hover-theme"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>Marca Blanca y Dominio</span>
         </button>
 
         <button
@@ -495,7 +557,6 @@ export default function SuperAdminDashboard({
       {/* ================= TAB 1: SALUD Y SERVIDOR ================= */}
       {activeTab === "health" && (
         <div className="space-y-6 animate-fade-in">
-          {/* Top Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
@@ -515,7 +576,7 @@ export default function SuperAdminDashboard({
 
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
-                <span className="text-xs font-bold uppercase tracking-wider">Tiempo de Actividad (Uptime)</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Tiempo de Actividad</span>
                 <Clock className="w-4 h-4 text-amber-400" />
               </div>
               <div className="text-2xl font-black text-white font-mono">
@@ -557,7 +618,6 @@ export default function SuperAdminDashboard({
             </div>
           </div>
 
-          {/* Console Stream Logs */}
           <div className="p-6 rounded-2xl border border-border-theme bg-slate-950/90 backdrop-blur-md space-y-4 shadow-2xl font-mono">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
@@ -587,10 +647,212 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 2: USUARIOS DEL SISTEMA Y DETALLES ================= */}
+      {/* ================= TAB 2: MARCA BLANCA Y DOMINIO ================= */}
+      {activeTab === "branding" && (
+        <div className="space-y-6 animate-fade-in">
+          {onSaveConfig && (
+            <form onSubmit={onSaveConfig} className="p-6 md:p-8 rounded-3xl border border-amber-500/30 bg-surface-theme/60 backdrop-blur-md space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border-theme/40 pb-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                    Configuración de Marca Blanca (White-Label Branding)
+                  </h3>
+                  <p className="text-xs text-text-dim-theme">
+                    Personaliza el nombre de la agencia, logotipos oficiales, correos globales y dominio personalizado de publicación.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSavingConfig}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingConfig ? "Guardando..." : "Guardar Marca Blanca"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Brand Name */}
+                <div className="space-y-4 p-5 rounded-2xl bg-bg-theme/50 border border-border-theme/40">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Identidad de Marca Blanca</h4>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Nombre de la Agencia / Marca Blanca *</label>
+                    <input
+                      type="text"
+                      value={adminText}
+                      onChange={(e) => setAdminText && setAdminText(e.target.value)}
+                      placeholder="Ej. Tlamatqui Diagnostics / Evolución Agency"
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Tipo de Logo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setLogoType && setLogoType("text")}
+                        className={`py-2 px-3 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                          logoType === "text"
+                            ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                            : "bg-bg-theme border-border-theme text-text-dim-theme"
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Texto
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLogoType && setLogoType("logo")}
+                        className={`py-2 px-3 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                          logoType === "logo"
+                            ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                            : "bg-bg-theme border-border-theme text-text-dim-theme"
+                        }`}
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        Logo / Imagen
+                      </button>
+                    </div>
+                  </div>
+
+                  {logoType === "text" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Texto del Logo</label>
+                      <input
+                        type="text"
+                        value={logoText}
+                        onChange={(e) => setLogoText && setLogoText(e.target.value)}
+                        placeholder="Escribe el texto del logo..."
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Correo Global de Marca Blanca</label>
+                    <input
+                      type="email"
+                      value={globalEmail}
+                      onChange={(e) => setGlobalEmail && setGlobalEmail(e.target.value)}
+                      placeholder="global@miagencia.com"
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Brand Logos URLs */}
+                <div className="space-y-4 p-5 rounded-2xl bg-bg-theme/50 border border-border-theme/40">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Logotipos Principales y Secundarios</h4>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Logo Principal (URL imagen)</label>
+                    <input
+                      type="text"
+                      value={adminLogo}
+                      onChange={(e) => setAdminLogo && setAdminLogo(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Logo Secundario 2 (Opcional)</label>
+                    <input
+                      type="text"
+                      value={adminLogo2}
+                      onChange={(e) => setAdminLogo2 && setAdminLogo2(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Logo Secundario 3 (Opcional)</label>
+                    <input
+                      type="text"
+                      value={adminLogo3}
+                      onChange={(e) => setAdminLogo3 && setAdminLogo3(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Domain Section */}
+              <div className="p-5 rounded-2xl bg-slate-950/70 border border-border-theme/50 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-cyan-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Dominio Personalizado de Marca (Custom Domain)</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    domainVerified ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                  }`}>
+                    {domainVerified ? "🟢 Dominio Verificado" : "🟡 Verificación Pendiente DNS"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Dominio Personalizado (ej. reportes.miagencia.com)</label>
+                    <input
+                      type="text"
+                      value={customDomain}
+                      onChange={(e) => setCustomDomain && setCustomDomain(e.target.value)}
+                      placeholder="reportes.miagencia.com"
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-cyan-400 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+
+                  {domainVerificationToken && (
+                    <div>
+                      <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Registro TXT DNS Requerido</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`tlamatqui-verify=${domainVerificationToken}`}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-bg-theme border border-border-theme text-cyan-300 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(`tlamatqui-verify=${domainVerificationToken}`, "txt_token")}
+                          className="px-3 py-2.5 rounded-xl bg-surface-hover-theme text-white text-xs font-bold cursor-pointer shrink-0"
+                        >
+                          {copiedKeyId === "txt_token" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {onVerifyDomainDNS && customDomain && (
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={onVerifyDomainDNS}
+                      disabled={verifyingDomainConfig}
+                      className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />
+                      {verifyingDomainConfig ? "Verificando Registros DNS..." : "Verificar Registros DNS TXT"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* ================= TAB 3: USUARIOS DEL SISTEMA Y DETALLES ================= */}
       {activeTab === "users" && (
         <div className="space-y-6 animate-fade-in">
-          {/* Controls Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md shadow-xl">
             <div className="flex items-center gap-3 flex-1">
               <div className="relative flex-1 max-w-md">
@@ -622,7 +884,6 @@ export default function SuperAdminDashboard({
             </span>
           </div>
 
-          {/* Users Table */}
           <div className="rounded-2xl border border-border-theme bg-surface-theme/40 overflow-hidden shadow-xl">
             {isLoadingUsers ? (
               <div className="p-12 text-center text-xs text-text-dim-theme">Cargando usuarios...</div>
@@ -693,10 +954,9 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 3: EQUIPOS DEL SISTEMA ================= */}
+      {/* ================= TAB 4: EQUIPOS DEL SISTEMA ================= */}
       {activeTab === "teams" && (
         <div className="space-y-6 animate-fade-in">
-          {/* Search Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md shadow-xl">
             <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-dim-theme" />
@@ -714,7 +974,6 @@ export default function SuperAdminDashboard({
             </span>
           </div>
 
-          {/* Teams Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTeams.map((team) => {
               const teamReportsCount = reports.filter((r) => r.teamId === team.id).length;
@@ -746,7 +1005,6 @@ export default function SuperAdminDashboard({
                     </div>
                   </div>
 
-                  {/* Members badges */}
                   <div className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme block">Integrantes:</span>
                     <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
@@ -758,7 +1016,6 @@ export default function SuperAdminDashboard({
                     </div>
                   </div>
 
-                  {/* Copy Invite Token */}
                   {team.inviteToken && (
                     <button
                       onClick={() => {
@@ -778,7 +1035,7 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 4: BASE DE DATOS ================= */}
+      {/* ================= TAB 5: BASE DE DATOS ================= */}
       {activeTab === "database" && (
         <div className="space-y-6 animate-fade-in">
           <div className="p-6 md:p-8 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-6 shadow-xl">
@@ -844,7 +1101,7 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 5: GESTIÓN DE API KEYS ================= */}
+      {/* ================= TAB 6: GESTIÓN DE API KEYS ================= */}
       {activeTab === "apikeys" && (
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md shadow-xl">
@@ -924,7 +1181,7 @@ export default function SuperAdminDashboard({
         </div>
       )}
 
-      {/* ================= TAB 6: BLOQUEO MAESTRO DE API ================= */}
+      {/* ================= TAB 7: BLOQUEO MAESTRO DE API ================= */}
       {activeTab === "apilock" && (
         <div className="space-y-6 animate-fade-in">
           <div className="p-6 md:p-8 rounded-3xl border border-rose-500/30 bg-gradient-to-br from-rose-950/30 via-slate-900/90 to-surface-theme backdrop-blur-xl space-y-6 shadow-2xl">
@@ -1015,7 +1272,6 @@ export default function SuperAdminDashboard({
               </div>
             )}
 
-            {/* Profile Avatar Header */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-bg-theme/60 border border-border-theme/40">
               <img
                 src={selectedUserDetail.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"}
@@ -1037,7 +1293,6 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
-            {/* Change Role Section */}
             <div className="space-y-2 p-4 rounded-xl bg-surface-hover-theme/40 border border-border-theme/30">
               <label className="block text-xs font-bold text-white uppercase tracking-wider">
                 Cambiar Rol de Usuario (Gestión Superusuario)
@@ -1057,7 +1312,6 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
-            {/* User Metadata Fields */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-bg-theme/40 border border-border-theme/30 space-y-0.5">
                 <span className="text-[10px] font-bold text-text-dim-theme uppercase block">ID de Usuario</span>
@@ -1072,7 +1326,6 @@ export default function SuperAdminDashboard({
               </div>
             </div>
 
-            {/* Equipos Pertenecientes */}
             <div className="space-y-2">
               <h5 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-cyan-400" />
