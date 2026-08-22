@@ -546,6 +546,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
+  // Guardia de navegación: Redirigir a Agentes fuera de secciones restringidas
+  useEffect(() => {
+    if (userRole === "Agente") {
+      if (adminTab === "config") setAdminTab("dashboard");
+      if (teamSubTab !== "dashboard") setTeamSubTab("dashboard");
+    }
+  }, [userRole, adminTab, teamSubTab]);
+
+
   const handleSaveConfig = async () => {
     setIsSavingConfig(true);
     try {
@@ -875,12 +884,21 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     const url = isNew ? "/api/reports" : `/api/reports/${editingReport.id}`;
     const method = isNew ? "POST" : "PUT";
 
+    const reportToSave: Report = {
+      ...editingReport,
+      id: editingReport.id || `rep_${Date.now()}`,
+      createdBy: editingReport.createdBy || userEmail,
+      contactEmail: editingReport.contactEmail || userEmail
+    } as Report;
+
+
     try {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingReport)
+        body: JSON.stringify(reportToSave)
       });
+
 
       if (res.ok) {
         setEditingReport(null);
@@ -923,11 +941,18 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   const activeTeam = teams.find(t => t.id === selectedTeamId) || teams[0] || null;
   const filteredReports = reports.filter(r => {
+    // Si el usuario es Agente, restringir los reportes exclusivamente a los creados por él
+    if (userRole === "Agente") {
+      const isCreator = (r.createdBy && r.createdBy.toLowerCase() === userEmail.toLowerCase()) || 
+                        (r.contactEmail && r.contactEmail.toLowerCase() === userEmail.toLowerCase());
+      if (!isCreator) return false;
+    }
     if (selectedTeamId === "team-default") {
       return !r.teamId || r.teamId === "team-default";
     }
     return r.teamId === selectedTeamId;
   });
+
 
   const processedReports = filteredReports.filter(report => {
     // 1. Search term match (comercio, ID, or tagline)
@@ -1280,7 +1305,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 )}
 
                 {/* Submenu for team items inside AdminPanel sidebar */}
-                {adminTab === "team" && !editingReport && (
+                {adminTab === "team" && !editingReport && userRole !== "Agente" && (
                   <div className="pl-6 pr-2 py-1 space-y-1 ml-4 border-l border-border-theme/40 animate-fade-in">
                     <button
                       onClick={() => {
@@ -1342,23 +1367,26 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 )}
               </div>
 
-              <button
-                onClick={() => {
-                  setAdminTab("config");
-                  if (editingReport) setEditingReport(null);
-                  setSelectedLiveMetricsReport(null);
-                  if (window.innerWidth < 768) setIsSidebarExpanded(false);
-                }}
-                className={`w-full flex items-center gap-3 p-2.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                  adminTab === "config" && !editingReport
-                    ? "bg-accent-theme text-white shadow-md shadow-accent-theme/10"
-                    : "text-text-dim-theme hover:text-white hover:bg-surface-hover-theme"
-                }`}
-                title="Configuración de Sistema"
-              >
-                <Settings className="w-4 h-4 shrink-0" />
-                <span>Configuración</span>
-              </button>
+              {userRole !== "Agente" && (
+                <button
+                  onClick={() => {
+                    setAdminTab("config");
+                    if (editingReport) setEditingReport(null);
+                    setSelectedLiveMetricsReport(null);
+                    if (window.innerWidth < 768) setIsSidebarExpanded(false);
+                  }}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                    adminTab === "config" && !editingReport
+                      ? "bg-accent-theme text-white shadow-md shadow-accent-theme/10"
+                      : "text-text-dim-theme hover:text-white hover:bg-surface-hover-theme"
+                  }`}
+                  title="Configuración de Sistema"
+                >
+                  <Settings className="w-4 h-4 shrink-0" />
+                  <span>Configuración</span>
+                </button>
+              )}
+
             </div>
           ) : (
             <div className="p-3 flex flex-col items-center gap-3 animate-fade-in">
@@ -2438,7 +2466,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             <option value="Superusuario">Superusuario</option>
                           )}
                           <option value="Administrador">Administrador</option>
-                          <option value="Editor">Editor</option>
+                          <option value="Agente">Agente</option>
+
                           <option value="Visor">Visor</option>
                         </select>
                       </div>

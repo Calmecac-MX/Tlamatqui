@@ -123,7 +123,7 @@ const DEFAULT_TEAMS = [
         id: "member-2",
         name: "Sofía Ruiz",
         email: "sofia.ruiz@evolucion.mx",
-        role: "Editor",
+        role: "Agente",
         avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
       },
       {
@@ -1695,7 +1695,7 @@ export async function registerOrSyncUser(userData: {
   name?: string;
   avatar?: string;
   sub?: string;
-  role?: "Superusuario" | "Administrador" | "Editor" | "Visor";
+  role?: "Superusuario" | "Administrador" | "Agente" | "Visor";
   accessToken?: string;
   idToken?: string;
   tokenExpiresAt?: string | Date;
@@ -1780,7 +1780,7 @@ export async function registerOrSyncUser(userData: {
 
   // 2. SI ES UN USUARIO NUEVO:
   const isFirstUserInSystem = users.length === 0;
-  const assignedRole: "Superusuario" | "Administrador" | "Editor" | "Visor" = (isFirstUserInSystem || isConfiguredSuperAdmin)
+  const assignedRole: "Superusuario" | "Administrador" | "Agente" | "Visor" = (isFirstUserInSystem || isConfiguredSuperAdmin)
     ? "Superusuario"
     : (userData.role || "Visor");
 
@@ -1842,7 +1842,7 @@ export async function registerOrSyncUser(userData: {
 /**
  * Actualiza el rol de un usuario existente (Requiere permisos de Superusuario o Administrador).
  */
-export async function updateUserRole(userId: string, newRole: "Superusuario" | "Administrador" | "Editor" | "Visor"): Promise<UserAccount | null> {
+export async function updateUserRole(userId: string, newRole: "Superusuario" | "Administrador" | "Agente" | "Visor"): Promise<UserAccount | null> {
   const users = await getDbUsers();
   const userIndex = users.findIndex((u) => u.id === userId || u.email === userId);
 

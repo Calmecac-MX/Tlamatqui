@@ -148,7 +148,10 @@ export interface Report {
   uniqueVisitorIds?: string[];
   /** ID del equipo asignado a este reporte */
   teamId?: string;
+  /** Correo electrónico del creador o agente asignado */
+  createdBy?: string;
   /** Registro detallado de interacciones y analíticas en tiempo real */
+
   interactions?: {
     /** Diccionario con el número de vistas por nombre de diapositiva */
     slideViews: Record<string, number>;
@@ -190,7 +193,7 @@ export interface Config {
   /** Correo del usuario administrador principal */
   userEmail: string;
   /** Rol del usuario administrador */
-  userRole: "Superusuario" | "Administrador" | "Editor" | "Visor";
+  userRole: "Superusuario" | "Administrador" | "Agente" | "Visor";
   /** Avatar del usuario administrador */
   userAvatar: string;
   /** Intervalo en milisegundos para refrescar métricas en vivo */
@@ -213,7 +216,7 @@ export interface Config {
   domainVerifiedAt?: string;
 }
 
-export type UserRole = "Superusuario" | "Administrador" | "Editor" | "Visor";
+export type UserRole = "Superusuario" | "Administrador" | "Agente" | "Visor";
 
 export interface UserAccount {
   id: string;
@@ -260,7 +263,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "Superusuario" | "Administrador" | "Editor" | "Visor";
+  role: "Superusuario" | "Administrador" | "Agente" | "Visor";
   avatar?: string;
 }
 
@@ -277,9 +280,10 @@ export interface Team {
   /** Token secreto único para el enlace de invitación al equipo */
   inviteToken?: string;
   /** Rol asignado por defecto a los miembros que se unan vía enlace */
-  inviteRole?: "Superusuario" | "Administrador" | "Editor" | "Visor";
+  inviteRole?: "Superusuario" | "Administrador" | "Agente" | "Visor";
   createdAt: string;
 }
+
 
 /**
  * Tipo de logo configurado: 'text' para solo texto o 'logo' para archivo/imagen de logo.

@@ -48,6 +48,7 @@ export const ReportSchema = z.object({
   contactWhatsapp: z.string().default("5512345678"),
   adminLogos: z.array(z.string()).default([]),
   teamId: z.string().optional(),
+  createdBy: z.string().optional(),
 });
 
 export const TeamSchema = z.object({
@@ -60,7 +61,7 @@ export const TeamSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
     email: z.string().email(),
-    role: z.enum(["Administrador", "Editor", "Visor"]),
+    role: z.enum(["Superusuario", "Administrador", "Agente", "Visor"]),
     avatar: z.string().optional(),
   })).default([]),
 });
@@ -82,9 +83,10 @@ export type SendEmailRequest = z.infer<typeof SendEmailRequestSchema>;
 export const SendTeamInviteEmailRequestSchema = z.object({
   toEmail: z.string().email("Correo electrónico no válido"),
   recipientName: z.string().optional(),
-  role: z.enum(["Superusuario", "Administrador", "Editor", "Visor"]).default("Visor"),
+  role: z.enum(["Superusuario", "Administrador", "Agente", "Visor"]).default("Visor"),
   customNote: z.string().optional(),
 });
+
 
 export type SendTeamInviteEmailRequest = z.infer<typeof SendTeamInviteEmailRequestSchema>;
 

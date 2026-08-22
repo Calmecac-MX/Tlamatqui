@@ -61,7 +61,7 @@ export default function TeamDashboard({
   // New Member Form State
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState<"Administrador" | "Editor" | "Visor">("Visor");
+  const [newMemberRole, setNewMemberRole] = useState<"Administrador" | "Agente" | "Visor">("Visor");
   const [newMemberAvatar, setNewMemberAvatar] = useState("");
   const [memberError, setMemberError] = useState<string | null>(null);
 
@@ -94,7 +94,8 @@ export default function TeamDashboard({
   const [isInviteEmailModalOpen, setIsInviteEmailModalOpen] = useState(false);
   const [sendInviteEmail, setSendInviteEmail] = useState("");
   const [sendInviteName, setSendInviteName] = useState("");
-  const [sendInviteRole, setSendInviteRole] = useState<"Superusuario" | "Administrador" | "Editor" | "Visor">("Visor");
+  const [sendInviteRole, setSendInviteRole] = useState<"Superusuario" | "Administrador" | "Agente" | "Visor">("Visor");
+
   const [sendInviteNote, setSendInviteNote] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -211,38 +212,67 @@ export default function TeamDashboard({
     );
   }
 
-  // Filter reports belonging to this team
-  const teamReports = reports.filter(r => r.teamId === activeTeam.id);
+  const isAgent = currentUserRole === "Agente";
+  const isAdminOrSuper = currentUserRole === "Administrador" || currentUserRole === "Superusuario";
 
-  // Calculate annual savings for team reports
-  // Standard average helper for savings based on typical calculations in the app
-  const calculateTotalSavings = () => {
+  useEffect(() => {
+    if (isAgent && (subTab === "members" || subTab === "settings")) {
+      setSubTab("dashboard");
+    }
+  }, [isAgent, subTab]);
+
+  // Raw team reports
+  const rawTeamReports = reports.filter(r => r.teamId === activeTeam.id);
+
+  // If user is Agente, filter reports to only show those created by this seller
+  const teamReports = isAgent
+    ? rawTeamReports.filter(r => (r.createdBy && r.createdBy.toLowerCase() === currentUserEmail.toLowerCase()) || (r.contactEmail && r.contactEmail.toLowerCase() === currentUserEmail.toLowerCase()))
+    : rawTeamReports;
+
+  // Calculate annual savings for a given set of reports
+  const calculateTotalSavingsForReports = (repList: Report[]) => {
     let totalSavings = 0;
-    teamReports.forEach(report => {
-      // In AdminPanel, savings are computed using the report tools and plan structures.
-      // We'll estimate or compute savings based on general report stats.
-      // E.g., visitors * GMV * 0.015 as a generic proxy, or we can use the same logic if we want.
-      // But we can also look at its properties or default to a reasonable simulated mock if not available.
+    repList.forEach(report => {
       const appsCostUSD = report.tools?.reduce((acc, t) => acc + (t.costType === "exact" ? t.costExact : t.costMax), 0) || 0;
-      const appsCostMXN = appsCostUSD * 18.50; // default exchange rate
+      const appsCostMXN = appsCostUSD * 18.50;
       
-      let shopifyPlanCost = 52 * 18.50; // basic standard
+      let shopifyPlanCost = 52 * 18.50;
       if (report.shopifyPlan === "basic") shopifyPlanCost = 19 * 18.50;
       else if (report.shopifyPlan === "grow") shopifyPlanCost = 52 * 18.50;
       else if (report.shopifyPlan === "advanced") shopifyPlanCost = 299 * 18.50;
       else if (report.shopifyPlan === "plus") shopifyPlanCost = 2000 * 18.50;
 
-      const shopifyTransactionFee = report.gmv * 0.01; // standard average
+      const shopifyTransactionFee = (report.gmv || 0) * 0.01;
       const totalShopifyCost = shopifyPlanCost + shopifyTransactionFee + appsCostMXN;
 
-      const tnPlanCost = 349; // standard average plan
+      const tnPlanCost = 349;
       const currentSavings = totalShopifyCost - tnPlanCost;
       totalSavings += currentSavings > 0 ? currentSavings : 0;
     });
     return totalSavings;
   };
 
-  const annualSavings = calculateTotalSavings() * 12;
+  const annualSavings = calculateTotalSavingsForReports(teamReports) * 12;
+
+  // Compute Leaderboard Ranking per Agent for Admins / Superadmins
+  const agentRanking = activeTeam.members.map(member => {
+    const memberEmail = member.email.toLowerCase();
+    const agentReports = rawTeamReports.filter(r => 
+      (r.createdBy && r.createdBy.toLowerCase() === memberEmail) ||
+      (r.contactEmail && r.contactEmail.toLowerCase() === memberEmail)
+    );
+
+    const totalGmv = agentReports.reduce((sum, r) => sum + (r.gmv || 0), 0);
+    const totalAnnualSavings = calculateTotalSavingsForReports(agentReports) * 12;
+
+    return {
+      member,
+      reportsCount: agentReports.length,
+      totalGmv,
+      totalAnnualSavings
+    };
+  }).sort((a, b) => b.totalGmv - a.totalGmv || b.reportsCount - a.reportsCount);
+
 
   // Handle Add Member
   const handleAddMember = async (e: React.FormEvent) => {
@@ -370,7 +400,8 @@ export default function TeamDashboard({
   };
 
   // Handle Edit Member Role
-  const handleSaveMemberRole = async (memberId: string, role: "Superusuario" | "Administrador" | "Editor" | "Visor") => {
+  const handleSaveMemberRole = async (memberId: string, role: "Superusuario" | "Administrador" | "Agente" | "Visor") => {
+
     const updatedTeam = {
       ...activeTeam,
       members: activeTeam.members.map(m => m.id === memberId ? { ...m, role } : m)
@@ -527,7 +558,78 @@ export default function TeamDashboard({
               </div>
             </div>
 
+            {/* Ranking & Rendimiento por Agente (Sólo para Administradores / Superusuarios) */}
+            {isAdminOrSuper && (
+              <div className="p-6 rounded-2xl border border-border-theme bg-surface-theme/40 space-y-4">
+                <div className="flex items-center justify-between border-b border-border-theme/30 pb-3">
+                  <div>
+                    <h3 className="font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      Ranking & Rendimiento por Agente
+                    </h3>
+                    <p className="text-xs text-text-dim-theme mt-0.5">Extracto comercial de diagnósticos, volumen de ventas y ahorro proyectado por vendedor.</p>
+                  </div>
+                  <span className="text-xs font-bold text-accent-theme bg-accent-theme/10 px-2.5 py-1 rounded-lg border border-accent-theme/20">
+                    {agentRanking.filter(a => a.reportsCount > 0 || a.member.role === "Agente").length} Agentes
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+                  {agentRanking.map((agent, index) => {
+                    const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`;
+                    return (
+                      <div key={agent.member.id} className="p-4 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3 relative overflow-hidden">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-base font-extrabold text-amber-400">{medal}</span>
+                            <img
+                              src={agent.member.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"}
+                              alt={agent.member.name}
+                              className="w-9 h-9 rounded-full border border-border-theme object-cover shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-xs text-white truncate">{agent.member.name}</h4>
+                              <p className="text-[10px] text-text-dim-theme truncate">{agent.member.email}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 ${
+                            agent.member.role === "Administrador" 
+                              ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                              : agent.member.role === "Agente"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                : "bg-surface-theme text-text-dim-theme border-border-theme"
+                          }`}>
+                            {agent.member.role}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-theme/30 text-center">
+                          <div>
+                            <span className="block text-[9px] text-text-dim-theme uppercase font-semibold">Reportes</span>
+                            <span className="text-xs font-extrabold text-white">{agent.reportsCount}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[9px] text-text-dim-theme uppercase font-semibold">GMV Auditado</span>
+                            <span className="text-xs font-extrabold text-emerald-400">
+                              ${(agent.totalGmv / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}k
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-[9px] text-text-dim-theme uppercase font-semibold">Ahorro Anual</span>
+                            <span className="text-xs font-extrabold text-amber-400">
+                              ${(agent.totalAnnualSavings / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}k
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Dashboard main split */}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Column: Recent Team Reports */}
               <div className="lg:col-span-7 space-y-4">
@@ -609,12 +711,13 @@ export default function TeamDashboard({
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
                           member.role === "Administrador" 
                             ? "bg-red-theme/10 border-red-theme/25 text-red-theme" 
-                            : member.role === "Editor"
-                              ? "bg-accent-theme/10 border-accent-theme/25 text-accent-theme"
+                            : member.role === "Agente"
+                              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
                               : "bg-surface-theme border-border-theme text-text-dim-theme"
                         }`}>
                           {member.role}
                         </span>
+
                       </div>
                     ))}
                   </div>
@@ -705,7 +808,7 @@ export default function TeamDashboard({
                         <option value="Superusuario">Superusuario (Control Total del Sistema)</option>
                       )}
                       <option value="Administrador">Administrador (Control total del equipo)</option>
-                      <option value="Editor">Editor (Modifica diagnósticos)</option>
+                      <option value="Agente">Agente (Gestiona sus diagnósticos)</option>
                       <option value="Visor">Visor (Sólo lectura)</option>
                     </select>
                   </div>
@@ -784,7 +887,7 @@ export default function TeamDashboard({
                               <option value="Superusuario">Superusuario</option>
                             )}
                             <option value="Administrador">Administrador</option>
-                            <option value="Editor">Editor</option>
+                            <option value="Agente">Agente</option>
                             <option value="Visor">Visor</option>
                           </select>
                           <button 
@@ -806,14 +909,15 @@ export default function TeamDashboard({
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                           member.role === "Administrador" 
                             ? "bg-red-theme/10 border-red-theme/25 text-red-theme" 
-                            : member.role === "Editor"
-                              ? "bg-accent-theme/10 border-accent-theme/25 text-accent-theme"
+                            : member.role === "Agente"
+                              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
                               : "bg-surface-theme border-border-theme text-text-dim-theme"
                         }`}>
                           {member.role}
                         </span>
                       )}
                     </div>
+
 
                     {/* Actions if we are not editing role */}
                     {isEditingMember?.id !== member.id && (
@@ -971,7 +1075,8 @@ export default function TeamDashboard({
                               <option value="Superusuario">Superusuario</option>
                             )}
                             <option value="Administrador">Administrador</option>
-                            <option value="Editor">Editor</option>
+                            <option value="Agente">Agente</option>
+
                             <option value="Visor">Visor</option>
                           </select>
                         </div>
@@ -1344,7 +1449,8 @@ export default function TeamDashboard({
                         <option value="Superusuario">Superusuario</option>
                       )}
                       <option value="Administrador">Administrador</option>
-                      <option value="Editor">Editor</option>
+                      <option value="Agente">Agente</option>
+
                       <option value="Visor">Visor</option>
                     </select>
                   </div>

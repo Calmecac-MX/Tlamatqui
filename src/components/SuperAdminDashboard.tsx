@@ -229,7 +229,8 @@ export default function SuperAdminDashboard({
   }, [autoRefresh]);
 
   // Handle Update User Role
-  const handleUpdateUserRole = async (targetUserId: string, newRole: "Superusuario" | "Administrador" | "Editor" | "Visor") => {
+  const handleUpdateUserRole = async (targetUserId: string, newRole: "Superusuario" | "Administrador" | "Agente" | "Visor") => {
+
     setIsUpdatingUserRole(true);
     try {
       const res = await fetch(`/api/users/${targetUserId}/role`, {
@@ -935,7 +936,7 @@ export default function SuperAdminDashboard({
                 <option value="all">Todos los Roles</option>
                 <option value="Superusuario">Superusuario</option>
                 <option value="Administrador">Administrador</option>
-                <option value="Editor">Editor</option>
+                <option value="Agente">Agente</option>
                 <option value="Visor">Visor</option>
               </select>
             </div>
@@ -983,8 +984,8 @@ export default function SuperAdminDashboard({
                               ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
                               : user.role === "Administrador"
                               ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                              : user.role === "Editor"
-                              ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                              : user.role === "Agente"
+                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                               : "bg-slate-500/20 text-slate-300 border-slate-500/40"
                           }`}>
                             {user.role}
@@ -1437,7 +1438,8 @@ export default function SuperAdminDashboard({
                 >
                   <option value="Superusuario">Superusuario (Acceso Total)</option>
                   <option value="Administrador">Administrador</option>
-                  <option value="Editor">Editor</option>
+                  <option value="Agente">Agente</option>
+
                   <option value="Visor">Visor</option>
                 </select>
               </div>

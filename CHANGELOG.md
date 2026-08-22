@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.47 (Frontend) / v2.5.45 (Backend)] - 2026-08-22
+
+### ⚡ Optimización y Rendimiento
+- **core:** optimizar rendimiento fullstack con memory cache json, gzip middleware y code-splitting frontend (`9232a20`)
+
 ## [v2.5.46 (Frontend) / v2.5.44 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

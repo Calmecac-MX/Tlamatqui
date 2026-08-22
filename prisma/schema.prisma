@@ -17,9 +17,10 @@ generator client {
 enum Role {
   Superusuario
   Administrador
-  Editor
+  Agente
   Visor
 }
+
 
 enum ShopifyPlan {
   basic
@@ -167,8 +168,10 @@ model Report {
   interactions           ReportInteraction?
   teamId                 String?
   team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  createdBy              String?
   creatorId              String?
   creator                User?                  @relation("ReportCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+
 
   @@index([teamId])
   @@index([creatorId])
