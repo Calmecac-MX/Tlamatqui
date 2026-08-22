@@ -9,6 +9,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 
+import { showAuth0Lock, hideAuth0Lock, LockOptions } from "./auth0LockService";
+
 export interface AuthUser {
   name: string;
   email: string;
@@ -22,6 +24,7 @@ export interface AuthContextType {
   isLoading: boolean;
   user: AuthUser | null;
   loginWithRedirect: () => Promise<void>;
+  loginWithLock: (options?: LockOptions) => void;
   logout: () => void;
   isAuth0Configured: boolean;
   demoLogin: (customUser?: Partial<AuthUser>) => void;
@@ -102,7 +105,11 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
               }
             });
           },
+          loginWithLock: (options?: LockOptions) => {
+            showAuth0Lock(options);
+          },
           logout: () => {
+            hideAuth0Lock();
             auth0.logout({
               logoutParams: {
                 returnTo: window.location.origin
@@ -138,7 +145,16 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
             demoLogin();
           }
         },
+        loginWithLock: (options?: LockOptions) => {
+          if (isAuth0Configured) {
+            demoLogout();
+            showAuth0Lock(options);
+          } else {
+            demoLogin();
+          }
+        },
         logout: () => {
+          hideAuth0Lock();
           demoLogout();
         },
         isAuth0Configured,

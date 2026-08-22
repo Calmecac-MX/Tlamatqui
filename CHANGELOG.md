@@ -4,6 +4,21 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.29 (Frontend) / v2.5.19 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **docker:** agregar docker-compose.backend.yml exclusivo para el servicio de backend y postgres (`cb1d3ad`)
+
+### 🐛 Corregido & Bug Fixes
+- **build:** reemplazar enlaces simbolicos rotos de skills por directorios reales para vercel build (`3ec6ff8`)
+- **ci:** añadir token configurable para release-please action (`b171884`)
+
+### 📚 Documentación
+- **release:** actualizar cabeceras de version de cerebros a v2.5.28 / v2.5.19 (`858df79`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **release:** v2.5.28 (Frontend) / v2.5.19 (Backend) (`6d02bfd`)
+
 ## [v2.5.28 (Frontend) / v2.5.19 (Backend)] - 2026-08-20
 
 ### 🚀 Features & Nuevas Funcionalidades
