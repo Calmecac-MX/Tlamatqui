@@ -49,34 +49,41 @@ const PORT = Number(process.env.PORT) || 4000;
 
 // Configuración avanzada de Middleware CORS para comunicación cliente-servidor desacoplada
 const envOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim().replace(/\/+$/, "")).filter(Boolean)
   : [];
 
 const frontendOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim()).filter(Boolean)
+  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim().replace(/\/+$/, "")).filter(Boolean)
   : [];
 
-const allowedOrigins: string[] | boolean = (envOrigins.length > 0 || frontendOrigins.length > 0)
-  ? Array.from(new Set([...envOrigins, ...frontendOrigins]))
-  : true;
+const defaultProductionOrigins = [
+  "https://tlamatqui.calmecac.lat",
+  "https://api.tlamatqui.calmecac.lat",
+  "http://localhost:3000",
+  "http://localhost:4000",
+  "http://localhost:5173"
+];
+
+const rawOrigins = [...envOrigins, ...frontendOrigins, ...defaultProductionOrigins];
+const allowedOriginsList = Array.from(new Set(rawOrigins.map((o) => o.trim().replace(/\/+$/, "")).filter(Boolean)));
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     // Permitir peticiones sin origen (como Postman, CLI, cURL o Server-to-Server)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins === true) {
+    const cleanOrigin = origin.trim().replace(/\/+$/, "");
+
+    if (allowedOriginsList.includes("*") || allowedOriginsList.includes(cleanOrigin)) {
       return callback(null, true);
     }
 
-    if (Array.isArray(allowedOrigins)) {
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
-        return callback(null, true);
-      }
-      return callback(new Error(`Origen ${origin} no permitido por política CORS`));
+    // Permitir subdominios de calmecac.lat y vercel.app automáticamente
+    if (cleanOrigin.endsWith(".calmecac.lat") || cleanOrigin.endsWith(".vercel.app")) {
+      return callback(null, true);
     }
 
-    callback(null, true);
+    callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

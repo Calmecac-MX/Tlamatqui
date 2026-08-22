@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.33 (Frontend) / v2.5.27 (Backend)] - 2026-08-22
+
+### 🐛 Corregido & Bug Fixes
+- **auth:** preservar parametros de autenticacion auth0 en redireccion de produccion (`c3d89a2`)
+
 ## [v2.5.33 (Frontend) / v2.5.26 (Backend)] - 2026-08-22
 
 ### 🐛 Corregido & Bug Fixes
