@@ -38,7 +38,7 @@ services:
       - PORT=4000
       - NODE_ENV=production
       - SERVE_STATIC=false
-      - APP_URL=${APP_URL:-http://localhost}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-tlamatqui_diagnostics}?schema=public
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80,http://localhost:3000}
       - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-}

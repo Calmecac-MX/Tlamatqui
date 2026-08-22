@@ -4,6 +4,17 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.30 (Frontend) / v2.5.21 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **architecture:** migrar repositorio a arquitectura monorepo desacoplada con NPM Workspaces (apps/frontend y apps/backend) (`b31f584`)
+
+### 📚 Documentación
+- **ai:** actualizar arquitectura monorepo en AGENTS.md (`5fc4f5c`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **clean:** eliminar archivos obsoletos de la raiz y ordenar la estructura del monorepo (`6bad3b4`)
+
 ## [v2.5.30 (Frontend) / v2.5.20 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

@@ -54,8 +54,7 @@ const envOrigins = process.env.CORS_ORIGIN
 
 const frontendOrigins = [
   process.env.FRONTEND_URL,
-  process.env.APP_URL,
-  process.env.APP_BASE_URL
+  process.env.APP_URL
 ].filter(Boolean) as string[];
 
 const allowedOrigins: string[] | boolean = (envOrigins.length > 0 || frontendOrigins.length > 0)
