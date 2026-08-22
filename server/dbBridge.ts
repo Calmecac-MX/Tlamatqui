@@ -1652,9 +1652,21 @@ export async function getDbUsers(): Promise<UserAccount[]> {
 }
 
 /**
+ * Retorna la dirección de correo configurada en variables de entorno como Superusuario Inicial.
+ */
+export function getConfiguredSuperAdminEmail(): string {
+  return (
+    process.env.SUPERADMIN_EMAIL ||
+    process.env.INITIAL_SUPERADMIN_EMAIL ||
+    process.env.FIRST_SUPERADMIN_EMAIL ||
+    ""
+  ).trim().toLowerCase();
+}
+
+/**
  * Registra un nuevo usuario o sincroniza su perfil en cada inicio de sesión.
- * REGLA OBLIGATORIA: Si la base de datos de usuarios está vacía (0 usuarios registrados),
- * se otorga automáticamente el rol de "Superusuario" al primer usuario creado.
+ * REGLA OBLIGATORIA: Si la base de datos de usuarios está vacía (0 usuarios registrados)
+ * o el correo coincide con la variable SUPERADMIN_EMAIL en .env, se le otorga automáticamente el rol de "Superusuario".
  */
 export async function registerOrSyncUser(userData: {
   email: string;
@@ -1666,19 +1678,27 @@ export async function registerOrSyncUser(userData: {
   const users = await getDbUsers();
   const cleanEmail = userData.email.trim().toLowerCase();
   
+  const configuredSuperAdminEmail = getConfiguredSuperAdminEmail();
+  const isConfiguredSuperAdmin = Boolean(
+    configuredSuperAdminEmail && cleanEmail === configuredSuperAdminEmail
+  );
+
   // Buscar si el usuario ya existe por email o sub de Auth0
   const existingUserIndex = users.findIndex(
     (u) => (cleanEmail && u.email.toLowerCase() === cleanEmail) || (userData.sub && u.sub === userData.sub)
   );
 
-  // 1. SI EL USUARIO YA EXISTE: Preservar su rol asignado previamente
+  // 1. SI EL USUARIO YA EXISTE: Preservar su rol o promoverlo a Superusuario si coincide con SUPERADMIN_EMAIL en .env
   if (existingUserIndex >= 0) {
     const existingUser = users[existingUserIndex];
+    const targetRole = isConfiguredSuperAdmin ? "Superusuario" : existingUser.role;
+
     const updatedUser: UserAccount = {
       ...existingUser,
       name: userData.name || existingUser.name,
       avatar: userData.avatar || existingUser.avatar,
       sub: userData.sub || existingUser.sub,
+      role: targetRole,
       updatedAt: new Date().toISOString()
     };
 
@@ -1693,7 +1713,8 @@ export async function registerOrSyncUser(userData: {
             data: {
               name: updatedUser.name,
               avatar: updatedUser.avatar,
-              sub: updatedUser.sub
+              sub: updatedUser.sub,
+              role: targetRole
             }
           });
         } catch (err) {
@@ -1706,15 +1727,15 @@ export async function registerOrSyncUser(userData: {
   }
 
   // 2. SI ES UN USUARIO NUEVO:
-  // REGLA CLAVE: Si count == 0 (no hay ningún usuario registrado), asignar "Superusuario".
+  // REGLA CLAVE: Si count == 0 (no hay ningún usuario registrado) o su correo coincide con SUPERADMIN_EMAIL en .env, asignar "Superusuario".
   // Si no, asignar el rol solicitado o "Visor" por defecto.
   const isFirstUserInSystem = users.length === 0;
-  const assignedRole: "Superusuario" | "Administrador" | "Editor" | "Visor" = isFirstUserInSystem
+  const assignedRole: "Superusuario" | "Administrador" | "Editor" | "Visor" = (isFirstUserInSystem || isConfiguredSuperAdmin)
     ? "Superusuario"
     : (userData.role || "Visor");
 
-  if (isFirstUserInSystem) {
-    console.log(`\x1b[33m[User Manager]\x1b[0m ¡Primer usuario creado en el sistema! Otorgando rol de Superusuario a: ${cleanEmail}`);
+  if (isFirstUserInSystem || isConfiguredSuperAdmin) {
+    console.log(`\x1b[33m[User Manager]\x1b[0m Otorgando rol de Superusuario a: ${cleanEmail} (Motivo: ${isFirstUserInSystem ? "Primer usuario registrado en el sistema" : "Coincidencia con SUPERADMIN_EMAIL en .env"})`);
   }
 
   const newUser: UserAccount = {

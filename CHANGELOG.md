@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.41 (Frontend) / v2.5.32 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **superadmin:** trasladar la configuración de Marca Blanca y Dominio Personalizado a la consola de Superusuario (v2.5.41/v2.5.31) (`f8b877a`)
+
 ## [v2.5.41 (Frontend) / v2.5.31 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades
