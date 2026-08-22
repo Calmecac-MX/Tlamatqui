@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.41 (Frontend) / v2.5.34 (Backend)] - 2026-08-22
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **db:** migrar esquema inicial a Prisma Postgres e integrar clientes v7.9.1 (v2.5.41/v2.5.33) (`496f681`)
+
 ## [v2.5.41 (Frontend) / v2.5.33 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

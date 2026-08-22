@@ -1,5 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// ==============================================================================
+// TLAMATQUI - SCHEMA PRISMA (OPTIMIZADO Y SIMPLIFICADO CON RELACIONES PRUDENTES)
+// ==============================================================================
 
 datasource db {
   provider = "postgresql"
@@ -9,9 +10,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// ==========================================
-// ENUMS (Representing exact model types)
-// ==========================================
+// ==============================================================================
+// 1. ENUMS (Roles y tipos de planes)
+// ==============================================================================
 
 enum Role {
   Superusuario
@@ -56,86 +57,73 @@ enum LogoType {
   logo
 }
 
-// ==========================================
-// MODELS
-// ==========================================
+// ==============================================================================
+// 2. 👥 USUARIOS, EQUIPOS Y AUTENTICACIÓN
+// ==============================================================================
 
-/// Configuration model representing the global diagnostic panel parameters.
-model Config {
-  id                     String @id @default("default")
-  adminLogoUrl           String
-  adminLogo2Url          String? @default("")
-  adminLogo3Url          String? @default("")
-  adminTextUrl           String
-  appUrl                 String
-  defaultContactEmail    String
-  defaultContactWhatsapp String
-  customExchangeRate     Float
-  userName               String
-  userEmail              String
-  userRole               Role   @default(Administrador)
-  userAvatar             String
-  metricsUpdateInterval  Int
-  brandCard2Title        String?
-  brandCard2Desc         String?
-  brandCard2Logo         String?
-  brandCard2Link         String?
-  customDomain           String? @default("")
-  domainVerificationToken String? @default("")
-  domainVerified         Boolean @default(false)
-  domainVerifiedAt       DateTime?
+/// Cuenta de usuario registrada en la plataforma Tlamatqui.
+model User {
+  id              String       @id @default(uuid())
+  email           String       @unique
+  name            String
+  role            Role         @default(Visor)
+  avatar          String?
+  sub             String?      @unique
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // 🔗 Relaciones prudenciales de usuario
+  ownedTeams      Team[]       @relation("TeamOwner")
+  teamMemberships TeamMember[]
+  createdReports  Report[]     @relation("ReportCreator")
+  apiKeys         ApiKey[]
+
+  @@index([email])
 }
 
-/// Team model representing an agency or team workspace.
+/// Equipo o workspace de trabajo colaborativo de una agencia / cliente.
 model Team {
-  id         String       @id
-  name       String
-  image      String?
-  ownerName  String
-  ownerEmail String
+  id          String       @id @default(uuid())
+  name        String
+  image       String?
+  ownerName   String
+  ownerEmail  String
+  ownerId     String?
+  owner       User?        @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   members     TeamMember[]
   reports     Report[]
   inviteToken String?      @default("")
   inviteRole  Role         @default(Visor)
   createdAt   DateTime     @default(now())
+
+  @@index([ownerEmail])
+  @@index([ownerId])
 }
 
-/// Individual members belonging to a team.
+/// Integrantes y roles dentro de un equipo o workspace.
 model TeamMember {
-  id       String  @id
-  name     String
-  email    String
-  role     Role    @default(Visor)
-  avatar   String?
-  teamId   String
-  team     Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  id      String  @id @default(uuid())
+  name    String
+  email   String
+  role    Role    @default(Visor)
+  avatar  String?
+  teamId  String
+  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([teamId])
+  @@index([userId])
+  @@index([email])
 }
 
-/// Standard templates used to pre-populate comparison tables.
-model ComparisonTemplate {
-  id   String                  @id
-  name String
-  rows ComparisonTemplateRow[]
-}
+// ==============================================================================
+// 3. 📊 REPORTES DE DIAGNÓSTICO FINANCIERO Y FUGAS
+// ==============================================================================
 
-/// Rows belonging to a standard comparison template.
-model ComparisonTemplateRow {
-  id         String             @id
-  variable   String
-  shopify    String
-  tiendanube String
-  pillText   String
-  templateId String
-  template   ComparisonTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@index([templateId])
-}
-
-/// Full diagnostic reports prepared for e-commerce clients.
+/// Reporte completo de auditoría y simulación de ahorros para clientes e-commerce.
 model Report {
-  id                     String                 @id
+  id                     String                 @id @default(uuid())
   name                   String
   logo                   String?
   tagline                String?
@@ -157,7 +145,7 @@ model Report {
   comparisonRows         ReportComparisonRow[]
   contactEmail           String
   contactWhatsapp        String
-  adminLogos             Json                   // Array of logo URLs: string[]
+  adminLogos             Json                   // Lista de logos: string[]
   brandCard1Title        String?
   brandCard1Desc         String?
   brandCard1Logo         String?
@@ -171,17 +159,20 @@ model Report {
   viewCount              Int                    @default(0)
   openCount              Int                    @default(0)
   uniqueVisitors         Int                    @default(0)
-  uniqueVisitorIds       Json?                  // Array of string visitor IDs: string[]
+  uniqueVisitorIds       Json?                  // Lista de visitor IDs: string[]
   interactions           ReportInteraction?
   teamId                 String?
   team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  creatorId              String?
+  creator                User?                  @relation("ReportCreator", fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([teamId])
+  @@index([creatorId])
 }
 
-/// E-commerce app/tools diagnosed within a specific report as leakage points.
+/// Herramienta / App de e-commerce diagnosticada como punto de fuga dentro de un reporte.
 model ReportTool {
-  id          String    @id
+  id          String    @id @default(uuid())
   name        String
   category    String
   costType    CostType  @default(exact)
@@ -199,9 +190,9 @@ model ReportTool {
   @@index([reportId])
 }
 
-/// Active comparison table rows configured for a specific report.
+/// Filas de la tabla comparativa activas configuradas para un reporte.
 model ReportComparisonRow {
-  id         String @id
+  id         String @id @default(uuid())
   variable   String
   shopify    String
   tiendanube String
@@ -212,19 +203,43 @@ model ReportComparisonRow {
   @@index([reportId])
 }
 
-/// Real-time interaction log counters and metrics for an individual report.
+/// Métricas e historial de interacciones en tiempo real de un reporte.
 model ReportInteraction {
   id                     String @id @default(uuid())
   reportId               String @unique
   report                 Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  slideViews             Json   // Record<string, number> mapping slide name to view count
+  slideViews             Json   // Record<string, number>
   whatsappClicks         Int    @default(0)
   toolClicks             Int    @default(0)
   calculatorInteractions Int    @default(0)
   timeSpentSeconds       Int    @default(0)
 }
 
-/// Partner brand and team configuration model.
+// ==============================================================================
+// 4. 📋 PLANTILLAS Y SOCIOS
+// ==============================================================================
+
+/// Plantilla estándar utilizada para pre-poblar las tablas comparativas.
+model ComparisonTemplate {
+  id   String                  @id @default(uuid())
+  name String
+  rows ComparisonTemplateRow[]
+}
+
+/// Filas pertenecientes a una plantilla de comparación.
+model ComparisonTemplateRow {
+  id         String             @id @default(uuid())
+  variable   String
+  shopify    String
+  tiendanube String
+  pillText   String
+  templateId String
+  template   ComparisonTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+/// Configuración de marca de socio estratégico.
 model Partner {
   id          String          @id @default("default")
   name        String          @default("Socio Principal")
@@ -234,19 +249,49 @@ model Partner {
   members     PartnerMember[]
 }
 
-/// Members belonging to a partner brand with specific roles.
+/// Integrantes asociados a la marca del socio estratégico.
 model PartnerMember {
   id        String  @id @default(uuid())
   name      String
   email     String
-  role      String  @default("Lector") // "Lector" or "Lector y Comentarista"
+  role      String  @default("Lector")
   partnerId String
   partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
 
   @@index([partnerId])
 }
 
-/// Logo configuration model to set logo type (text or logo), logo content/file, and global contact email.
+// ==============================================================================
+// 5. ⚙️ CONFIGURACIÓN GLOBAL, LLAVES Y SISTEMA
+// ==============================================================================
+
+/// Configuración global de marca blanca y parámetros de la plataforma.
+model Config {
+  id                     String    @id @default("default")
+  adminLogoUrl           String
+  adminLogo2Url          String?   @default("")
+  adminLogo3Url          String?   @default("")
+  adminTextUrl           String
+  appUrl                 String
+  defaultContactEmail    String
+  defaultContactWhatsapp String
+  customExchangeRate     Float
+  userName               String
+  userEmail              String
+  userRole               Role      @default(Administrador)
+  userAvatar             String
+  metricsUpdateInterval  Int
+  brandCard2Title        String?
+  brandCard2Desc         String?
+  brandCard2Logo         String?
+  brandCard2Link         String?
+  customDomain           String?   @default("")
+  domainVerificationToken String?  @default("")
+  domainVerified         Boolean   @default(false)
+  domainVerifiedAt       DateTime?
+}
+
+/// Configuración de branding de logotipos y correo de contacto global.
 model LogoConfig {
   id          String   @id @default("default")
   logoType    LogoType @default(text)
@@ -257,36 +302,27 @@ model LogoConfig {
   updatedAt   DateTime @updatedAt
 }
 
-/// User account registered in the platform.
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      Role     @default(Visor)
-  avatar    String?
-  sub       String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-/// API Key management for external/programmatic API integrations.
+/// Llaves de API para integración programática con servicios externos.
 model ApiKey {
   id            String    @id @default(uuid())
   name          String
   keyHash       String    @unique
   maskedKey     String
-  status        String    @default("active") // "active" | "revoked"
+  status        String    @default("active")
   createdByName String?
+  createdById   String?
+  createdBy     User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
   lastUsedAt    DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([createdById])
 }
 
-/// Global system settings and operational switches (e.g., API Lock).
+/// Estado global y modificadores del sistema (ej. Bloqueo Maestro de API).
 model SystemSetting {
   id         String   @id @default("default")
   apiLocked  Boolean  @default(false)
   lockReason String?  @default("Mantenimiento programado de la API")
   updatedAt  DateTime @updatedAt
 }
-
