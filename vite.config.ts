@@ -10,6 +10,16 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     build: {
       emptyOutDir: false,
+      chunkSizeWarningLimit: 1600,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            charts: ['recharts'],
+            utils: ['jspdf', 'gsap', 'motion']
+          }
+        }
+      }
     },
     resolve: {
       alias: {
