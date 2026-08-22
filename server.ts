@@ -53,8 +53,7 @@ const envOrigins = process.env.CORS_ORIGIN
   : [];
 
 const frontendOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.APP_URL
+  process.env.FRONTEND_URL
 ].filter(Boolean) as string[];
 
 const allowedOrigins: string[] | boolean = (envOrigins.length > 0 || frontendOrigins.length > 0)
@@ -188,7 +187,7 @@ app.post("/api/send-report-email", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "El reporte solicitado no existe." });
     }
 
-    const frontendBaseUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const cleanBaseUrl = frontendBaseUrl.endsWith("/") ? frontendBaseUrl.slice(0, -1) : frontendBaseUrl;
     const reportUrl = `${cleanBaseUrl}/?report=${report.id}&shared=true`;
 
@@ -830,7 +829,7 @@ if (process.env.NODE_ENV === "production" && process.env.SERVE_STATIC === "true"
 if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== "test") {
   app.listen(PORT, "0.0.0.0", () => {
     const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
-    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     console.log(`\x1b[36m[Backend REST API]\x1b[0m Escuchando en ${backendUrl} (Puerto ${PORT})`);
     console.log(`\x1b[35m[Frontend Configured]\x1b[0m CORS permitiendo peticiones desde: ${frontendUrl}`);
     console.log(`\x1b[32m[Health Check]\x1b[0m Endpoint de salud disponible en ${backendUrl}/api/health`);

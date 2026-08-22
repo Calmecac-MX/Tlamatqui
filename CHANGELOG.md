@@ -4,6 +4,18 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.32 (Frontend) / v2.5.23 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **architecture:** reunificar la aplicacion en una sola estructura unificada fullstack que se despliega junta (`de708a8`)
+
+### 📚 Documentación
+- **readme:** redactar README.md completo y actualizar arquitectura docker y reglas de IA para la estructura unificada fullstack (`6765cb5`)
+- **ai:** actualizar documentacion de la arquitectura unificada fullstack (`ee2cc57`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **clean:** eliminar directorio .claude no utilizado (`7d2276b`)
+
 ## [v2.5.31 (Frontend) / v2.5.22 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código
