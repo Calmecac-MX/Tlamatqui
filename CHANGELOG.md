@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.48 (Frontend) / v2.5.45 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **roles:** integrar rol Agente, visibilidad restringida por vendedor y ranking de rendimiento comercial (`a44e8ea`)
+
 ## [v2.5.47 (Frontend) / v2.5.45 (Backend)] - 2026-08-22
 
 ### ⚡ Optimización y Rendimiento

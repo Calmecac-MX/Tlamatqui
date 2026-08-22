@@ -32,7 +32,8 @@ interface TeamDashboardProps {
 
 /**
  * Módulo de Gestión de Espacios de Trabajo y Equipos.
- * Permite administrar miembros de la agencia, asignar roles (Administrador, Editor, Visor),
+ * Permite administrar miembros de la agencia, asignar roles (Administrador, Agente, Visor),
+
  * consultar estadísticas por equipo y gestionar la marca del socio consultor estratégico.
  */
 export default function TeamDashboard({

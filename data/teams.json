@@ -17,7 +17,8 @@
         "id": "member-2",
         "name": "Sofía Ruiz",
         "email": "$enc$gcm$39debc7c6eb9011f09f45c2e:16fd62efc64596483588a478bc51f47d:761230071eb4bffcab42a33ec5b630e11f3afa83b4e6e9",
-        "role": "Editor",
+        "role": "Agente",
+
         "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
       },
       {
