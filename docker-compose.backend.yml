@@ -27,11 +27,7 @@ services:
   # 2. Servidor Backend API REST (Express / Node.js)
   # ============================================================================
   backend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-    # Descomenta la siguiente línea si prefieres descargar la imagen precompilada de GHCR:
-    # image: ghcr.io/cesar-ayar/tlamatqui-backend:latest
+    image: ghcr.io/cesar-ayar/tlamatqui-backend:latest
     container_name: tlamatqui-backend-api
     restart: unless-stopped
     ports:
@@ -55,9 +51,3 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
-volumes:
-  pg_data:
-    driver: local
-  backend_data:
-    driver: local

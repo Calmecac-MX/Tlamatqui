@@ -4,6 +4,6 @@
  * Exporta la aplicación Express configurada en server.ts para atender peticiones /api/*.
  */
 
-import app from "../apps/backend/server.ts";
+import app from "../server.ts";
 
 export default app;

@@ -20,22 +20,21 @@ const rootDir = path.resolve(__dirname, "..");
 const VERSION_FILE = path.join(rootDir, "version.json");
 const PACKAGE_JSON_FILE = path.join(rootDir, "package.json");
 const OPENAPI_FILE = path.join(rootDir, "openapi.json");
-const FRONTEND_VERSION_FILE = path.join(rootDir, "apps", "frontend", "src", "version.ts");
-const BACKEND_VERSION_FILE = path.join(rootDir, "apps", "backend", "server", "version.ts");
-const FRONTEND_PACKAGE_JSON = path.join(rootDir, "apps", "frontend", "package.json");
-const BACKEND_PACKAGE_JSON = path.join(rootDir, "apps", "backend", "package.json");
+const FRONTEND_VERSION_FILE = path.join(rootDir, "src", "version.ts");
+const BACKEND_VERSION_FILE = path.join(rootDir, "server", "version.ts");
 
 // Definición de ámbitos de archivos para cada capa
 const BACKEND_PATHS = [
-  "apps/backend/server.ts",
-  "apps/backend/server",
-  "apps/backend/prisma",
-  "apps/backend/cli.ts"
+  "server.ts",
+  "server",
+  "prisma",
+  "cli.ts"
 ];
 
 const FRONTEND_PATHS = [
-  "apps/frontend/src",
-  "apps/frontend/index.html"
+  "src",
+  "index.html",
+  "assets"
 ];
 
 /**
@@ -210,16 +209,6 @@ if (fs.existsSync(PACKAGE_JSON_FILE)) {
   const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_FILE, "utf-8"));
   packageJson.version = versionData.backend;
   fs.writeFileSync(PACKAGE_JSON_FILE, JSON.stringify(packageJson, null, 2) + "\n", "utf-8");
-}
-if (fs.existsSync(FRONTEND_PACKAGE_JSON)) {
-  const feJson = JSON.parse(fs.readFileSync(FRONTEND_PACKAGE_JSON, "utf-8"));
-  feJson.version = versionData.frontend;
-  fs.writeFileSync(FRONTEND_PACKAGE_JSON, JSON.stringify(feJson, null, 2) + "\n", "utf-8");
-}
-if (fs.existsSync(BACKEND_PACKAGE_JSON)) {
-  const beJson = JSON.parse(fs.readFileSync(BACKEND_PACKAGE_JSON, "utf-8"));
-  beJson.version = versionData.backend;
-  fs.writeFileSync(BACKEND_PACKAGE_JSON, JSON.stringify(beJson, null, 2) + "\n", "utf-8");
 }
 
 // 7. Generar y actualizar CHANGELOG.md y carpeta changelog/

@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.31 (Frontend) / v2.5.22 (Backend)] - 2026-08-22
+
+### ♻️ Refactorización de Código
+- **env:** unificar variables FRONTEND_URL, APP_URL y APP_BASE_URL en la variable unica FRONTEND_URL (`839cd5e`)
+
+### 📚 Documentación
+- **ai:** actualizar versiones en AGENTS.md y GEMINI.md (`6e7bafb`)
+
 ## [v2.5.30 (Frontend) / v2.5.21 (Backend)] - 2026-08-22
 
 ### ♻️ Refactorización de Código

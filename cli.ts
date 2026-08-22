@@ -8,7 +8,7 @@
 
 import fs from "fs";
 import path from "path";
-import { updateChangelogFile } from "../../scripts/generate-changelog.js";
+import { updateChangelogFile } from "./scripts/generate-changelog.js";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
