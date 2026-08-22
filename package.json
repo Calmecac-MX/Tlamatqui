@@ -6,6 +6,13 @@
   "engines": {
     "node": "24.x"
   },
+  "allowScripts": {
+    "@prisma/engines": true,
+    "browser-tabs-lock": true,
+    "core-js": true,
+    "esbuild": true,
+    "prisma": true
+  },
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -p \"[{name}]\" -c \"cyan.bold,magenta.bold\" -n \"backend,frontend\" \"npm run dev:backend\" \"npm run dev:frontend\"",
