@@ -284,3 +284,206 @@ export async function sendReportEmail(options: SendReportEmailOptions): Promise<
 
   return { success: true, messageId: info.messageId };
 }
+
+export interface SendTeamInviteEmailOptions {
+  toEmail: string;
+  recipientName?: string;
+  teamName: string;
+  inviterName?: string;
+  role: string;
+  inviteUrl: string;
+  customNote?: string;
+}
+
+/**
+ * Construye la plantilla HTML del correo de invitación al equipo.
+ */
+function buildTeamInviteEmailHtml(options: SendTeamInviteEmailOptions): string {
+  const { recipientName, teamName, inviterName, role, inviteUrl, customNote } = options;
+
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invitación a equipo - ${teamName}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background-color: #151d30;
+      border: 1px solid #23314f;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      color: #ecfdf5;
+    }
+    .content {
+      padding: 32px 24px;
+    }
+    .greeting {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f8fafc;
+      margin-bottom: 16px;
+    }
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #34d399;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      margin-top: 8px;
+    }
+    .note-box {
+      background-color: #1e293b;
+      border-left: 4px solid #10b981;
+      padding: 16px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-style: italic;
+      color: #cbd5e1;
+    }
+    .btn-container {
+      text-align: center;
+      margin: 32px 0 20px;
+    }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #10b981 0%, #2563eb 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 32px;
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+    .footer {
+      background-color: #0f172a;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #1e293b;
+    }
+    .footer a {
+      color: #34d399;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Tlamatqui Workspace</h1>
+      <p>Invitación a Colaborar en Diagnósticos Financieros</p>
+    </div>
+    <div class="content">
+      <div class="greeting">Hola ${recipientName ? recipientName : ''},</div>
+      <p>${inviterName ? `<strong>${inviterName}</strong>` : 'Un administrador'} te ha invitado a unirte al equipo de trabajo en Tlamatqui.</p>
+      
+      <div class="card">
+        <div class="card-title">Equipo de Trabajo</div>
+        <div class="card-value">${teamName}</div>
+        <div class="badge">Rol Asignado: ${role}</div>
+      </div>
+
+      ${customNote ? `
+      <div class="note-box">
+        <strong>Mensaje Personalizado:</strong><br>
+        ${customNote.replace(/\n/g, '<br>')}
+      </div>
+      ` : ''}
+
+      <p>Haz clic en el siguiente botón para aceptar la invitación y unirte directamente al espacio de trabajo:</p>
+      
+      <div class="btn-container">
+        <a href="${inviteUrl}" class="btn" target="_blank">Aceptar Invitación y Unirme</a>
+      </div>
+      
+      <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-top: 24px;">
+        Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+        <a href="${inviteUrl}" style="color: #34d399; word-break: break-all;">${inviteUrl}</a>
+      </p>
+    </div>
+    <div class="footer">
+      &copy; ${new Date().getFullYear()} Tlamatqui Diagnostics. Todos los derechos reservados.<br>
+      Plataforma de Auditoría Financiera y Analítica Ejecutiva para E-commerce.
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
+ * Envía una invitación por correo electrónico a un nuevo miembro del equipo.
+ */
+export async function sendTeamInviteEmail(options: SendTeamInviteEmailOptions): Promise<{ success: boolean; messageId?: string }> {
+  const transporter = createTransporter();
+  const config = getSmtpConfig();
+
+  const subject = `Te han invitado a unirte al equipo "${options.teamName}" en Tlamatqui`;
+  const htmlContent = buildTeamInviteEmailHtml(options);
+
+  const info = await transporter.sendMail({
+    from: config.from,
+    to: options.toEmail,
+    subject: subject,
+    html: htmlContent
+  });
+
+  console.log(`\x1b[32m[SMTP Email]\x1b[0m Invitación enviada exitosamente a ${options.toEmail}. ID: ${info.messageId}`);
+
+  return { success: true, messageId: info.messageId };
+}
+

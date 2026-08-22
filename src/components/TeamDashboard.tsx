@@ -90,6 +90,17 @@ export default function TeamDashboard({
   const [newPartnerMemberEmail, setNewPartnerMemberEmail] = useState("");
   const [newPartnerMemberRole, setNewPartnerMemberRole] = useState<"Lector" | "Lector y Comentarista">("Lector");
 
+  // Invite by Email Modal State
+  const [isInviteEmailModalOpen, setIsInviteEmailModalOpen] = useState(false);
+  const [sendInviteEmail, setSendInviteEmail] = useState("");
+  const [sendInviteName, setSendInviteName] = useState("");
+  const [sendInviteRole, setSendInviteRole] = useState<"Superusuario" | "Administrador" | "Editor" | "Visor">("Visor");
+  const [sendInviteNote, setSendInviteNote] = useState("");
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [sendEmailOnAddMember, setSendEmailOnAddMember] = useState(true);
+
+
   useEffect(() => {
     if (subTab === "partners") {
       setLoadingPartner(true);
@@ -261,6 +272,24 @@ export default function TeamDashboard({
 
     try {
       await onUpdateTeam(updatedTeam);
+
+      // Enviar correo electrónico de invitación si la opción está seleccionada
+      if (sendEmailOnAddMember) {
+        try {
+          await fetch(`/api/teams/${activeTeam.id}/send-invite-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              toEmail: newMemberEmail.trim(),
+              recipientName: newMemberName.trim(),
+              role: newMemberRole
+            })
+          });
+        } catch (e) {
+          console.error("Error enviando correo de invitación:", e);
+        }
+      }
+
       setNewMemberName("");
       setNewMemberEmail("");
       setNewMemberRole("Visor");
@@ -271,6 +300,54 @@ export default function TeamDashboard({
       setMemberError("No se pudo agregar al miembro");
     }
   };
+
+  // Handle Send Direct Email Invitation Modal
+  const handleSendInviteEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sendInviteEmail.trim()) {
+      setInviteStatus({ type: "error", message: "El correo electrónico es obligatorio" });
+      return;
+    }
+
+    setIsSendingInvite(true);
+    setInviteStatus(null);
+
+    try {
+      const res = await fetch(`/api/teams/${activeTeam.id}/send-invite-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toEmail: sendInviteEmail.trim(),
+          recipientName: sendInviteName.trim() || undefined,
+          role: sendInviteRole,
+          customNote: sendInviteNote.trim() || undefined
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo enviar el correo de invitación");
+      }
+
+      setInviteStatus({
+        type: "success",
+        message: `¡Correo de invitación enviado exitosamente a ${sendInviteEmail.trim()}!`
+      });
+
+      setSendInviteEmail("");
+      setSendInviteName("");
+      setSendInviteNote("");
+    } catch (err: any) {
+      setInviteStatus({
+        type: "error",
+        message: err.message || "Error al enviar la invitación por correo electrónico."
+      });
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
+
 
   // Handle Delete Member
   const handleDeleteMember = async (memberId: string) => {
@@ -557,18 +634,31 @@ export default function TeamDashboard({
             className="space-y-6"
           >
             {/* Members Section Header */}
-            <div className="flex items-center justify-between border-b border-border-theme pb-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border-theme pb-3.5">
               <div>
                 <h3 className="font-bold text-base text-white">Administración de Miembros y Roles</h3>
                 <p className="text-xs text-text-dim-theme">Agrega colaboradores, asigna roles de permisos y gestiona accesos.</p>
               </div>
-              <button
-                onClick={() => setIsAddingMember(!isAddingMember)}
-                className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                {isAddingMember ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                <span>{isAddingMember ? "Cancelar" : "Nuevo Miembro"}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setInviteStatus(null);
+                    setSendInviteRole(activeTeam.inviteRole || "Visor");
+                    setIsInviteEmailModalOpen(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Invitar por Correo</span>
+                </button>
+                <button
+                  onClick={() => setIsAddingMember(!isAddingMember)}
+                  className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  {isAddingMember ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{isAddingMember ? "Cancelar" : "Nuevo Miembro"}</span>
+                </button>
+              </div>
             </div>
 
             {/* Add Member Form Expandable */}
@@ -621,6 +711,18 @@ export default function TeamDashboard({
                   </div>
                 </div>
 
+                <div className="flex items-center gap-2 pt-1">
+                  <label className="flex items-center gap-2 text-xs text-text-dim-theme cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sendEmailOnAddMember}
+                      onChange={e => setSendEmailOnAddMember(e.target.checked)}
+                      className="rounded border-border-theme text-accent-theme focus:ring-accent-theme cursor-pointer"
+                    />
+                    <span>Enviar correo electrónico de invitación con el enlace de acceso al equipo</span>
+                  </label>
+                </div>
+
                 {memberError && (
                   <p className="text-xs text-rose-400 font-semibold flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" />
@@ -632,19 +734,20 @@ export default function TeamDashboard({
                   <button
                     type="button"
                     onClick={() => setIsAddingMember(false)}
-                    className="px-3.5 py-1.5 rounded-lg border border-border-theme text-xs font-bold text-text-dim-theme hover:text-white bg-bg-theme"
+                    className="px-3.5 py-1.5 rounded-lg border border-border-theme text-xs font-bold text-text-dim-theme hover:text-white bg-bg-theme cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 rounded-lg bg-accent-theme text-xs font-bold text-white hover:bg-accent-theme/90"
+                    className="px-4 py-1.5 rounded-lg bg-accent-theme text-xs font-bold text-white hover:bg-accent-theme/90 cursor-pointer"
                   >
                     Agregar Miembro
                   </button>
                 </div>
               </form>
             )}
+
 
             {/* Members List Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -838,6 +941,19 @@ export default function TeamDashboard({
                           <Copy className="w-3.5 h-3.5" />
                           Copiar Enlace
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInviteStatus(null);
+                            setSendInviteRole(activeTeam.inviteRole || "Visor");
+                            setIsInviteEmailModalOpen(true);
+                          }}
+                          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5 shrink-0 transition-all shadow-sm"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          Enviar por Correo
+                        </button>
+
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
@@ -1155,6 +1271,141 @@ export default function TeamDashboard({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Modal de Invitación a Miembros por Correo Electrónico */}
+      <AnimatePresence>
+        {isInviteEmailModalOpen && activeTeam && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-lg bg-surface-theme border border-border-theme rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 relative"
+            >
+              <div className="flex items-center justify-between border-b border-border-theme/40 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-white">Enviar Invitación por Correo</h3>
+                    <p className="text-xs text-text-dim-theme">Invita a colaboradores al equipo "{activeTeam.name}"</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsInviteEmailModalOpen(false)}
+                  className="p-1.5 rounded-lg text-text-dim-theme hover:text-white hover:bg-bg-theme/60 transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSendInviteEmail} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                    Correo Electrónico del Destinatario *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="colaborador@empresa.com"
+                    value={sendInviteEmail}
+                    onChange={e => setSendInviteEmail(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-emerald-500 bg-bg-theme border-border-theme text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                      Nombre del Destinatario (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Ana Gómez"
+                      value={sendInviteName}
+                      onChange={e => setSendInviteName(e.target.value)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-emerald-500 bg-bg-theme border-border-theme text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                      Rol Asignado
+                    </label>
+                    <select
+                      value={sendInviteRole}
+                      onChange={e => setSendInviteRole(e.target.value as any)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-emerald-500 bg-bg-theme border-border-theme text-white cursor-pointer"
+                    >
+                      {currentUserRole === "Superusuario" && (
+                        <option value="Superusuario">Superusuario</option>
+                      )}
+                      <option value="Administrador">Administrador</option>
+                      <option value="Editor">Editor</option>
+                      <option value="Visor">Visor</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                    Nota o Mensaje Personalizado (Opcional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Ej. Hola Ana, te comparto la invitación para que colabores en nuestros diagnósticos financieros."
+                    value={sendInviteNote}
+                    onChange={e => setSendInviteNote(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-emerald-500 bg-bg-theme border-border-theme text-white resize-none"
+                  />
+                </div>
+
+                {inviteStatus && (
+                  <div className={`p-3 rounded-lg text-xs flex items-center gap-2 border ${
+                    inviteStatus.type === "success"
+                      ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                      : "bg-rose-500/10 border-rose-500/25 text-rose-400"
+                  }`}>
+                    {inviteStatus.type === "success" ? <CheckCircle className="w-4 h-4 shrink-0" /> : <AlertTriangle className="w-4 h-4 shrink-0" />}
+                    <span>{inviteStatus.message}</span>
+                  </div>
+                )}
+
+                <div className="pt-2 flex justify-end gap-3 border-t border-border-theme/30">
+                  <button
+                    type="button"
+                    onClick={() => setIsInviteEmailModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-border-theme text-xs font-bold text-text-dim-theme hover:text-white bg-bg-theme cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingInvite}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    {isSendingInvite ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Enviando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Enviar Invitación</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

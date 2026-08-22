@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.45 (Frontend) / v2.5.42 (Backend)] - 2026-08-22
+
+### 🐛 Corregido & Bug Fixes
+- **prisma:** integrar driver adapter de pg en Prisma 7 y sincronizar esquema DB (`79964e8`)
+
 ## [v2.5.44 (Frontend) / v2.5.41 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

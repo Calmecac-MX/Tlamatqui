@@ -44,9 +44,9 @@ import {
   resetInstanceToFactorySettings
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock } from "./server/authMiddleware.js";
-import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema } from "./server/schemas.js";
+import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema, SendTeamInviteEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative } from "./server/scrapper.js";
-import { isSmtpConfigured, sendReportEmail, verifySmtpConnection } from "./server/emailService.js";
+import { isSmtpConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
@@ -639,6 +639,61 @@ app.post("/api/teams/:id/reset-invite", async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * @route POST /api/teams/:id/send-invite-email
+ * @description Envía una invitación por correo electrónico a un nuevo miembro para unirse al equipo.
+ */
+app.post("/api/teams/:id/send-invite-email", async (req: Request, res: Response) => {
+  try {
+    if (!isSmtpConfigured()) {
+      return res.status(400).json({
+        error: "El servicio de correo SMTP no está configurado en las variables de entorno del servidor (SMTP_HOST es requerido)."
+      });
+    }
+
+    const parseResult = SendTeamInviteEmailRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: "Datos de invitación no válidos",
+        details: parseResult.error.flatten()
+      });
+    }
+
+    const teams = await getDbTeams();
+    const team = teams.find(t => t.id === req.params.id);
+    if (!team) {
+      return res.status(404).json({ error: "Equipo no encontrado" });
+    }
+
+    const { toEmail, recipientName, role, customNote } = parseResult.data;
+
+    // Generar enlace de invitación dinámico
+    const origin = req.get("origin") || req.get("referer") || "https://tlamatqui.app";
+    const cleanOrigin = origin.replace(/\/$/, "");
+    const inviteToken = team.inviteToken || `team-inv-sec_${Math.random().toString(36).substring(2, 10)}`;
+    const inviteUrl = `${cleanOrigin}/?inviteTeam=${encodeURIComponent(inviteToken)}`;
+
+    const emailResult = await sendTeamInviteEmail({
+      toEmail,
+      recipientName,
+      teamName: team.name,
+      inviterName: team.ownerName,
+      role: role || team.inviteRole || "Visor",
+      inviteUrl,
+      customNote
+    });
+
+    res.json({
+      success: true,
+      message: `Invitación enviada exitosamente a ${toEmail}`,
+      messageId: emailResult.messageId
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Error al enviar correo de invitación" });
+  }
+});
+
 
 // ----------------------------------------------------------------------------
 // MÓDULO DE REPORTES Y DIAGNÓSTICOS (REPORTS)

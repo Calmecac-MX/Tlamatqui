@@ -79,3 +79,12 @@ export const SendEmailRequestSchema = z.object({
 
 export type SendEmailRequest = z.infer<typeof SendEmailRequestSchema>;
 
+export const SendTeamInviteEmailRequestSchema = z.object({
+  toEmail: z.string().email("Correo electrónico no válido"),
+  recipientName: z.string().optional(),
+  role: z.enum(["Superusuario", "Administrador", "Editor", "Visor"]).default("Visor"),
+  customNote: z.string().optional(),
+});
+
+export type SendTeamInviteEmailRequest = z.infer<typeof SendTeamInviteEmailRequestSchema>;
+
