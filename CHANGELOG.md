@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.41 (Frontend) / v2.5.33 (Backend)] - 2026-08-22
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** agregar soporte para la variable SUPERADMIN_EMAIL en .env para asignación automática de Superusuario (v2.5.41/v2.5.32) (`7c39ee9`)
+
 ## [v2.5.41 (Frontend) / v2.5.32 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades
