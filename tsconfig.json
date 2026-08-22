@@ -27,6 +27,7 @@
     "src",
     "server.ts",
     "server",
-    "cli.ts"
+    "cli.ts",
+    "api"
   ]
 }
