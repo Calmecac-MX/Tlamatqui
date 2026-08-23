@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.49 (Frontend) / v2.5.46 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **teams:** corregir rol residual Editor por Agente en datos por defecto de equipos (`82cc83c`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- bump frontend version to 2.5.48 (`c7a8cc5`)
+
 ## [v2.5.48 (Frontend) / v2.5.45 (Backend)] - 2026-08-22
 
 ### 🚀 Features & Nuevas Funcionalidades

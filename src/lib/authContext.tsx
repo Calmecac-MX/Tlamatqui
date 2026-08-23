@@ -24,7 +24,8 @@ export interface AuthContextType {
   isLoading: boolean;
   user: AuthUser | null;
   error: Error | null;
-  loginWithRedirect: () => Promise<void>;
+  loginWithRedirect: (options?: { authorizationParams?: { screen_hint?: string; [key: string]: any }; appState?: any }) => Promise<void>;
+
   loginWithLock: (options?: LockOptions) => void;
   logout: () => void;
   isAuth0Configured: boolean;
@@ -171,12 +172,13 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           isLoading: auth0.isLoading,
           user: authUser,
           error: auth0.error || null,
-          loginWithRedirect: async () => {
+          loginWithRedirect: async (options?: any) => {
             clearAuthError();
             await auth0.loginWithRedirect({
-              appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname },
+              appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname, ...options?.appState },
               authorizationParams: {
-                redirect_uri: window.location.origin
+                redirect_uri: window.location.origin,
+                ...options?.authorizationParams
               }
             });
           },
@@ -211,20 +213,22 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
         isLoading: false,
         user: demoUser,
         error: null,
-        loginWithRedirect: async () => {
+        loginWithRedirect: async (options?: any) => {
           if (isAuth0Configured) {
             demoLogout();
             clearAuthError();
             await auth0.loginWithRedirect({
-              appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname },
+              appState: { returnTo: window.location.pathname === "/" ? "/tlachialoyan" : window.location.pathname, ...options?.appState },
               authorizationParams: {
-                redirect_uri: window.location.origin
+                redirect_uri: window.location.origin,
+                ...options?.authorizationParams
               }
             });
           } else {
             demoLogin();
           }
         },
+
         loginWithLock: (options?: LockOptions) => {
           if (isAuth0Configured) {
             demoLogout();

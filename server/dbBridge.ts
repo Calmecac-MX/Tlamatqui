@@ -3,7 +3,8 @@ import path from "path";
 import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
-import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, ApiKeyItem, SystemHealthData } from "./types.js";
+import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, UserRole, ApiKeyItem, SystemHealthData } from "./types.js";
+
 import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
 
 // Caché en memoria RAM para archivos JSON (evita releer de disco e invalidar cifrado AES en cada consulta)
@@ -918,6 +919,18 @@ export async function joinTeamViaInviteToken(
   team.members.push(newMember);
   const updatedTeam = await saveDbTeam(team);
 
+  // Sincronizar el rol de la cuenta de usuario en el sistema
+  try {
+    const users = await getDbUsers();
+    const targetUserIndex = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
+    if (targetUserIndex >= 0 && (users[targetUserIndex].role === "Visor" || !users[targetUserIndex].role)) {
+      users[targetUserIndex].role = (team.inviteRole || "Agente") as UserRole;
+      await writeJsonAsync(USERS_FILE, users);
+    }
+  } catch (e) {
+    console.warn("No se pudo actualizar el rol de la cuenta del usuario:", e);
+  }
+
   return {
     success: true,
     message: `¡Te has unido exitosamente al equipo '${team.name}' como ${newMember.role}!`,
@@ -925,6 +938,7 @@ export async function joinTeamViaInviteToken(
     member: newMember
   };
 }
+
 
 // ==========================================
 // REPORTS CRUD OPERATORS

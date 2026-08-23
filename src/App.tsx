@@ -111,6 +111,9 @@ function MainAppRouter() {
     </div>
   );
 
+  const pendingToken = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_pending_invite_token") : null;
+  const activeInviteToken = inviteTeamToken || pendingToken;
+
   // 1. Si hay un reporte activo (especialmente en modo público compartido), mostrar ReportView sin forzar login
   if (viewingReportId) {
     return (
@@ -127,13 +130,34 @@ function MainAppRouter() {
     );
   }
 
-  // 2. Si el usuario intenta acceder al AdminPanel y no está autenticado, mostrar pantalla de inicio de sesión Auth0
+  // 2. Si el usuario intenta acceder al AdminPanel y no está autenticado
   if (!isAuthenticated) {
     return (
-      <LoginPage 
-        isDarkMode={isDarkMode} 
-        toggleDarkMode={toggleDarkMode} 
-      />
+      <>
+        <LoginPage 
+          isDarkMode={isDarkMode} 
+          toggleDarkMode={toggleDarkMode} 
+        />
+        {activeInviteToken && (
+          <JoinTeamModal
+            inviteToken={activeInviteToken}
+            onJoined={() => {
+              localStorage.removeItem("tlamatqui_pending_invite_token");
+              const url = new URL(window.location.href);
+              url.searchParams.delete("inviteTeam");
+              window.history.replaceState({}, "", url.toString());
+              setInviteTeamToken(null);
+            }}
+            onClose={() => {
+              localStorage.removeItem("tlamatqui_pending_invite_token");
+              const url = new URL(window.location.href);
+              url.searchParams.delete("inviteTeam");
+              window.history.replaceState({}, "", url.toString());
+              setInviteTeamToken(null);
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -148,18 +172,19 @@ function MainAppRouter() {
         />
       </Suspense>
 
-      {/* Modal de Invitación a Equipo vía Enlace Corto */}
-      {inviteTeamToken && (
+      {/* Vista / Modal de Invitación a Equipo vía Enlace Corto */}
+      {activeInviteToken && (
         <JoinTeamModal
-          inviteToken={inviteTeamToken}
+          inviteToken={activeInviteToken}
           onJoined={() => {
-            // Limpiar parámetro de la URL
+            localStorage.removeItem("tlamatqui_pending_invite_token");
             const url = new URL(window.location.href);
             url.searchParams.delete("inviteTeam");
             window.history.replaceState({}, "", url.toString());
             setInviteTeamToken(null);
           }}
           onClose={() => {
+            localStorage.removeItem("tlamatqui_pending_invite_token");
             const url = new URL(window.location.href);
             url.searchParams.delete("inviteTeam");
             window.history.replaceState({}, "", url.toString());
@@ -169,6 +194,7 @@ function MainAppRouter() {
       )}
     </div>
   );
+
 }
 
 export default function App() {
