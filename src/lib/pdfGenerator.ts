@@ -349,8 +349,8 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
   doc.text("DIAGNOSTICO EJECUTIVO DE COMERCIO ELECTRONICO", W / 2, 62, { align: "center" });
 
-  const displayBrandName = report.team?.teamBrandName || report.name;
-  const displayBrandUrl = report.team?.teamBrandWebsite || report.businessUrl;
+  const displayBrandName = report.name;
+  const displayBrandUrl = report.businessUrl || report.team?.teamBrandWebsite;
 
   doc.setFontSize(23);
   doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);

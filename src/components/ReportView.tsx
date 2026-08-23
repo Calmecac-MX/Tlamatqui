@@ -1333,18 +1333,18 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
 
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
                 Diagnóstico de{" "}
-                {report.team?.teamBrandWebsite || report.businessUrl ? (
+                {report.businessUrl || report.team?.teamBrandWebsite ? (
                   <a
-                    href={report.team?.teamBrandWebsite || report.businessUrl}
+                    href={report.businessUrl || report.team?.teamBrandWebsite}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:underline cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-accent-theme to-indigo-400"
                   >
-                    {report.team?.teamBrandName || report.name}
+                    {report.name}
                   </a>
                 ) : (
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-theme to-indigo-400">
-                    {report.team?.teamBrandName || report.name}
+                    {report.name}
                   </span>
                 )}
               </h1>

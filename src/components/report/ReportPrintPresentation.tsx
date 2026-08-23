@@ -102,18 +102,18 @@ export const ReportPrintPresentation: React.FC<ReportPrintPresentationProps> = (
 
             <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
               Diagnóstico de{" "}
-              {report.team?.teamBrandWebsite || report.businessUrl ? (
+              {report.businessUrl || report.team?.teamBrandWebsite ? (
                 <a
-                  href={report.team?.teamBrandWebsite || report.businessUrl}
+                  href={report.businessUrl || report.team?.teamBrandWebsite}
                   target="_blank"
                   rel="noreferrer"
                   className="hover:underline cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400"
                 >
-                  {report.team?.teamBrandName || report.name}
+                  {report.name}
                 </a>
               ) : (
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400">
-                  {report.team?.teamBrandName || report.name}
+                  {report.name}
                 </span>
               )}
             </h2>

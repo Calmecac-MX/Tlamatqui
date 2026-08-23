@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.68 (Frontend) / v2.5.55 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **team-settings:** eliminar bloque general de equipo del formulario de configuración del reporte (`bd3f966`)
+
 ## [v2.5.67 (Frontend) / v2.5.55 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades
