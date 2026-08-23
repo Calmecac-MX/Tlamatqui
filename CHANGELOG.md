@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.60 (Frontend) / v2.5.53 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** ocultar tarjeta de configuración de dominios a usuarios no administradores v2.5.59 (`5cf6e9c`)
+
 ## [v2.5.59 (Frontend) / v2.5.52 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes

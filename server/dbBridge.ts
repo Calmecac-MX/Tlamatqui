@@ -102,6 +102,7 @@ const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const API_KEYS_FILE = path.join(DATA_DIR, "api_keys.json");
 const SYSTEM_SETTINGS_FILE = path.join(DATA_DIR, "system_settings.json");
+const SUPERADMIN_EMAILS_FILE = path.join(DATA_DIR, "superadmin_emails.json");
 
 // Define defaults
 const DEFAULT_CONFIG = {
@@ -1801,9 +1802,37 @@ export function getConfiguredSuperAdminEmail(): string {
 }
 
 /**
+ * Obtiene la lista persistente de correos con rol de Superusuario preservados entre actualizaciones.
+ */
+export async function getPersistentSuperAdminEmails(): Promise<string[]> {
+  const envEmail = getConfiguredSuperAdminEmail();
+  const fileEmails = await readJsonAsync<string[]>(SUPERADMIN_EMAILS_FILE, []);
+  const list = new Set<string>();
+  if (envEmail) list.add(envEmail.toLowerCase());
+  fileEmails.forEach((e) => {
+    if (e && typeof e === "string") list.add(e.trim().toLowerCase());
+  });
+  return Array.from(list);
+}
+
+/**
+ * Registra y preserva un correo en el listado de Superusuarios permanentes.
+ */
+export async function addPersistentSuperAdminEmail(email: string): Promise<void> {
+  if (!email || typeof email !== "string" || !email.includes("@")) return;
+  const clean = email.trim().toLowerCase();
+  const current = await readJsonAsync<string[]>(SUPERADMIN_EMAILS_FILE, []);
+  const normalized = current.map((e) => e.trim().toLowerCase());
+  if (!normalized.includes(clean)) {
+    normalized.push(clean);
+    await writeJsonAsync(SUPERADMIN_EMAILS_FILE, normalized);
+  }
+}
+
+/**
  * Registra un nuevo usuario o sincroniza su perfil y tokens Auth0 cifrados en cada inicio de sesión.
- * REGLA OBLIGATORIA: Si la base de datos de usuarios está vacía (0 usuarios registrados)
- * o el correo coincide con la variable SUPERADMIN_EMAIL en .env, se le otorga automáticamente el rol de "Superusuario".
+ * REGLA OBLIGATORIA: Si el usuario ya era Superusuario, su correo está registrado como Superusuario o es el 1er usuario, 
+ * CONSERVA permanentemente el rol de "Superusuario" sin importar actualizaciones o inicios de sesión posteriores.
  */
 export async function registerOrSyncUser(userData: {
   email: string;
@@ -1819,9 +1848,13 @@ export async function registerOrSyncUser(userData: {
   const users = await getDbUsers();
   const cleanEmail = userData.email.trim().toLowerCase();
   
+  const persistentSuperAdmins = await getPersistentSuperAdminEmails();
   const configuredSuperAdminEmail = getConfiguredSuperAdminEmail();
-  const isConfiguredSuperAdmin = Boolean(
-    configuredSuperAdminEmail && cleanEmail === configuredSuperAdminEmail
+  const isSuperAdminEmail = Boolean(
+    cleanEmail && (
+      (configuredSuperAdminEmail && cleanEmail === configuredSuperAdminEmail) ||
+      persistentSuperAdmins.includes(cleanEmail)
+    )
   );
 
   const formattedExpiresAt = userData.tokenExpiresAt
@@ -1840,10 +1873,15 @@ export async function registerOrSyncUser(userData: {
     (u) => (cleanEmail && u.email.toLowerCase() === cleanEmail) || (userData.sub && u.sub === userData.sub)
   );
 
-  // 1. SI EL USUARIO YA EXISTE: Actualizar datos de perfil y tokens de sesión cifrados
+  // 1. SI EL USUARIO YA EXISTE: Actualizar datos de perfil y tokens de sesión cifrados (PRESERVANDO SUPERUSUARIO)
   if (existingUserIndex >= 0) {
     const existingUser = users[existingUserIndex];
-    const targetRole = isConfiguredSuperAdmin ? "Superusuario" : existingUser.role;
+    const isSuperUser = existingUser.role === "Superusuario" || isSuperAdminEmail || userData.role === "Superusuario";
+    const targetRole = isSuperUser ? "Superusuario" : existingUser.role;
+
+    if (isSuperUser && cleanEmail) {
+      await addPersistentSuperAdminEmail(cleanEmail).catch(() => {});
+    }
 
     const updatedUser: UserAccount = {
       ...existingUser,
@@ -1895,12 +1933,16 @@ export async function registerOrSyncUser(userData: {
 
   // 2. SI ES UN USUARIO NUEVO:
   const isFirstUserInSystem = users.length === 0;
-  const assignedRole: "Superusuario" | "Administrador" | "Agente" | "Visor" = (isFirstUserInSystem || isConfiguredSuperAdmin)
+  const assignedRole: "Superusuario" | "Administrador" | "Agente" | "Visor" = (isFirstUserInSystem || isSuperAdminEmail || userData.role === "Superusuario")
     ? "Superusuario"
     : (userData.role || "Visor");
 
-  if (isFirstUserInSystem || isConfiguredSuperAdmin) {
-    console.log(`\x1b[33m[User Manager]\x1b[0m Otorgando rol de Superusuario a: ${cleanEmail} (Motivo: ${isFirstUserInSystem ? "Primer usuario registrado en el sistema" : "Coincidencia con SUPERADMIN_EMAIL en .env"})`);
+  if (assignedRole === "Superusuario" && cleanEmail) {
+    await addPersistentSuperAdminEmail(cleanEmail).catch(() => {});
+  }
+
+  if (isFirstUserInSystem || isSuperAdminEmail) {
+    console.log(`\x1b[33m[User Manager]\x1b[0m Otorgando rol de Superusuario a: ${cleanEmail} (Motivo: ${isFirstUserInSystem ? "Primer usuario registrado en el sistema" : "Superusuario Persistente / Env SUPERADMIN_EMAIL"})`);
   }
 
   const newUser: UserAccount = {
@@ -1956,6 +1998,7 @@ export async function registerOrSyncUser(userData: {
 
 /**
  * Actualiza el rol de un usuario existente (Requiere permisos de Superusuario o Administrador).
+ * Preserva automáticamente la dirección de correo en la lista persistente de Superusuarios si se le asigna dicho rol.
  */
 export async function updateUserRole(userId: string, newRole: "Superusuario" | "Administrador" | "Agente" | "Visor"): Promise<UserAccount | null> {
   const users = await getDbUsers();
@@ -1965,6 +2008,10 @@ export async function updateUserRole(userId: string, newRole: "Superusuario" | "
 
   users[userIndex].role = newRole;
   users[userIndex].updatedAt = new Date().toISOString();
+
+  if (newRole === "Superusuario" && users[userIndex].email) {
+    await addPersistentSuperAdminEmail(users[userIndex].email).catch(() => {});
+  }
 
   if (isPrismaEnabled()) {
     const prisma = getPrisma();

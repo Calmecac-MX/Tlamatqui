@@ -252,7 +252,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   // User Profile States (Sincronizado dinámicamente con Auth0 / Modo Multi-usuario)
   const [userName, setUserName] = useState<string>(() => authUser?.name || "Usuario");
   const [userEmail, setUserEmail] = useState<string>(() => authUser?.email || "");
-  const [userRole, setUserRole] = useState<string>(() => authUser?.role || "Administrador");
+  const [userRole, setUserRole] = useState<string>(() => {
+    const persisted = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+    if (persisted === "Superusuario" || authUser?.role === "Superusuario") return "Superusuario";
+    return authUser?.role || "Administrador";
+  });
   const [userAvatar, setUserAvatar] = useState<string>(() => authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
   const [isDraggingAvatar, setIsDraggingAvatar] = useState<boolean>(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -260,21 +264,27 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [savedProfile, setSavedProfile] = useState({
     name: authUser?.name || "Usuario",
     email: authUser?.email || "",
-    role: authUser?.role || "Administrador",
+    role: (authUser?.role === "Superusuario" || (typeof window !== "undefined" && localStorage.getItem("tlamatqui_persisted_role") === "Superusuario")) ? "Superusuario" : (authUser?.role || "Administrador"),
     avatar: authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
   });
 
-  // Sincronizar dinámicamente los datos del perfil cuando el usuario autenticado en Auth0 cambie
+  // Sincronizar dinámicamente los datos del perfil cuando el usuario autenticado en Auth0 cambie (PRESERVANDO ROL SUPERUSUARIO)
   useEffect(() => {
     if (authUser) {
       const activeName = authUser.name || (authUser.email ? authUser.email.split("@")[0] : "Usuario Auth0");
       const activeEmail = authUser.email || "";
-      const activeRole = authUser.role || "Administrador";
+      const persistedRole = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+      const activeRole = (authUser.role === "Superusuario" || persistedRole === "Superusuario" || userRole === "Superusuario")
+        ? "Superusuario"
+        : (authUser.role || "Administrador");
       const activeAvatar = authUser.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
 
       setUserName(activeName);
       setUserEmail(activeEmail);
       setUserRole(activeRole);
+      if (activeRole === "Superusuario" && typeof window !== "undefined") {
+        localStorage.setItem("tlamatqui_persisted_role", "Superusuario");
+      }
       setUserAvatar(activeAvatar);
 
       setSavedProfile({
@@ -499,12 +509,18 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       
       const loadedName = authUser?.name || data.userName || "Usuario";
       const loadedEmail = authUser?.email || data.userEmail || "";
-      const loadedRole = authUser?.role || data.userRole || "Administrador";
+      const persistedRole = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+      const loadedRole = (authUser?.role === "Superusuario" || persistedRole === "Superusuario" || userRole === "Superusuario" || data.userRole === "Superusuario")
+        ? "Superusuario"
+        : (authUser?.role || data.userRole || "Administrador");
       const loadedAvatar = authUser?.picture || data.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
 
       setUserName(loadedName);
       setUserEmail(loadedEmail);
       setUserRole(loadedRole);
+      if (loadedRole === "Superusuario" && typeof window !== "undefined") {
+        localStorage.setItem("tlamatqui_persisted_role", "Superusuario");
+      }
       setUserAvatar(loadedAvatar);
       
       setSavedProfile({
@@ -539,13 +555,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setMetricsUpdateInterval(3000);
       setUserName(authUser?.name || "Usuario");
       setUserEmail(authUser?.email || "");
-      setUserRole(authUser?.role || "Administrador");
+      const persistedFallback = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+      const fallbackRole = (authUser?.role === "Superusuario" || persistedFallback === "Superusuario" || userRole === "Superusuario") ? "Superusuario" : (authUser?.role || "Administrador");
+      setUserRole(fallbackRole);
       setUserAvatar(authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
       
       setSavedProfile({
         name: authUser?.name || "Usuario",
         email: authUser?.email || "",
-        role: authUser?.role || "Administrador",
+        role: fallbackRole,
         avatar: authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
       });
     }
@@ -567,12 +585,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   const handleSaveConfig = async () => {
     setIsSavingConfig(true);
+    const persistedRoleToSave = (userRole === "Superusuario" || authUser?.role === "Superusuario" || (typeof window !== "undefined" && localStorage.getItem("tlamatqui_persisted_role") === "Superusuario")) ? "Superusuario" : userRole;
     try {
       const res = await fetch("/api/config", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "X-User-Role": userRole || authUser?.role || "Administrador"
+          "X-User-Role": persistedRoleToSave
         },
         body: JSON.stringify({
           adminLogoUrl: adminLogo,
@@ -585,7 +604,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           customExchangeRate: Number(customExchangeRate) || 18.50,
           userName,
           userEmail,
-          userRole,
+          userRole: persistedRoleToSave,
           userAvatar,
           metricsUpdateInterval: Number(metricsUpdateInterval) || 3000,
           customDomainEnabled,

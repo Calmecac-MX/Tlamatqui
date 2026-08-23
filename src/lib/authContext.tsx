@@ -142,6 +142,9 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
             const data = await res.json();
             if (data && data.user && data.user.role) {
               setSyncedRole(data.user.role);
+              if (data.user.role === "Superusuario") {
+                localStorage.setItem("tlamatqui_persisted_role", "Superusuario");
+              }
             }
           }
         } catch (err) {
@@ -155,12 +158,21 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
 
   // Si Auth0 está activo y el usuario se autenticó vía Auth0
   if (isAuth0Configured && !isDemoActive) {
+    const persistedRole = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+    const effectiveRole = (syncedRole === "Superusuario" || persistedRole === "Superusuario" || (auth0.user as any)?.["https://evolucion.mx/role"] === "Superusuario")
+      ? "Superusuario"
+      : (syncedRole || persistedRole || (auth0.user as any)?.["https://evolucion.mx/role"] || "Administrador");
+
+    if (effectiveRole === "Superusuario" && typeof window !== "undefined") {
+      localStorage.setItem("tlamatqui_persisted_role", "Superusuario");
+    }
+
     const authUser: AuthUser | null = auth0.user
       ? {
           name: auth0.user.name || auth0.user.nickname || (auth0.user.email ? auth0.user.email.split("@")[0] : "Usuario Auth0"),
           email: auth0.user.email || "",
           picture: auth0.user.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-          role: syncedRole || (auth0.user as any)["https://evolucion.mx/role"] || "Administrador",
+          role: effectiveRole,
           sub: auth0.user.sub
         }
       : null;
