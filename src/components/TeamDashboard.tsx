@@ -519,7 +519,7 @@ export default function TeamDashboard({
                   <span className="block text-3xl font-extrabold text-white">{activeTeam.members.length}</span>
                   <span className="block text-[11px] text-accent-theme flex items-center gap-1">
                     <Shield className="w-3 h-3" />
-                    {activeTeam.members.filter(m => m.role === "Administrador").length} Administradores
+                    {activeTeam.members.filter(m => m.role === "Administrador" || m.role === "Superusuario").length} Administradores
                   </span>
                 </div>
                 <div className="p-3 bg-accent-theme/10 text-accent-theme rounded-2xl">
@@ -594,7 +594,7 @@ export default function TeamDashboard({
                             </div>
                           </div>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 ${
-                            agent.member.role === "Administrador" 
+                            agent.member.role === "Administrador" || agent.member.role === "Superusuario" 
                               ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
                               : agent.member.role === "Agente"
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
@@ -710,7 +710,7 @@ export default function TeamDashboard({
                         </div>
 
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
-                          member.role === "Administrador" 
+                          member.role === "Administrador" || member.role === "Superusuario" 
                             ? "bg-red-theme/10 border-red-theme/25 text-red-theme" 
                             : member.role === "Agente"
                               ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
@@ -908,7 +908,7 @@ export default function TeamDashboard({
                         </div>
                       ) : (
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                          member.role === "Administrador" 
+                          member.role === "Administrador" || member.role === "Superusuario" 
                             ? "bg-red-theme/10 border-red-theme/25 text-red-theme" 
                             : member.role === "Agente"
                               ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"

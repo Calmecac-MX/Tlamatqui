@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.62 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **email:** rediseñar plantillas de correo con estilo Calmécac v2.5.54 (`61937e6`)
+
 ## [v2.5.61 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes
