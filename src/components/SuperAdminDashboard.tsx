@@ -849,6 +849,7 @@ export default function SuperAdminDashboard({
               {/* Tarjeta de Dominio Personalizado y Verificación TXT DNS */}
               {(() => {
                 const canManageDomain = userRole === "Superusuario" || userRole === "Administrador";
+                if (!canManageDomain) return null;
                 return (
                   <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -863,23 +864,15 @@ export default function SuperAdminDashboard({
                       </span>
                     </div>
 
-                    {!canManageDomain && (
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>La adición y configuración de dominios personalizados está restringida exclusivamente a Administradores o Superusuarios.</span>
-                      </div>
-                    )}
-
-                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!canManageDomain ? "opacity-60 pointer-events-none" : ""}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Dominio Personalizado (ej. reportes.miagencia.com)</label>
                         <input
                           type="text"
-                          disabled={!canManageDomain}
                           value={customDomain}
                           onChange={(e) => setCustomDomain && setCustomDomain(e.target.value)}
                           placeholder="reportes.miagencia.com"
-                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-cyan-400 bg-bg-theme border-border-theme text-white disabled:opacity-60"
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-cyan-400 bg-bg-theme border-border-theme text-white"
                         />
                       </div>
 
@@ -910,7 +903,7 @@ export default function SuperAdminDashboard({
                         <button
                           type="button"
                           onClick={onVerifyDomainDNS}
-                          disabled={verifyingDomainConfig || !canManageDomain}
+                          disabled={verifyingDomainConfig}
                           className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />

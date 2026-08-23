@@ -3126,18 +3126,12 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       {/* Tarjeta de Dominio Personalizado y Verificación TXT DNS */}
                       {(() => {
                         const canManageDomain = userRole === "Superusuario" || userRole === "Administrador" || authUser?.role === "Superusuario" || authUser?.role === "Administrador";
+                        if (!canManageDomain) return null;
                         return (
                           <div className="pt-4 border-t border-border-theme/20 space-y-3">
                             
-                            {!canManageDomain && (
-                              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
-                                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                                <span>La adición y configuración de dominios personalizados está restringida exclusivamente a Administradores o Superusuarios.</span>
-                              </div>
-                            )}
-
                             {/* Interruptor de Activación de Dominio Personalizado */}
-                            <div className={`flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 ${!canManageDomain ? "opacity-60 pointer-events-none" : ""}`}>
+                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
                               <div className="space-y-0.5 pr-3">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-bold text-white">Integración de Dominio Personalizado</span>
@@ -3155,7 +3149,6 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                                 <input 
                                   type="checkbox" 
-                                  disabled={!canManageDomain}
                                   checked={customDomainEnabled} 
                                   onChange={(e) => setCustomDomainEnabled(e.target.checked)} 
                                   className="sr-only peer" 
@@ -3164,7 +3157,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               </label>
                             </div>
 
-                            <div className={`space-y-3 transition-opacity ${customDomainEnabled && canManageDomain ? "opacity-100" : "opacity-50 pointer-events-none"}`}>
+                            <div className={`space-y-3 transition-opacity ${customDomainEnabled ? "opacity-100" : "opacity-50 pointer-events-none"}`}>
                               <div className="flex items-center justify-between">
                                 <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">
                                   Dominio Personalizado de Marca (Custom Domain)
@@ -3183,7 +3176,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               <div className="flex gap-2">
                                 <input 
                                   type="text" 
-                                  disabled={!customDomainEnabled || !canManageDomain}
+                                  disabled={!customDomainEnabled}
                                   value={customDomain} 
                                   onChange={e => setCustomDomain(e.target.value)}
                                   placeholder="https://reportes.miagencia.com"
@@ -3192,7 +3185,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                 <button
                                   type="button"
                                   onClick={async () => {
-                                    if (!customDomain || !customDomainEnabled || !canManageDomain) return;
+                                    if (!customDomain || !customDomainEnabled) return;
                                     setVerifyingDomainConfig(true);
                                     setDomainCheckMessage({ type: null, msg: "" });
                                     try {
@@ -3218,7 +3211,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                       setVerifyingDomainConfig(false);
                                     }
                                   }}
-                                  disabled={verifyingDomainConfig || !customDomain || !customDomainEnabled || !canManageDomain}
+                                  disabled={verifyingDomainConfig || !customDomain || !customDomainEnabled}
                                   className="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                                 >
                                   <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />

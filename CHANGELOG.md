@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.59 (Frontend) / v2.5.52 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **auth:** restringir la adición y configuración de dominios a administradores y superusuarios v2.5.58 (`7c54a55`)
+
 ## [v2.5.58 (Frontend) / v2.5.52 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes
