@@ -507,19 +507,23 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setDomainVerified(Boolean(data.domainVerified));
       setDomainVerifiedAt(data.domainVerifiedAt);
       
-      const loadedName = authUser?.name || data.userName || "Usuario";
-      const loadedEmail = authUser?.email || data.userEmail || "";
-      const persistedRole = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
-      const loadedRole = (authUser?.role === "Superusuario" || persistedRole === "Superusuario" || userRole === "Superusuario" || data.userRole === "Superusuario")
-        ? "Superusuario"
-        : (authUser?.role || data.userRole || "Administrador");
-      const loadedAvatar = authUser?.picture || data.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
+      const activeEmailKey = authUser?.email ? authUser.email.toLowerCase() : "";
+      const perUserRole = (activeEmailKey && typeof window !== "undefined") ? localStorage.getItem(`tn_user_role_${activeEmailKey}`) : null;
+      const globalPersistedRole = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+      
+      const loadedName = authUser?.name || "Usuario";
+      const loadedEmail = authUser?.email || "";
+      const loadedRole = authUser?.role || perUserRole || globalPersistedRole || "Administrador";
+      const loadedAvatar = authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80";
 
       setUserName(loadedName);
       setUserEmail(loadedEmail);
       setUserRole(loadedRole);
       if (loadedRole === "Superusuario" && typeof window !== "undefined") {
         localStorage.setItem("tlamatqui_persisted_role", "Superusuario");
+      }
+      if (activeEmailKey && loadedRole && typeof window !== "undefined") {
+        localStorage.setItem(`tn_user_role_${activeEmailKey}`, loadedRole);
       }
       setUserAvatar(loadedAvatar);
       
@@ -555,8 +559,10 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setMetricsUpdateInterval(3000);
       setUserName(authUser?.name || "Usuario");
       setUserEmail(authUser?.email || "");
-      const persistedFallback = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
-      const fallbackRole = (authUser?.role === "Superusuario" || persistedFallback === "Superusuario" || userRole === "Superusuario") ? "Superusuario" : (authUser?.role || "Administrador");
+      const activeEmailKey = authUser?.email ? authUser.email.toLowerCase() : "";
+      const perUserRole = (activeEmailKey && typeof window !== "undefined") ? localStorage.getItem(`tn_user_role_${activeEmailKey}`) : null;
+      const globalPersistedRole = typeof window !== "undefined" ? localStorage.getItem("tlamatqui_persisted_role") : null;
+      const fallbackRole = authUser?.role || perUserRole || globalPersistedRole || "Administrador";
       setUserRole(fallbackRole);
       setUserAvatar(authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80");
       
@@ -585,13 +591,12 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   const handleSaveConfig = async () => {
     setIsSavingConfig(true);
-    const persistedRoleToSave = (userRole === "Superusuario" || authUser?.role === "Superusuario" || (typeof window !== "undefined" && localStorage.getItem("tlamatqui_persisted_role") === "Superusuario")) ? "Superusuario" : userRole;
     try {
       const res = await fetch("/api/config", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "X-User-Role": persistedRoleToSave
+          "X-User-Role": userRole || authUser?.role || "Administrador"
         },
         body: JSON.stringify({
           adminLogoUrl: adminLogo,
@@ -602,15 +607,10 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           defaultContactEmail,
           defaultContactWhatsapp,
           customExchangeRate: Number(customExchangeRate) || 18.50,
-          userName,
-          userEmail,
-          userRole: persistedRoleToSave,
-          userAvatar,
           metricsUpdateInterval: Number(metricsUpdateInterval) || 3000,
           customDomainEnabled,
           customDomain
         })
-
       });
 
       // Save Prisma LogoConfig

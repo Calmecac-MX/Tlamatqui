@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.61 (Frontend) / v2.5.53 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** garantizar la permanencia perpetua del rol superusuario entre actualizaciones v2.5.60 (`127b9a0`)
+
 ## [v2.5.60 (Frontend) / v2.5.53 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades
