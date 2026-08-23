@@ -1332,7 +1332,21 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
               </span>
 
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-                Diagnóstico de <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-theme to-indigo-400">{report.name}</span>
+                Diagnóstico de{" "}
+                {report.team?.teamBrandWebsite || report.businessUrl ? (
+                  <a
+                    href={report.team?.teamBrandWebsite || report.businessUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-accent-theme to-indigo-400"
+                  >
+                    {report.team?.teamBrandName || report.name}
+                  </a>
+                ) : (
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-theme to-indigo-400">
+                    {report.team?.teamBrandName || report.name}
+                  </span>
+                )}
               </h1>
 
               <p className="text-text-dim-theme text-xs md:text-sm leading-relaxed max-w-2xl mx-auto line-clamp-3">
@@ -1344,6 +1358,16 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
               <Clock className="w-3.5 h-3.5 text-accent-theme" />
               <span>Fecha del reporte: {formatReportDate(report.createdAt)}</span>
             </span>
+
+            {(report.team?.teamBrandLogo || report.team?.image) && (
+              <div className="pt-2 flex items-center justify-center gap-2 text-xs text-text-dim-theme">
+                <img
+                  src={report.team?.teamBrandLogo || report.team?.image}
+                  alt={report.team?.name || "Logo Equipo"}
+                  className="h-8 w-auto object-contain rounded bg-white/5 p-1 border border-border-theme"
+                />
+              </div>
+            )}
 
             <div className="pt-2">
               <button 
@@ -3248,8 +3272,30 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
               </a>
             </div>
 
-            {/* Apartado de Logo Section (Soporta hasta 3 logos) */}
+            {/* Apartado de Logo Section (Team Logo + Aliados con tamaño uniforme) */}
             {(() => {
+              const teamLogo = report.team?.teamBrandLogo || report.team?.image;
+              const allies = report.team?.allies || [];
+              
+              if (teamLogo || allies.length > 0) {
+                return (
+                  <div className="border-t border-border-theme/40 pt-8 max-w-3xl mx-auto">
+                    <div className="flex justify-center items-center gap-6 flex-wrap">
+                      {teamLogo && (
+                        <div className="h-14 w-36 flex items-center justify-center p-2.5 rounded-xl border border-border-theme bg-surface-theme/90 shadow-md">
+                          <img src={teamLogo} alt={report.team?.name || "Logo Equipo"} className="max-h-full max-w-full object-contain" />
+                        </div>
+                      )}
+                      {allies.map(ally => (
+                        <a key={ally.id} href={ally.url} target="_blank" rel="noreferrer" title={ally.name} className="h-14 w-36 flex items-center justify-center p-2.5 rounded-xl border border-border-theme bg-surface-theme/90 shadow-md hover:border-accent-theme/50 transition-all cursor-pointer">
+                          <img src={ally.logo} alt={ally.name} className="max-h-full max-w-full object-contain" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
               const logos = [
                 report.finalSlideMainLogo || report.adminLogos?.[0] || config?.adminLogoUrl,
                 report.finalSlideLogo2 || report.adminLogos?.[1] || config?.adminLogo2Url,

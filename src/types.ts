@@ -148,6 +148,8 @@ export interface Report {
   uniqueVisitorIds?: string[];
   /** ID del equipo asignado a este reporte */
   teamId?: string;
+  /** Datos del equipo de trabajo asignado al reporte */
+  team?: Team;
   /** Correo electrónico del creador o agente asignado */
   createdBy?: string;
   /** Registro detallado de interacciones y analíticas en tiempo real */
@@ -271,6 +273,17 @@ export interface TeamMember {
 }
 
 /**
+ * Organización o empresa aliada vinculada a un equipo.
+ */
+export interface Ally {
+  id: string;
+  name: string;
+  logo: string;
+  url: string;
+  teamId?: string;
+}
+
+/**
  * Espacio de trabajo o equipo de consultoría.
  */
 export interface Team {
@@ -284,8 +297,17 @@ export interface Team {
   inviteToken?: string;
   /** Rol asignado por defecto a los miembros que se unan vía enlace */
   inviteRole?: "Superusuario" | "Administrador" | "Agente" | "Visor";
+  /** Nombre de marca configurado para el reporte */
+  teamBrandName?: string;
+  /** URL del logotipo de marca del reporte */
+  teamBrandLogo?: string;
+  /** Sitio web oficial de la marca del reporte */
+  teamBrandWebsite?: string;
+  /** Relación de empresas o socios aliados del equipo */
+  allies?: Ally[];
   createdAt: string;
 }
+
 
 
 /**

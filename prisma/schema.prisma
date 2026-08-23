@@ -88,22 +88,42 @@ model User {
 
 /// Equipo o workspace de trabajo colaborativo de una agencia / cliente.
 model Team {
-  id          String       @id @default(uuid())
-  name        String
-  image       String?
-  ownerName   String
-  ownerEmail  String
-  ownerId     String?
-  owner       User?        @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  members     TeamMember[]
-  reports     Report[]
-  inviteToken String?      @default("")
-  inviteRole  Role         @default(Visor)
-  createdAt   DateTime     @default(now())
+  id               String       @id @default(uuid())
+  name             String
+  image            String?
+  ownerName        String
+  ownerEmail       String
+  ownerId          String?
+  owner            User?        @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  members          TeamMember[]
+  reports          Report[]
+  inviteToken      String?      @default("")
+  inviteRole       Role         @default(Visor)
+  teamBrandName    String?
+  teamBrandLogo    String?
+  teamBrandWebsite String?
+  allies           Ally[]
+  createdAt        DateTime     @default(now())
 
   @@index([ownerEmail])
   @@index([ownerId])
 }
+
+/// Alianzas estratégicas o aliados asociados a un equipo.
+model Ally {
+  id        String   @id @default(uuid())
+  name      String
+  logo      String
+  url       String
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("aliados")
+  @@index([teamId])
+}
+
 
 /// Integrantes y roles dentro de un equipo o workspace.
 model TeamMember {

@@ -770,7 +770,7 @@ export async function getDbTeams(): Promise<Team[]> {
       try {
         const dbTeams = await withDbTimeout(
           prisma.team.findMany({
-            include: { members: true }
+            include: { members: true, allies: true }
           }),
           3500
         );
@@ -789,6 +789,16 @@ export async function getDbTeams(): Promise<Team[]> {
           })),
           inviteToken: t.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
           inviteRole: (t.inviteRole as any) || "Visor",
+          teamBrandName: t.teamBrandName || undefined,
+          teamBrandLogo: t.teamBrandLogo || undefined,
+          teamBrandWebsite: t.teamBrandWebsite || undefined,
+          allies: t.allies ? t.allies.map(a => ({
+            id: a.id,
+            name: a.name,
+            logo: a.logo,
+            url: a.url,
+            teamId: a.teamId
+          })) : [],
           createdAt: t.createdAt.toISOString()
         }));
       } catch (err) {
@@ -807,7 +817,7 @@ export async function getDbTeams(): Promise<Team[]> {
 
 
 /**
- * Guarda o actualiza un equipo de trabajo con sus miembros asociados.
+ * Guarda o actualiza un equipo de trabajo con sus miembros y aliados asociados.
  * 
  * @param {Team} team - Instancia del equipo a guardar.
  * @returns {Promise<Team>} Equipo guardado en la base de datos o almacenamiento local.
@@ -817,9 +827,10 @@ export async function saveDbTeam(team: Team): Promise<Team> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        // Since members are a child relation table, clear existing and insert to sync
+        // Since members and allies are child relation tables, clear existing and insert to sync
         await prisma.$transaction([
           prisma.teamMember.deleteMany({ where: { teamId: team.id } }),
+          prisma.ally.deleteMany({ where: { teamId: team.id } }),
           prisma.team.upsert({
             where: { id: team.id },
             update: {
@@ -829,13 +840,24 @@ export async function saveDbTeam(team: Team): Promise<Team> {
               ownerEmail: team.ownerEmail,
               inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
               inviteRole: (team.inviteRole as any) || "Visor",
+              teamBrandName: team.teamBrandName || null,
+              teamBrandLogo: team.teamBrandLogo || null,
+              teamBrandWebsite: team.teamBrandWebsite || null,
               members: {
-                create: team.members.map(m => ({
+                create: (team.members || []).map(m => ({
                   id: m.id,
                   name: m.name,
                   email: m.email,
                   role: m.role as any,
                   avatar: m.avatar || null
+                }))
+              },
+              allies: {
+                create: (team.allies || []).map(a => ({
+                  id: a.id || "ally-" + Math.random().toString(36).substring(2, 11),
+                  name: a.name,
+                  logo: a.logo,
+                  url: a.url
                 }))
               }
             },
@@ -847,14 +869,25 @@ export async function saveDbTeam(team: Team): Promise<Team> {
               ownerEmail: team.ownerEmail,
               inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
               inviteRole: (team.inviteRole as any) || "Visor",
+              teamBrandName: team.teamBrandName || null,
+              teamBrandLogo: team.teamBrandLogo || null,
+              teamBrandWebsite: team.teamBrandWebsite || null,
               createdAt: team.createdAt ? new Date(team.createdAt) : new Date(),
               members: {
-                create: team.members.map(m => ({
+                create: (team.members || []).map(m => ({
                   id: m.id,
                   name: m.name,
                   email: m.email,
                   role: m.role as any,
                   avatar: m.avatar || null
+                }))
+              },
+              allies: {
+                create: (team.allies || []).map(a => ({
+                  id: a.id || "ally-" + Math.random().toString(36).substring(2, 11),
+                  name: a.name,
+                  logo: a.logo,
+                  url: a.url
                 }))
               }
             }
@@ -1043,7 +1076,10 @@ export async function getDbReports(): Promise<Report[]> {
             include: {
               tools: true,
               comparisonRows: true,
-              interactions: true
+              interactions: true,
+              team: {
+                include: { allies: true }
+              }
             }
           }),
           3500
@@ -1112,7 +1148,28 @@ export async function getDbReports(): Promise<Report[]> {
             calculatorInteractions: r.interactions.calculatorInteractions,
             timeSpentSeconds: r.interactions.timeSpentSeconds
           } : undefined,
-          teamId: r.teamId || undefined
+          teamId: r.teamId || undefined,
+          team: r.team ? {
+            id: r.team.id,
+            name: r.team.name,
+            image: r.team.image || undefined,
+            ownerName: r.team.ownerName,
+            ownerEmail: r.team.ownerEmail,
+            members: [],
+            inviteToken: r.team.inviteToken || undefined,
+            inviteRole: (r.team.inviteRole as any) || "Visor",
+            teamBrandName: r.team.teamBrandName || undefined,
+            teamBrandLogo: r.team.teamBrandLogo || undefined,
+            teamBrandWebsite: r.team.teamBrandWebsite || undefined,
+            allies: (r.team as any).allies ? (r.team as any).allies.map((a: any) => ({
+              id: a.id,
+              name: a.name,
+              logo: a.logo,
+              url: a.url,
+              teamId: a.teamId
+            })) : [],
+            createdAt: r.team.createdAt.toISOString()
+          } : undefined
         }));
       } catch (err) {
         console.error("Error fetching reports from database:", err);

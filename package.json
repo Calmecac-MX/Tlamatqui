@@ -1,7 +1,7 @@
 {
   "name": "tlamatqui",
   "private": true,
-  "version": "2.5.54",
+  "version": "2.5.55",
   "license": "AGPL-3.0-only",
   "engines": {
     "node": "24.x"

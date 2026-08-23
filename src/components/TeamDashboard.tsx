@@ -4,7 +4,7 @@ import {
   Mail, Clock, FileText, DollarSign, Crown, CheckCircle, X, ChevronRight, User, AlertTriangle, Copy, Link as LinkIcon, RefreshCw, Check, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Team, TeamMember, Report } from "../types";
+import { Team, TeamMember, Report, Ally } from "../types";
 
 /**
  * Propiedades del componente TeamDashboard.
@@ -33,8 +33,7 @@ interface TeamDashboardProps {
 /**
  * Módulo de Gestión de Espacios de Trabajo y Equipos.
  * Permite administrar miembros de la agencia, asignar roles (Administrador, Agente, Visor),
-
- * consultar estadísticas por equipo y gestionar la marca del socio consultor estratégico.
+ * consultar estadísticas por equipo y gestionar la marca del reporte y alianzas estratégicas.
  */
 export default function TeamDashboard({
   activeTeam,
@@ -73,6 +72,17 @@ export default function TeamDashboard({
   const [teamOwnerEmail, setTeamOwnerEmail] = useState("");
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+
+  // Report Brand & Allies State
+  const [teamBrandName, setTeamBrandName] = useState("");
+  const [teamBrandLogo, setTeamBrandLogo] = useState("");
+  const [teamBrandWebsite, setTeamBrandWebsite] = useState("");
+  const [allies, setAllies] = useState<Ally[]>([]);
+
+  // New Ally inputs
+  const [newAllyName, setNewAllyName] = useState("");
+  const [newAllyLogo, setNewAllyLogo] = useState("");
+  const [newAllyUrl, setNewAllyUrl] = useState("");
 
   // Partner / Socio State
   const [partnerData, setPartnerData] = useState<any>(null);
@@ -196,8 +206,68 @@ export default function TeamDashboard({
       setTeamImage(activeTeam.image || "");
       setTeamOwnerName(activeTeam.ownerName || "");
       setTeamOwnerEmail(activeTeam.ownerEmail || "");
+      setTeamBrandName(activeTeam.teamBrandName || "");
+      setTeamBrandLogo(activeTeam.teamBrandLogo || "");
+      setTeamBrandWebsite(activeTeam.teamBrandWebsite || "");
+      setAllies(activeTeam.allies || []);
     }
   }, [activeTeam]);
+
+  // Ally handlers
+  const handleAddAlly = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAllyName.trim() || !newAllyLogo.trim() || !newAllyUrl.trim()) {
+      alert("El nombre, logo y URL del aliado son obligatorios.");
+      return;
+    }
+    const newAlly: Ally = {
+      id: "ally-" + Math.random().toString(36).substring(2, 11),
+      name: newAllyName.trim(),
+      logo: newAllyLogo.trim(),
+      url: newAllyUrl.trim()
+    };
+    setAllies(prev => [...prev, newAlly]);
+    setNewAllyName("");
+    setNewAllyLogo("");
+    setNewAllyUrl("");
+  };
+
+  const handleDeleteAlly = (allyId: string) => {
+    setAllies(prev => prev.filter(a => a.id !== allyId));
+  };
+
+  // Handle Save Team Configuration
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamName.trim() || !teamOwnerName.trim() || !teamOwnerEmail.trim()) {
+      setConfigError("El nombre, propietario y correo de propietario son obligatorios");
+      return;
+    }
+
+    setIsSavingConfig(true);
+    setConfigError(null);
+
+    const updatedTeam: Team = {
+      ...activeTeam,
+      name: teamName,
+      image: teamImage || undefined,
+      ownerName: teamOwnerName,
+      ownerEmail: teamOwnerEmail,
+      teamBrandName: teamBrandName.trim() || undefined,
+      teamBrandLogo: teamBrandLogo.trim() || undefined,
+      teamBrandWebsite: teamBrandWebsite.trim() || undefined,
+      allies: allies
+    };
+
+    try {
+      await onUpdateTeam(updatedTeam);
+      alert("¡Configuración del reporte del equipo guardada con éxito!");
+    } catch (err) {
+      setConfigError("Error al guardar la configuración del reporte.");
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
 
   if (!activeTeam) {
     return (
@@ -413,35 +483,6 @@ export default function TeamDashboard({
       setIsEditingMember(null);
     } catch (err) {
       alert("No se pudo actualizar el rol del miembro.");
-    }
-  };
-
-  // Handle Save Team Configuration
-  const handleSaveConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!teamName.trim() || !teamOwnerName.trim() || !teamOwnerEmail.trim()) {
-      setConfigError("El nombre, propietario y correo de propietario son obligatorios");
-      return;
-    }
-
-    setIsSavingConfig(true);
-    setConfigError(null);
-
-    const updatedTeam: Team = {
-      ...activeTeam,
-      name: teamName,
-      image: teamImage || undefined,
-      ownerName: teamOwnerName,
-      ownerEmail: teamOwnerEmail
-    };
-
-    try {
-      await onUpdateTeam(updatedTeam);
-      alert("¡Configuración del equipo guardada con éxito!");
-    } catch (err) {
-      setConfigError("Error al guardar la configuración del equipo.");
-    } finally {
-      setIsSavingConfig(false);
     }
   };
 
@@ -959,10 +1000,10 @@ export default function TeamDashboard({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Left Column: Config Form */}
               <div className="lg:col-span-8 space-y-6">
-                <form onSubmit={handleSaveConfig} className="p-6 rounded-2xl border border-border-theme bg-surface-theme/50 backdrop-blur-md space-y-5">
+                <form onSubmit={handleSaveConfig} className="p-6 rounded-2xl border border-border-theme bg-surface-theme/50 backdrop-blur-md space-y-6">
                   <div className="flex items-center gap-2 mb-2 border-b border-border-theme/30 pb-2">
                     <Settings className="w-4 h-4 text-accent-theme" />
-                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">Detalles de Configuración</h3>
+                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">Configuración del reporte</h3>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1012,6 +1053,128 @@ export default function TeamDashboard({
                         className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
                       />
                     </div>
+                  </div>
+
+                  {/* SECCIÓN: Marca del Reporte */}
+                  <div className="pt-6 border-t border-border-theme/30 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                      <h3 className="font-bold text-xs text-indigo-300 uppercase tracking-wider">Marca del Reporte</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Nombre de la Marca</label>
+                        <input 
+                          type="text" 
+                          value={teamBrandName} 
+                          onChange={e => setTeamBrandName(e.target.value)}
+                          placeholder="Ej. Ginebra"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Logo de la Marca (URL)</label>
+                        <input 
+                          type="text" 
+                          value={teamBrandLogo} 
+                          onChange={e => setTeamBrandLogo(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Sitio Web de la Marca</label>
+                        <input 
+                          type="url" 
+                          value={teamBrandWebsite} 
+                          onChange={e => setTeamBrandWebsite(e.target.value)}
+                          placeholder="https://ginebra.mx"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SECCIÓN: Alianzas (Aliados) */}
+                  <div className="pt-6 border-t border-border-theme/30 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-emerald-400" />
+                        <h3 className="font-bold text-xs text-emerald-300 uppercase tracking-wider">Alianzas y Empresas Aliadas</h3>
+                      </div>
+                      <span className="text-[10px] text-text-dim-theme bg-bg-theme px-2 py-0.5 rounded border border-border-theme font-mono">
+                        {allies.length} {allies.length === 1 ? "aliado" : "aliados"}
+                      </span>
+                    </div>
+
+                    {/* Formulario para Agregar Aliado */}
+                    <div className="p-4 rounded-xl border border-border-theme/40 bg-bg-theme/40 space-y-3">
+                      <span className="text-[11px] font-bold text-white block">Agregar nuevo aliado</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Nombre (ej. Shopify, Stripe)"
+                          value={newAllyName}
+                          onChange={e => setNewAllyName(e.target.value)}
+                          className="text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme border-border-theme text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Logo URL (https://...)"
+                          value={newAllyLogo}
+                          onChange={e => setNewAllyLogo(e.target.value)}
+                          className="text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme border-border-theme text-white"
+                        />
+                        <input
+                          type="url"
+                          placeholder="URL Sitio Web (https://...)"
+                          value={newAllyUrl}
+                          onChange={e => setNewAllyUrl(e.target.value)}
+                          className="text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme border-border-theme text-white"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleAddAlly}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Agregar Aliado
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Listado de Aliados */}
+                    {allies.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        {allies.map(ally => (
+                          <div key={ally.id} className="p-3 rounded-xl border border-border-theme bg-bg-theme/60 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img src={ally.logo} alt={ally.name} className="w-9 h-9 object-contain rounded bg-white/5 p-1 border border-border-theme shrink-0" onError={e => { (e.target as HTMLElement).style.display = 'none'; }} />
+                              <div className="truncate">
+                                <h4 className="text-xs font-bold text-white truncate">{ally.name}</h4>
+                                <a href={ally.url} target="_blank" rel="noreferrer" className="text-[10px] text-accent-theme hover:underline truncate block">
+                                  {ally.url}
+                                </a>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAlly(ally.id)}
+                              className="p-1.5 text-text-dim-theme hover:text-red-theme hover:bg-red-theme/10 rounded transition-all cursor-pointer shrink-0"
+                              title="Eliminar aliado"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-text-dim-theme italic">No hay aliados agregados aún.</p>
+                    )}
                   </div>
 
                   {/* Tarjeta de Enlace de Invitación al Equipo */}

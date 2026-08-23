@@ -1409,7 +1409,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       }`}
                     >
                       <Settings className="w-3.5 h-3.5 shrink-0 text-current" />
-                      <span>Configuración</span>
+                      <span>Configuración del reporte</span>
                     </button>
                     <button
                       onClick={() => {

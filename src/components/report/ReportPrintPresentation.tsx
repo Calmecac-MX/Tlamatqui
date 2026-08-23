@@ -102,9 +102,20 @@ export const ReportPrintPresentation: React.FC<ReportPrintPresentationProps> = (
 
             <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
               Diagnóstico de{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400">
-                {report.name}
-              </span>
+              {report.team?.teamBrandWebsite || report.businessUrl ? (
+                <a
+                  href={report.team?.teamBrandWebsite || report.businessUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:underline cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400"
+                >
+                  {report.team?.teamBrandName || report.name}
+                </a>
+              ) : (
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400">
+                  {report.team?.teamBrandName || report.name}
+                </span>
+              )}
             </h2>
 
             <p className="text-slate-300 text-sm max-w-2xl mx-auto leading-relaxed">
@@ -129,7 +140,16 @@ export const ReportPrintPresentation: React.FC<ReportPrintPresentationProps> = (
         </main>
 
         <footer className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400">
-          <span>Tlamatqui &bull; Documento Confidencial</span>
+          <div className="flex items-center gap-2">
+            {(report.team?.teamBrandLogo || report.team?.image) && (
+              <img
+                src={report.team?.teamBrandLogo || report.team?.image}
+                alt={report.team?.name || "Logo Equipo"}
+                className="h-6 w-auto object-contain rounded bg-white/5 p-0.5"
+              />
+            )}
+            <span>Tlamatqui &bull; Documento Confidencial</span>
+          </div>
           <span className="font-bold text-slate-300">Diapositiva 1 de 10</span>
         </footer>
       </div>
@@ -685,6 +705,32 @@ export const ReportPrintPresentation: React.FC<ReportPrintPresentationProps> = (
               </div>
             </div>
           </div>
+
+          {/* Logos de Equipo y Aliados (Mismo Tamaño) */}
+          {(() => {
+            const teamLogo = report.team?.teamBrandLogo || report.team?.image;
+            const allies = report.team?.allies || [];
+            const hasLogos = Boolean(teamLogo || allies.length > 0);
+
+            if (!hasLogos) return null;
+
+            return (
+              <div className="pt-4 border-t border-white/10 max-w-3xl mx-auto">
+                <div className="flex items-center justify-center gap-6 flex-wrap">
+                  {teamLogo && (
+                    <div className="h-12 w-32 flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10">
+                      <img src={teamLogo} alt={report.team?.name || "Logo Equipo"} className="max-h-full max-w-full object-contain" />
+                    </div>
+                  )}
+                  {allies.map((ally) => (
+                    <a key={ally.id} href={ally.url} target="_blank" rel="noreferrer" title={ally.name} className="h-12 w-32 flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all cursor-pointer">
+                      <img src={ally.logo} alt={ally.name} className="max-h-full max-w-full object-contain" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </main>
 
         <footer className="flex items-center justify-between border-t border-white/10 pt-3 text-xs text-slate-400">

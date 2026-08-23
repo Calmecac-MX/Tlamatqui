@@ -1,8 +1,8 @@
 {
-  "frontend": "2.5.65",
-  "backend": "2.5.54",
+  "frontend": "2.5.66",
+  "backend": "2.5.55",
   "lastHashes": {
-    "frontend": "8e35efabb0eb9e004bf5a45e36e22d74",
-    "backend": "05e227ff23ae99f867ef1796b8658555"
+    "frontend": "5c90ae6dbda31816d8ff1fdb84fba211",
+    "backend": "3ef812c4e11b6e2429bac4f69f99d765"
   }
 }

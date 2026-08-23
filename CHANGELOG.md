@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.66 (Frontend) / v2.5.55 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **tools:** restringir edicion de aplicaciones existentes a solo precio y permitir agregar nuevas (Frontend v2.5.65) (`9707f7b`)
+
 ## [v2.5.65 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

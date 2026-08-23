@@ -349,9 +349,19 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
   doc.text("DIAGNOSTICO EJECUTIVO DE COMERCIO ELECTRONICO", W / 2, 62, { align: "center" });
 
+  const displayBrandName = report.team?.teamBrandName || report.name;
+  const displayBrandUrl = report.team?.teamBrandWebsite || report.businessUrl;
+
   doc.setFontSize(23);
   doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
-  doc.text(`Optimizando la Rentabilidad de ${report.name}`, W / 2, 74, { align: "center" });
+  doc.text(`Optimizando la Rentabilidad de ${displayBrandName}`, W / 2, 74, { align: "center" });
+
+  if (displayBrandUrl) {
+    try {
+      const titleWidth = doc.getTextWidth(`Optimizando la Rentabilidad de ${displayBrandName}`);
+      doc.link((W - titleWidth) / 2, 66, titleWidth, 10, { url: displayBrandUrl });
+    } catch (e) {}
+  }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
@@ -1144,6 +1154,42 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setFontSize(11);
   doc.setTextColor(COLOR_EMERALD[0], COLOR_EMERALD[1], COLOR_EMERALD[2]);
   doc.text(report.contactWhatsapp || "+52 55 0000 0000", mainBoxX + 123, 102);
+
+  // Renderizado de logos de Equipo y Aliados en Diapositiva 10
+  const teamLogoUrl = report.team?.teamBrandLogo || report.team?.image;
+  const teamLogoImg = teamLogoUrl ? await loadImage(teamLogoUrl) : null;
+  const alliesList = report.team?.allies || [];
+  const totalLogos = (teamLogoImg ? 1 : 0) + alliesList.length;
+
+  if (totalLogos > 0) {
+    const boxW = 28;
+    const boxH = 10;
+    const gap = 6;
+    const totalW = totalLogos * boxW + (totalLogos - 1) * gap;
+    let startLogoX = (W - totalW) / 2;
+    const logoY = 124;
+
+    if (teamLogoImg) {
+      drawCard(startLogoX, logoY, boxW, boxH);
+      try {
+        doc.addImage(teamLogoImg, "PNG", startLogoX + 2, logoY + 1, boxW - 4, boxH - 2);
+      } catch (e) {}
+      startLogoX += boxW + gap;
+    }
+
+    for (const ally of alliesList) {
+      drawCard(startLogoX, logoY, boxW, boxH);
+      if (ally.logo) {
+        const allyImg = await loadImage(ally.logo);
+        if (allyImg) {
+          try {
+            doc.addImage(allyImg, "PNG", startLogoX + 2, logoY + 1, boxW - 4, boxH - 2);
+          } catch (e) {}
+        }
+      }
+      startLogoX += boxW + gap;
+    }
+  }
 
   drawFooter(10);
 
