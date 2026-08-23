@@ -1046,9 +1046,9 @@ app.get("/api/config", async (req: Request, res: Response) => {
 
 /**
  * @route POST /api/config
- * @description Actualiza los parámetros globales del panel de administración.
+ * @description Actualiza los parámetros globales del panel de administración (Requiere Administrador o Superusuario).
  */
-app.post("/api/config", async (req: Request, res: Response) => {
+app.post("/api/config", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
   try {
     const config = await getDbConfig();
     const newConfig = { ...config, ...req.body };
@@ -1069,9 +1069,9 @@ app.post("/api/config", async (req: Request, res: Response) => {
 
 /**
  * @route POST /api/config/verify-domain
- * @description Verifica la propiedad del dominio personalizado mediante la consulta de registros TXT DNS.
+ * @description Verifica la propiedad del dominio personalizado mediante la consulta de registros TXT DNS (Requiere Administrador o Superusuario).
  */
-app.post("/api/config/verify-domain", async (req: Request, res: Response) => {
+app.post("/api/config/verify-domain", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
   try {
     const { domain } = req.body;
     const config = await getDbConfig();
@@ -1092,9 +1092,9 @@ app.post("/api/config/verify-domain", async (req: Request, res: Response) => {
 
 /**
  * @route POST /api/config/dns/status
- * @description Genera el informe completo de diagnóstico DNS en 4 checkpoints (TXT, CNAME, A, SSL).
+ * @description Genera el informe completo de diagnóstico DNS en 4 checkpoints (TXT, CNAME, A, SSL) (Requiere Administrador o Superusuario).
  */
-app.post("/api/config/dns/status", async (req: Request, res: Response) => {
+app.post("/api/config/dns/status", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
   try {
     const { domain } = req.body;
     const config = await getDbConfig();
@@ -1124,9 +1124,9 @@ app.post("/api/config/dns/status", async (req: Request, res: Response) => {
 
 /**
  * @route POST /api/config/dns/provision
- * @description Da de alta el dominio personalizado en el proyecto de Vercel (o proveedor de hosting) vía API.
+ * @description Da de alta el dominio personalizado en el proyecto de Vercel (o proveedor de hosting) vía API (Requiere Administrador o Superusuario).
  */
-app.post("/api/config/dns/provision", async (req: Request, res: Response) => {
+app.post("/api/config/dns/provision", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
   try {
     const { domain } = req.body;
     const config = await getDbConfig();

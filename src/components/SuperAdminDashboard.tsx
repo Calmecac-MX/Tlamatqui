@@ -846,67 +846,81 @@ export default function SuperAdminDashboard({
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-950/70 border border-border-theme/50 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-cyan-400" />
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Dominio Personalizado de Marca (Custom Domain)</h4>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                    domainVerified ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                  }`}>
-                    {domainVerified ? "🟢 Dominio Verificado" : "🟡 Verificación Pendiente DNS"}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Dominio Personalizado (ej. reportes.miagencia.com)</label>
-                    <input
-                      type="text"
-                      value={customDomain}
-                      onChange={(e) => setCustomDomain && setCustomDomain(e.target.value)}
-                      placeholder="reportes.miagencia.com"
-                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-cyan-400 bg-bg-theme border-border-theme text-white"
-                    />
-                  </div>
-
-                  {domainVerificationToken && (
-                    <div>
-                      <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Registro TXT DNS Requerido</label>
+              {/* Tarjeta de Dominio Personalizado y Verificación TXT DNS */}
+              {(() => {
+                const canManageDomain = userRole === "Superusuario" || userRole === "Administrador";
+                return (
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                       <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-cyan-400" />
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Dominio Personalizado de Marca (Custom Domain)</h4>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                        domainVerified ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                      }`}>
+                        {domainVerified ? "🟢 Dominio Verificado" : "🟡 Verificación Pendiente DNS"}
+                      </span>
+                    </div>
+
+                    {!canManageDomain && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>La adición y configuración de dominios personalizados está restringida exclusivamente a Administradores o Superusuarios.</span>
+                      </div>
+                    )}
+
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!canManageDomain ? "opacity-60 pointer-events-none" : ""}`}>
+                      <div>
+                        <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Dominio Personalizado (ej. reportes.miagencia.com)</label>
                         <input
                           type="text"
-                          readOnly
-                          value={`tlamatqui-verify=${domainVerificationToken}`}
-                          className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-bg-theme border border-border-theme text-cyan-300 font-mono"
+                          disabled={!canManageDomain}
+                          value={customDomain}
+                          onChange={(e) => setCustomDomain && setCustomDomain(e.target.value)}
+                          placeholder="reportes.miagencia.com"
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-cyan-400 bg-bg-theme border-border-theme text-white disabled:opacity-60"
                         />
+                      </div>
+
+                      {domainVerificationToken && (
+                        <div>
+                          <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Registro TXT DNS Requerido</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              readOnly
+                              value={`tlamatqui-verify=${domainVerificationToken}`}
+                              className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-bg-theme border border-border-theme text-cyan-300 font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(`tlamatqui-verify=${domainVerificationToken}`, "txt_token")}
+                              className="px-3 py-2.5 rounded-xl bg-surface-hover-theme text-white text-xs font-bold cursor-pointer shrink-0"
+                            >
+                              {copiedKeyId === "txt_token" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {onVerifyDomainDNS && customDomain && (
+                      <div className="pt-2 flex justify-end">
                         <button
                           type="button"
-                          onClick={() => copyToClipboard(`tlamatqui-verify=${domainVerificationToken}`, "txt_token")}
-                          className="px-3 py-2.5 rounded-xl bg-surface-hover-theme text-white text-xs font-bold cursor-pointer shrink-0"
+                          onClick={onVerifyDomainDNS}
+                          disabled={verifyingDomainConfig || !canManageDomain}
+                          className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
                         >
-                          {copiedKeyId === "txt_token" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
+                          <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />
+                          {verifyingDomainConfig ? "Verificando Registros DNS..." : "Verificar Registros DNS TXT"}
                         </button>
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {onVerifyDomainDNS && customDomain && (
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={onVerifyDomainDNS}
-                      disabled={verifyingDomainConfig}
-                      className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-2"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />
-                      {verifyingDomainConfig ? "Verificando Registros DNS..." : "Verificar Registros DNS TXT"}
-                    </button>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
             </form>
           )}
         </div>

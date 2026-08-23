@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.58 (Frontend) / v2.5.52 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **share:** remover sección de verificación DNS, recuadro de dominio predeterminado y píldora de modo compartible v2.5.57 (`30606cf`)
+
 ## [v2.5.57 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes
