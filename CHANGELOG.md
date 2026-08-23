@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.55 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### 📌 Otros Cambios
+- ocultar banner de SMTP activo en modal de correo y deshabilitar opciones cuando no hay credenciales (`e3bfdb5`)
+
 ## [v2.5.54 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

@@ -8,14 +8,15 @@ import {
   ArrowLeft, ArrowRight, DollarSign, HelpCircle, Shield, 
   Percent, Smartphone, MessageSquare, AlertCircle, TrendingUp, 
   Clock, ExternalLink, Mail, Phone, Lock, Zap, Layers, ChevronLeft, ChevronRight, CheckSquare, X, Menu, Sliders,
-  Eye, EyeOff, Download, Printer, Database, Palette, CreditCard, Truck, Rocket, CheckCircle2, Sparkles, ArrowDown, Calendar, Share2
+  Eye, EyeOff, Download, Printer, Database, Palette, CreditCard, Truck, Rocket, CheckCircle2, Sparkles, ArrowDown, Calendar, Share2,
+  FileSpreadsheet, FileText
 } from "lucide-react";
 import { Report, Tool, ComparisonRow } from "../types";
 import { motion, AnimatePresence } from "motion/react";
 import { Tooltip } from "./Tooltip";
 import RealTimeDashboard from "./RealTimeDashboard";
 import SavingsProjectionChart from "./SavingsProjectionChart";
-import { exportReportToCSV, exportReportToPrintPDF } from "../lib/exporter";
+import { exportReportToCSV, exportReportToExcel, exportReportToMarkdown, exportReportToPrintPDF } from "../lib/exporter";
 import { formatReportDate, formatAbbreviatedAmount } from "../utils/formatters";
 import { getVisitorId, sendReportInteraction } from "../utils/telemetryHelpers";
 import { ReportPrintPresentation } from "./report/ReportPrintPresentation";
@@ -192,6 +193,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   const [activeSlide, setActiveSlide] = useState<number>(0);
   const [slideDirection, setSlideDirection] = useState<"up" | "down">("down");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
+  const [isGeneratingExcel, setIsGeneratingExcel] = useState<boolean>(false);
   const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [globalConfig, setGlobalConfig] = useState<any>(null);
@@ -217,6 +219,23 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  const handleExportExcel = async () => {
+    if (!report) return;
+    setIsGeneratingExcel(true);
+    try {
+      await exportReportToExcel(report);
+    } catch (err) {
+      console.error("Error al generar Excel:", err);
+    } finally {
+      setIsGeneratingExcel(false);
+    }
+  };
+
+  const handleExportMarkdown = () => {
+    if (!report) return;
+    exportReportToMarkdown(report);
   };
 
   // Dynamic tab title: "Reporte de {{marca}} | Tlamatqui"
@@ -1136,12 +1155,35 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                 <span className="text-[10px] text-text-dim-theme font-bold uppercase tracking-wider">Exportar Diagnóstico</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
+                    onClick={handleExportExcel}
+                    disabled={isGeneratingExcel}
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm disabled:opacity-50"
+                    title="Exportar Hoja de Cálculo Excel (.xlsx) con estilos"
+                  >
+                    {isGeneratingExcel ? (
+                      <span className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    )}
+                    <span>Excel</span>
+                  </button>
+
+                  <button
                     onClick={() => exportReportToCSV(report)}
                     className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm"
-                    title="Exportar datos a CSV / Excel"
+                    title="Exportar datos a CSV estilizado (.csv)"
                   >
                     <Download className="w-3.5 h-3.5 text-green-theme group-hover:scale-110 transition-transform" />
                     <span>CSV</span>
+                  </button>
+
+                  <button
+                    onClick={handleExportMarkdown}
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm"
+                    title="Exportar documento en formato Markdown (.md)"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform" />
+                    <span>Markdown</span>
                   </button>
 
                   <button
@@ -1155,7 +1197,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                     ) : (
                       <Printer className="w-3.5 h-3.5 text-accent-theme group-hover:scale-110 transition-transform" />
                     )}
-                    <span>{isGeneratingPDF ? "Generando..." : "PDF"}</span>
+                    <span>{isGeneratingPDF ? "..." : "PDF"}</span>
                   </button>
 
                   <button
@@ -1169,11 +1211,11 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
 
                   <button
                     onClick={() => setIsShareModalOpen(true)}
-                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm col-span-2"
+                    className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bg-theme hover:bg-surface-hover-theme border border-border-theme text-text-dim-theme hover:text-white font-bold text-xs transition-all cursor-pointer group shadow-sm"
                     title="Compartir en Dominio Personalizado"
                   >
                     <Share2 className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                    <span>Compartir Dominio</span>
+                    <span>Compartir</span>
                   </button>
                 </div>
               </div>
