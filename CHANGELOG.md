@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.63 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **team:** incluir superusuario en contador de administradores (Frontend v2.5.62) (`da0dee2`)
+
 ## [v2.5.62 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

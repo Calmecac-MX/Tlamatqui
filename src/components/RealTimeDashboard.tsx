@@ -37,7 +37,7 @@ interface HistoricalPoint {
 interface FeedEvent {
   id: string;
   timestamp: string;
-  type: "audit" | "view" | "leak_found" | "contact";
+  type: "open" | "navigate" | "download";
   message: string;
   value?: string;
   storeName: string;
@@ -108,30 +108,31 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
 
     setHistory(initialHistory);
 
-    // Initial diagnostics feed logs for this specific report
+    // Initial diagnostics feed logs for this specific report (Apertura, Navegación, Descarga)
     const activeStoreName = report.name;
     const initialFeed: FeedEvent[] = [
       {
         id: `init-1`,
         timestamp: new Date(now.getTime() - 25000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        type: "view",
+        type: "open",
         message: "Cliente potencial abrió el diagnóstico detallado",
+        value: "Apertura 👁️",
         storeName: activeStoreName
       },
       {
         id: `init-2`,
         timestamp: new Date(now.getTime() - 15000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        type: "leak_found",
-        message: "Se detectó fuga crítica de comisión en pasarela",
-        value: "Fuga: 2.0% Shopify Fee",
+        type: "navigate",
+        message: "Navegó a: Slide 2 (Costos Ocultos y Fugas)",
+        value: "Navegación 🧭",
         storeName: activeStoreName
       },
       {
         id: `init-3`,
         timestamp: new Date(now.getTime() - 5000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        type: "contact",
-        message: "¡Clic en 'Contactar por WhatsApp' registrado!",
-        value: "Lead Calificado 🔥",
+        type: "download",
+        message: "Reporte descargado en formato PDF Horizontal",
+        value: "Descarga PDF 📄",
         storeName: activeStoreName
       }
     ];
@@ -159,82 +160,60 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
       let nextLeaks = detectedLeaks;
       let nextSavings = projectedSavings;
 
-      if (roll < 0.40) {
-        // View Diagnostic
+      if (roll < 0.25) {
+        // Evento: Abrir reporte
         const extraTraffic = 1;
         nextVisits += extraTraffic;
 
-        const pages = ["Slide 1: Comparativa General", "Slide 2: Costos Ocultos", "Slide 3: Plan de Acción", "Ficha Técnica"];
+        newEvent = {
+          id: `feed-${Date.now()}`,
+          timestamp: preciseTime,
+          type: "open",
+          message: `Cliente potencial abrió el diagnóstico en línea`,
+          value: `Apertura 👁️`,
+          storeName: storeName
+        };
+        triggerCardHighlight("visits");
+      } else if (roll < 0.75) {
+        // Evento: Navegar en el reporte
+        const pages = [
+          "Slide 1: Comparativa General", 
+          "Slide 2: Costos Ocultos y Fugas", 
+          "Slide 3: Plan de Acción y Ahorro", 
+          "Ficha Técnica y Métricas",
+          "Calculadora de Comisiones"
+        ];
         const randomPage = pages[Math.floor(Math.random() * pages.length)];
 
         newEvent = {
           id: `feed-${Date.now()}`,
           timestamp: preciseTime,
-          type: "view",
-          message: `Nuevo visitante único en: ${randomPage}`,
-          value: `+${extraTraffic} visitante`,
+          type: "navigate",
+          message: `Navegó a la sección: ${randomPage}`,
+          value: `Navegación 🧭`,
           storeName: storeName
         };
         triggerCardHighlight("visits");
-      } else if (roll < 0.75) {
-        // Leak Found or Analyzed
-        const extraLeakValue = Math.floor(Math.random() * 1800) + 400;
-        nextLeaks += 1;
-        nextSavings += extraLeakValue;
-
-        const leakTypes = [
-          "Fuga por Shopify Fee del 2.0%",
-          "Costo duplicado en pasarela local",
-          "Herramienta de MSI ineficiente",
-          "Suscripción de App obsoleta detectada"
-        ];
-        const randomLeak = leakTypes[Math.floor(Math.random() * leakTypes.length)];
-
-        newEvent = {
-          id: `feed-${Date.now()}`,
-          timestamp: preciseTime,
-          type: "leak_found",
-          message: `Identificado: ${randomLeak}`,
-          value: `Ahorro mensual: +$${extraLeakValue} MXN`,
-          storeName: storeName
-        };
-        triggerCardHighlight("leaks");
-        triggerCardHighlight("savings");
-      } else if (roll < 0.90) {
-        // Contact click
-        newEvent = {
-          id: `feed-${Date.now()}`,
-          timestamp: preciseTime,
-          type: "contact",
-          message: `Presionó botón de WhatsApp para agendar mentoría`,
-          value: "Lead Calificado 🔥",
-          storeName: storeName
-        };
-        triggerCardHighlight("savings");
       } else {
-        // Entirely new section diagnostic generated/simulated
-        nextDiag += 1;
-        const extraVisits = Math.floor(Math.random() * 12000) + 3000;
-        const extraLeaks = Math.floor(Math.random() * 3) + 2;
-        const extraSavings = Math.floor(Math.random() * 5500) + 1500;
-
-        nextVisits += extraVisits;
-        nextLeaks += extraLeaks;
-        nextSavings += extraSavings;
+        // Evento: Descargar reporte
+        const formats = [
+          "PDF Presentación (16:9)",
+          "Documento Markdown (.md)",
+          "Hoja de Cálculo Excel (.xlsx)",
+          "Resumen Ejecutivo PDF"
+        ];
+        const randomFormat = formats[Math.floor(Math.random() * formats.length)];
 
         newEvent = {
           id: `feed-${Date.now()}`,
           timestamp: preciseTime,
-          type: "audit",
-          message: `¡Nueva sección auditada y generada con éxito!`,
-          value: `+$${extraSavings.toLocaleString()} MXN ahorro/mes`,
+          type: "download",
+          message: `Reporte descargado en formato ${randomFormat}`,
+          value: `Descarga 📥`,
           storeName: storeName
         };
 
         triggerCardHighlight("diagnostics");
-        triggerCardHighlight("visits");
-        triggerCardHighlight("leaks");
-        triggerCardHighlight("savings");
       }
 
       setDiagnosticsCount(nextDiag);
@@ -286,9 +265,9 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
     const manualEvent: FeedEvent = {
       id: `manual-audit-${Date.now()}`,
       timestamp: preciseTime,
-      type: "audit",
-      message: "👉 Auditoría manual completada por Administrador",
-      value: `+$${extraSavings.toLocaleString()} MXN`,
+      type: "download",
+      message: "Descarga manual de reporte ejecutada",
+      value: "Descarga PDF 📄",
       storeName: storeName
     };
 
@@ -638,7 +617,7 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
               <RefreshCw className={`w-4 h-4 text-green-theme ${isPlaying ? "animate-spin" : ""}`} />
               Interacciones de la Tienda
             </h3>
-            <p className="text-xs text-text-dim-theme">Clicks, descargas y consultas de clientes potenciales para {report.name}.</p>
+            <p className="text-xs text-text-dim-theme">Registro exclusivo de aperturas, navegación y descargas para {report.name}.</p>
           </div>
 
           {/* Events log box */}
@@ -655,10 +634,9 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
                   className="p-2.5 rounded-lg border border-border-theme/60 bg-bg-theme/40 hover:bg-bg-theme/80 transition-all flex flex-col gap-1 border-l-2"
                   style={{
                     borderLeftColor: 
-                      ev.type === "audit" ? colors.green :
-                      ev.type === "contact" ? colors.red :
-                      ev.type === "leak_found" ? colors.yellow :
-                      colors.accent
+                      ev.type === "open" ? colors.accent :
+                      ev.type === "navigate" ? colors.green :
+                      colors.yellow
                   }}
                 >
                   <div className="flex items-center justify-between text-[10px]">
@@ -669,10 +647,9 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
                   {ev.value && (
                     <div className="mt-1 flex justify-end">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-mono ${
-                        ev.type === "audit" ? "bg-green-theme/10 text-green-theme" :
-                        ev.type === "contact" ? "bg-red-theme/10 text-red-theme" :
-                        ev.type === "leak_found" ? "bg-yellow-theme/10 text-yellow-theme" :
-                        "bg-accent-theme/10 text-accent-theme"
+                        ev.type === "open" ? "bg-accent-theme/10 text-accent-theme" :
+                        ev.type === "navigate" ? "bg-green-theme/10 text-green-theme" :
+                        "bg-yellow-theme/10 text-yellow-theme"
                       }`}>
                         {ev.value}
                       </span>
