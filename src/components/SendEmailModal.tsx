@@ -136,24 +136,14 @@ export default function SendEmailModal({
         {/* Cuerpo del Modal */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           
-          {/* Indicador de Estado del Servidor SMTP */}
+          {/* Indicador de Estado cuando NO existen credenciales */}
           {!loadingStatus && smtpStatus && !smtpStatus.configured && (
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="block font-semibold mb-0.5">Servidor SMTP no configurado</strong>
-                Configura las variables <code className="font-mono text-amber-200">SMTP_HOST</code> y <code className="font-mono text-amber-200">SMTP_USER</code> en tu archivo <code className="font-mono text-amber-200">.env</code> para habilitar el envío real.
+                <strong className="block font-semibold mb-0.5">Credenciales de Correo no Configuradas</strong>
+                No se detectaron credenciales activas de Brevo API ni servidor SMTP. Las opciones de envío han sido desactivadas. Contacta al administrador para configurarlas en el archivo <code className="font-mono text-amber-200">.env</code>.
               </div>
-            </div>
-          )}
-
-          {!loadingStatus && smtpStatus && smtpStatus.configured && (
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Server className="w-3.5 h-3.5 text-emerald-400" />
-                <span>SMTP Activo: <strong className="font-mono text-emerald-200">{smtpStatus.host}</strong></span>
-              </div>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 font-mono">Conectado</span>
             </div>
           )}
 
@@ -182,10 +172,13 @@ export default function SendEmailModal({
               <input
                 type="email"
                 required
+                disabled={!smtpStatus?.configured || isSending || loadingStatus}
                 value={toEmail}
                 onChange={(e) => setToEmail(e.target.value)}
                 placeholder="cliente@comercio.com"
-                className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-slate-800/90 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500"
+                className={`w-full pl-9 pr-3.5 py-2.5 text-sm bg-slate-800/90 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500 ${
+                  !smtpStatus?.configured ? "opacity-50 cursor-not-allowed bg-slate-800/50" : ""
+                }`}
               />
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             </div>
@@ -198,10 +191,13 @@ export default function SendEmailModal({
             </label>
             <input
               type="text"
+              disabled={!smtpStatus?.configured || isSending || loadingStatus}
               value={customSubject}
               onChange={(e) => setCustomSubject(e.target.value)}
               placeholder="Asunto personalizado..."
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-800/90 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500"
+              className={`w-full px-3.5 py-2.5 text-sm bg-slate-800/90 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500 ${
+                !smtpStatus?.configured ? "opacity-50 cursor-not-allowed bg-slate-800/50" : ""
+              }`}
             />
           </div>
 
@@ -212,10 +208,13 @@ export default function SendEmailModal({
             </label>
             <textarea
               rows={3}
+              disabled={!smtpStatus?.configured || isSending || loadingStatus}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Escribe comentarios ejecutivos o instrucciones para el cliente..."
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-800/90 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500 resize-none"
+              className={`w-full px-3.5 py-2.5 text-sm bg-slate-800/90 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500 resize-none ${
+                !smtpStatus?.configured ? "opacity-50 cursor-not-allowed bg-slate-800/50" : ""
+              }`}
             />
           </div>
 
@@ -241,17 +240,17 @@ export default function SendEmailModal({
             </button>
             <button
               type="submit"
-              disabled={isSending || (smtpStatus && !smtpStatus.configured)}
+              disabled={isSending || loadingStatus || !smtpStatus?.configured}
               className={`px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer ${
-                isSending || (smtpStatus && !smtpStatus.configured)
-                  ? "bg-slate-700 text-slate-400 cursor-not-allowed shadow-none"
+                isSending || loadingStatus || !smtpStatus?.configured
+                  ? "bg-slate-700 text-slate-400 cursor-not-allowed shadow-none opacity-60"
                   : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 active:scale-95"
               }`}
             >
               {isSending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Enviando por SMTP...</span>
+                  <span>Enviando reporte...</span>
                 </>
               ) : (
                 <>
@@ -261,6 +260,7 @@ export default function SendEmailModal({
               )}
             </button>
           </div>
+
         </form>
 
       </div>

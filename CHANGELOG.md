@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.54 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** ocultar centro superusuario para administradores y restringirlo exclusivamente a superusuarios (`e85baf6`)
+
 ## [v2.5.53 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### 📌 Otros Cambios
