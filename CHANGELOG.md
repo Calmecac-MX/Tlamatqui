@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.56 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **report:** añadir exportación a hoja de cálculo Excel (.xlsx), CSV estilizado y Markdown (.md) v2.5.55 (`cd0928b`)
+
 ## [v2.5.55 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### 📌 Otros Cambios
