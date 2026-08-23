@@ -188,7 +188,6 @@ model Report {
   interactions           ReportInteraction?
   metrics                ReportMetrics?
   platformConfig         ReportPlatformConfig?
-  branding               ReportBranding?
   analytics              ReportAnalytics?
   teamId                 String?
   team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
@@ -228,23 +227,7 @@ model ReportPlatformConfig {
   tiendanubePlan         TiendanubePlan @default(evolution)
 }
 
-/// Elementos de branding y tarjetas de marca pertenecientes a la subtabla ReportBranding.
-model ReportBranding {
-  id                 String  @id @default(uuid())
-  reportId           String  @unique
-  report             Report  @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  tagline            String?
-  adminLogos         Json?   // Lista de logos: string[]
-  brandCard1Title    String?
-  brandCard1Desc     String?
-  brandCard1Logo     String?
-  brandCard1Link     String?
-  brandCard2Title    String?
-  brandCard2Desc     String?
-  brandCard2Logo     String?
-  brandCard2Link     String?
-  finalSlideMainLogo String?
-}
+
 
 /// Métricas de interacción y analítica perteneciente a la subtabla ReportAnalytics.
 model ReportAnalytics {
@@ -368,10 +351,16 @@ model Config {
   userRole               Role      @default(Administrador)
   userAvatar             String
   metricsUpdateInterval  Int
+  tagline                String?   @default("Auditoría Financiera y Simulación de Ahorros")
+  brandCard1Title        String?
+  brandCard1Desc         String?
+  brandCard1Logo         String?
+  brandCard1Link         String?
   brandCard2Title        String?
   brandCard2Desc         String?
   brandCard2Logo         String?
   brandCard2Link         String?
+  finalSlideMainLogo     String?
   customDomain           String?   @default("")
   domainVerificationToken String?  @default("")
   domainVerified         Boolean   @default(false)

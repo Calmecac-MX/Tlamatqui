@@ -636,10 +636,16 @@ export async function saveDbConfig(config: any): Promise<any> {
     userRole: config.userRole || DEFAULT_CONFIG.userRole,
     userAvatar: config.userAvatar || DEFAULT_CONFIG.userAvatar,
     metricsUpdateInterval: Number(config.metricsUpdateInterval) || DEFAULT_CONFIG.metricsUpdateInterval,
-    brandCard2Title: config.brandCard2Title || null,
-    brandCard2Desc: config.brandCard2Desc || null,
-    brandCard2Logo: config.brandCard2Logo || null,
-    brandCard2Link: config.brandCard2Link || null,
+    tagline: config.tagline !== undefined ? config.tagline : (currentConfig.tagline || "Auditoría Financiera y Simulación de Ahorros"),
+    brandCard1Title: config.brandCard1Title !== undefined ? config.brandCard1Title : (currentConfig.brandCard1Title || null),
+    brandCard1Desc: config.brandCard1Desc !== undefined ? config.brandCard1Desc : (currentConfig.brandCard1Desc || null),
+    brandCard1Logo: config.brandCard1Logo !== undefined ? config.brandCard1Logo : (currentConfig.brandCard1Logo || null),
+    brandCard1Link: config.brandCard1Link !== undefined ? config.brandCard1Link : (currentConfig.brandCard1Link || null),
+    brandCard2Title: config.brandCard2Title !== undefined ? config.brandCard2Title : (currentConfig.brandCard2Title || null),
+    brandCard2Desc: config.brandCard2Desc !== undefined ? config.brandCard2Desc : (currentConfig.brandCard2Desc || null),
+    brandCard2Logo: config.brandCard2Logo !== undefined ? config.brandCard2Logo : (currentConfig.brandCard2Logo || null),
+    brandCard2Link: config.brandCard2Link !== undefined ? config.brandCard2Link : (currentConfig.brandCard2Link || null),
+    finalSlideMainLogo: config.finalSlideMainLogo !== undefined ? config.finalSlideMainLogo : (currentConfig.finalSlideMainLogo || null),
     customDomainEnabled: Boolean(config.customDomainEnabled !== undefined ? config.customDomainEnabled : (currentConfig.customDomainEnabled !== undefined ? currentConfig.customDomainEnabled : false)),
     customDomain: config.customDomain !== undefined ? config.customDomain : (currentConfig.customDomain || ""),
 
@@ -1079,7 +1085,6 @@ export async function getDbReports(): Promise<Report[]> {
               interactions: true,
               metrics: true,
               platformConfig: true,
-              branding: true,
               analytics: true,
               team: {
                 include: { allies: true }
@@ -1185,32 +1190,6 @@ export async function getDbReports(): Promise<Report[]> {
             shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
             shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
             tiendanubePlan: r.tiendanubePlan as any
-          },
-          branding: r.branding ? {
-            id: r.branding.id,
-            tagline: r.branding.tagline || undefined,
-            adminLogos: r.branding.adminLogos as any as string[],
-            brandCard1Title: r.branding.brandCard1Title || undefined,
-            brandCard1Desc: r.branding.brandCard1Desc || undefined,
-            brandCard1Logo: r.branding.brandCard1Logo || undefined,
-            brandCard1Link: r.branding.brandCard1Link || undefined,
-            brandCard2Title: r.branding.brandCard2Title || undefined,
-            brandCard2Desc: r.branding.brandCard2Desc || undefined,
-            brandCard2Logo: r.branding.brandCard2Logo || undefined,
-            brandCard2Link: r.branding.brandCard2Link || undefined,
-            finalSlideMainLogo: r.branding.finalSlideMainLogo || undefined
-          } : {
-            tagline: r.tagline || undefined,
-            adminLogos: r.adminLogos as any as string[],
-            brandCard1Title: r.brandCard1Title || undefined,
-            brandCard1Desc: r.brandCard1Desc || undefined,
-            brandCard1Logo: r.brandCard1Logo || undefined,
-            brandCard1Link: r.brandCard1Link || undefined,
-            brandCard2Title: r.brandCard2Title || undefined,
-            brandCard2Desc: r.brandCard2Desc || undefined,
-            brandCard2Logo: r.brandCard2Logo || undefined,
-            brandCard2Link: r.brandCard2Link || undefined,
-            finalSlideMainLogo: r.finalSlideMainLogo || undefined
           },
           analytics: r.analytics ? {
             id: r.analytics.id,
@@ -1500,36 +1479,6 @@ export async function saveDbReport(report: Report): Promise<Report> {
                   }
                 }
               },
-              branding: {
-                upsert: {
-                  create: {
-                    tagline: report.tagline || null,
-                    adminLogos: report.adminLogos as any || [],
-                    brandCard1Title: report.brandCard1Title || null,
-                    brandCard1Desc: report.brandCard1Desc || null,
-                    brandCard1Logo: report.brandCard1Logo || null,
-                    brandCard1Link: report.brandCard1Link || null,
-                    brandCard2Title: report.brandCard2Title || null,
-                    brandCard2Desc: report.brandCard2Desc || null,
-                    brandCard2Logo: report.brandCard2Logo || null,
-                    brandCard2Link: report.brandCard2Link || null,
-                    finalSlideMainLogo: report.finalSlideMainLogo || null
-                  },
-                  update: {
-                    tagline: report.tagline || null,
-                    adminLogos: report.adminLogos as any || [],
-                    brandCard1Title: report.brandCard1Title || null,
-                    brandCard1Desc: report.brandCard1Desc || null,
-                    brandCard1Logo: report.brandCard1Logo || null,
-                    brandCard1Link: report.brandCard1Link || null,
-                    brandCard2Title: report.brandCard2Title || null,
-                    brandCard2Desc: report.brandCard2Desc || null,
-                    brandCard2Logo: report.brandCard2Logo || null,
-                    brandCard2Link: report.brandCard2Link || null,
-                    finalSlideMainLogo: report.finalSlideMainLogo || null
-                  }
-                }
-              },
               analytics: {
                 upsert: {
                   create: {
@@ -1604,21 +1553,6 @@ export async function saveDbReport(report: Report): Promise<Report> {
                   shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
                   shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
                   tiendanubePlan: report.tiendanubePlan as any
-                }
-              },
-              branding: {
-                create: {
-                  tagline: report.tagline || null,
-                  adminLogos: report.adminLogos as any || [],
-                  brandCard1Title: report.brandCard1Title || null,
-                  brandCard1Desc: report.brandCard1Desc || null,
-                  brandCard1Logo: report.brandCard1Logo || null,
-                  brandCard1Link: report.brandCard1Link || null,
-                  brandCard2Title: report.brandCard2Title || null,
-                  brandCard2Desc: report.brandCard2Desc || null,
-                  brandCard2Logo: report.brandCard2Logo || null,
-                  brandCard2Link: report.brandCard2Link || null,
-                  finalSlideMainLogo: report.finalSlideMainLogo || null
                 }
               },
               analytics: {

@@ -170,8 +170,6 @@ export interface Report {
   metrics?: ReportMetricsSubtable;
   /** Subtabla opcional de configuración de plataformas */
   platformConfig?: ReportPlatformConfigSubtable;
-  /** Subtabla opcional de branding y tarjetas de marca */
-  branding?: ReportBrandingSubtable;
   /** Subtabla opcional de analítica y visitantes */
   analytics?: ReportAnalyticsSubtable;
 }
@@ -197,22 +195,6 @@ export interface ReportPlatformConfigSubtable {
   shopifyAppsCostUSD?: number;
   shopifyAppsCostMXN?: number;
   tiendanubePlan: "basic" | "tiendanube" | "advanced" | "evolution";
-}
-
-export interface ReportBrandingSubtable {
-  id?: string;
-  reportId?: string;
-  tagline?: string;
-  adminLogos?: string[];
-  brandCard1Title?: string;
-  brandCard1Desc?: string;
-  brandCard1Logo?: string;
-  brandCard1Link?: string;
-  brandCard2Title?: string;
-  brandCard2Desc?: string;
-  brandCard2Logo?: string;
-  brandCard2Link?: string;
-  finalSlideMainLogo?: string;
 }
 
 export interface ReportAnalyticsSubtable {
@@ -256,14 +238,26 @@ export interface Config {
   userAvatar: string;
   /** Intervalo en milisegundos para refrescar métricas en vivo */
   metricsUpdateInterval: number;
-  /** Título de la tarjeta del socio consultor secundario */
+  /** Eslogan por defecto para los reportes */
+  tagline?: string;
+  /** Título de la tarjeta del socio consultor principal (Socio 1) */
+  brandCard1Title?: string;
+  /** Descripción del socio consultor principal (Socio 1) */
+  brandCard1Desc?: string;
+  /** Logo del socio consultor principal (Socio 1) */
+  brandCard1Logo?: string;
+  /** Enlace del socio consultor principal (Socio 1) */
+  brandCard1Link?: string;
+  /** Título de la tarjeta del socio consultor secundario (Socio 2) */
   brandCard2Title?: string;
-  /** Descripción del socio consultor secundario */
+  /** Descripción del socio consultor secundario (Socio 2) */
   brandCard2Desc?: string;
-  /** Logo del socio consultor secundario */
+  /** Logo del socio consultor secundario (Socio 2) */
   brandCard2Logo?: string;
-  /** Enlace del socio consultor secundario */
+  /** Enlace del socio consultor secundario (Socio 2) */
   brandCard2Link?: string;
+  /** Logo principal de la diapositiva final del reporte */
+  finalSlideMainLogo?: string;
   /** Indica si la integración de dominio personalizado está activa */
   customDomainEnabled?: boolean;
   /** Dominio personalizado configurado para compartir reportes (ej. https://reportes.miagencia.com) */

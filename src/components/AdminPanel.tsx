@@ -65,6 +65,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [metricsUpdateInterval, setMetricsUpdateInterval] = useState<number>(3000);
   const [customDomainEnabled, setCustomDomainEnabled] = useState<boolean>(false);
   const [customDomain, setCustomDomain] = useState<string>("");
+  const [defaultTagline, setDefaultTagline] = useState<string>("Auditoría Financiera y Simulación de Ahorros");
+  const [brandCard1Title, setBrandCard1Title] = useState<string>("");
+  const [brandCard1Desc, setBrandCard1Desc] = useState<string>("");
+  const [brandCard1Logo, setBrandCard1Logo] = useState<string>("");
+  const [brandCard1Link, setBrandCard1Link] = useState<string>("");
+  const [brandCard2Title, setBrandCard2Title] = useState<string>("");
+  const [brandCard2Desc, setBrandCard2Desc] = useState<string>("");
+  const [brandCard2Logo, setBrandCard2Logo] = useState<string>("");
+  const [brandCard2Link, setBrandCard2Link] = useState<string>("");
+  const [finalSlideMainLogo, setFinalSlideMainLogo] = useState<string>("");
 
   const [domainVerificationToken, setDomainVerificationToken] = useState<string>("");
   const [domainVerified, setDomainVerified] = useState<boolean>(false);
@@ -447,7 +457,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   // Form states
   const [editingReport, setEditingReport] = useState<Partial<Report> | null>(null);
-  const [activeFormTab, setActiveFormTab] = useState<string>("general");
+  const [activeFormTab, setActiveFormTab] = useState<string>("metrics");
   const [isEditingComparison, setIsEditingComparison] = useState<boolean>(false);
   const [scraperUrl, setScraperUrl] = useState<string>("");
   const [scraping, setScraping] = useState<boolean>(false);
@@ -500,6 +510,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setDefaultContactWhatsapp(data.defaultContactWhatsapp || "5512345678");
       setCustomExchangeRate(Number(data.customExchangeRate) || 18.50);
       setMetricsUpdateInterval(data.metricsUpdateInterval !== undefined ? Number(data.metricsUpdateInterval) : 3000);
+      setDefaultTagline(data.tagline || "Auditoría Financiera y Simulación de Ahorros");
+      setBrandCard1Title(data.brandCard1Title || "");
+      setBrandCard1Desc(data.brandCard1Desc || "");
+      setBrandCard1Logo(data.brandCard1Logo || "");
+      setBrandCard1Link(data.brandCard1Link || "");
+      setBrandCard2Title(data.brandCard2Title || "");
+      setBrandCard2Desc(data.brandCard2Desc || "");
+      setBrandCard2Logo(data.brandCard2Logo || "");
+      setBrandCard2Link(data.brandCard2Link || "");
+      setFinalSlideMainLogo(data.finalSlideMainLogo || "");
       setGlobalConfig(data);
       setCustomDomainEnabled(Boolean(data.customDomainEnabled));
       setCustomDomain(data.customDomain || "");
@@ -609,6 +629,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           defaultContactWhatsapp,
           customExchangeRate: Number(customExchangeRate) || 18.50,
           metricsUpdateInterval: Number(metricsUpdateInterval) || 3000,
+          tagline: defaultTagline,
+          brandCard1Title,
+          brandCard1Desc,
+          brandCard1Logo,
+          brandCard1Link,
+          brandCard2Title,
+          brandCard2Desc,
+          brandCard2Logo,
+          brandCard2Link,
+          finalSlideMainLogo,
           customDomainEnabled,
           customDomain
         })
@@ -3299,6 +3329,145 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       })()}
                     </div>
                   </div>
+
+                  {/* Report Branding Settings Section */}
+                  <div className="mt-6 p-6 rounded-xl border border-border-theme bg-surface-theme/50 backdrop-blur-md space-y-6">
+                    <div className="flex items-center justify-between border-b border-border-theme/30 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="w-5 h-5 text-accent-theme" />
+                        <div>
+                          <h3 className="font-bold text-sm text-white uppercase tracking-wider">Configuración de Branding del Reporte</h3>
+                          <p className="text-xs text-text-dim-theme">Eslogan, Tarjetas de Socios Consultores y Logotipo de Cierre en Diapositivas</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-accent-theme/10 border border-accent-theme/30 text-accent-theme font-bold">Report Branding Centralizado</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Eslogan Global y Logo Diapositiva Final */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Eslogan Predeterminado del Reporte</label>
+                          <input 
+                            type="text" 
+                            value={defaultTagline} 
+                            onChange={e => setDefaultTagline(e.target.value)}
+                            placeholder="Ej. Auditoría Financiera y Simulación de Ahorros"
+                            className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Logo Principal Diapositiva Final</label>
+                          <input 
+                            type="text" 
+                            value={finalSlideMainLogo} 
+                            onChange={e => setFinalSlideMainLogo(e.target.value)}
+                            placeholder="URL del Logo Principal en la diapositiva final"
+                            className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tarjeta de Marca Socio Consultor 1 */}
+                      <div className="p-4 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3">
+                        <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-amber-400" /> Tarjeta de Marca: Socio Consultor 1
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Título Socio 1</label>
+                            <input 
+                              type="text"
+                              value={brandCard1Title}
+                              onChange={e => setBrandCard1Title(e.target.value)}
+                              placeholder="Ej. Agencia Partner Premium"
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Logo URL Socio 1</label>
+                            <input 
+                              type="text"
+                              value={brandCard1Logo}
+                              onChange={e => setBrandCard1Logo(e.target.value)}
+                              placeholder="https://..."
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Descripción Breve</label>
+                          <input 
+                            type="text"
+                            value={brandCard1Desc}
+                            onChange={e => setBrandCard1Desc(e.target.value)}
+                            placeholder="Ej. Especialistas en migración e-commerce"
+                            className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Enlace de Contacto (URL)</label>
+                          <input 
+                            type="text"
+                            value={brandCard1Link}
+                            onChange={e => setBrandCard1Link(e.target.value)}
+                            placeholder="https://partner.com"
+                            className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tarjeta de Marca Socio Consultor 2 */}
+                      <div className="p-4 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3 col-span-1 md:col-span-2">
+                        <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-emerald-400" /> Tarjeta de Marca: Socio Consultor 2
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Título Socio 2</label>
+                            <input 
+                              type="text"
+                              value={brandCard2Title}
+                              onChange={e => setBrandCard2Title(e.target.value)}
+                              placeholder="Ej. Aliado Logístico"
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Logo URL Socio 2</label>
+                            <input 
+                              type="text"
+                              value={brandCard2Logo}
+                              onChange={e => setBrandCard2Logo(e.target.value)}
+                              placeholder="https://..."
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Descripción</label>
+                            <input 
+                              type="text"
+                              value={brandCard2Desc}
+                              onChange={e => setBrandCard2Desc(e.target.value)}
+                              placeholder="Ej. Soluciones de envíos"
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Enlace</label>
+                            <input 
+                              type="text"
+                              value={brandCard2Link}
+                              onChange={e => setBrandCard2Link(e.target.value)}
+                              placeholder="https://..."
+                              className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
 
@@ -3376,12 +3545,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
             {/* Form Wizard Tabs Navigation (Subtablas Modulares) */}
             <div className="flex flex-wrap gap-2 border-b border-border-theme pb-3 mb-6">
               {[
-                { id: "general", label: "1. Marca & Branding", icon: FileText },
-                { id: "metrics", label: "2. Métricas & Fugas", icon: TrendingUp },
-                { id: "plan", label: "3. Configuración Plataformas", icon: Settings },
-                { id: "tools", label: "4. Aplicaciones Auditadas", icon: Layers },
-                { id: "comparison", label: "5. Matriz Comparativa", icon: Database },
-                { id: "analytics", label: "6. Analítica & Clics", icon: Eye }
+                { id: "metrics", label: "1. Datos del Comercio & Métricas", icon: TrendingUp },
+                { id: "plan", label: "2. Configuración Plataformas", icon: Settings },
+                { id: "tools", label: "3. Aplicaciones Auditadas", icon: Layers },
+                { id: "comparison", label: "4. Matriz Comparativa", icon: Database },
+                { id: "analytics", label: "5. Analítica & Clics", icon: Eye }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isSelected = activeFormTab === tab.id;
@@ -3400,135 +3568,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
             {/* Form Wizard Body */}
             <div className="space-y-6">
 
-              {/* TAB 1: DATOS GENERALES */}
-              {activeFormTab === "general" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Nombre del Comercio *</label>
-                      <input 
-                        type="text" 
-                        value={editingReport.name || ""} 
-                        onChange={e => setEditingReport(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Ej. Ginebra"
-                        className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">URL del Negocio (Migración) *</label>
-                      <input 
-                        type="text" 
-                        value={editingReport.businessUrl || ""} 
-                        onChange={e => setEditingReport(prev => ({ ...prev, businessUrl: e.target.value }))}
-                        placeholder="Ej. https://ginebra.com"
-                        className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Equipo Asignado</label>
-                      <select
-                        value={editingReport.teamId || "team-default"}
-                        onChange={e => setEditingReport(prev => ({ ...prev, teamId: e.target.value }))}
-                        className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
-                      >
-                        {teams.map(team => (
-                          <option key={team.id} value={team.id}>
-                            {team.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Logo Comercio / Principal</label>
-                      <input 
-                        type="text" 
-                        value={editingReport.logo || ""} 
-                        onChange={e => setEditingReport(prev => ({ ...prev, logo: e.target.value }))}
-                        placeholder="https://images.unsplash.com/... o vacío"
-                        className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
-
-                    {/* Logos Diapositiva Final */}
-                    <div className="p-3.5 rounded-lg border border-border-theme/60 bg-surface-theme/30 space-y-3">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">Logos de Diapositiva Final (Hasta 3)</label>
-                      <div>
-                        <label className="block text-[11px] text-text-dim-theme mb-1">Logo Principal (Diapositiva Final)</label>
-                        <input 
-                          type="text" 
-                          value={editingReport.finalSlideMainLogo || ""} 
-                          onChange={e => setEditingReport(prev => ({ ...prev, finalSlideMainLogo: e.target.value }))}
-                          placeholder="URL del Logo Principal (opcional)"
-                          className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[11px] text-text-dim-theme mb-1">Logo Adicional 1</label>
-                          <input 
-                            type="text" 
-                            value={editingReport.finalSlideLogo2 || ""} 
-                            onChange={e => setEditingReport(prev => ({ ...prev, finalSlideLogo2: e.target.value }))}
-                            placeholder="URL Logo 2 (opcional)"
-                            className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-text-dim-theme mb-1">Logo Adicional 2</label>
-                          <input 
-                            type="text" 
-                            value={editingReport.finalSlideLogo3 || ""} 
-                            onChange={e => setEditingReport(prev => ({ ...prev, finalSlideLogo3: e.target.value }))}
-                            placeholder="URL Logo 3 (opcional)"
-                            className="w-full text-xs px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Visitas Mensuales</label>
-                        <input 
-                          type="number" 
-                          value={editingReport.visitasMensuales || 0} 
-                          onChange={e => setEditingReport(prev => ({ ...prev, visitasMensuales: Number(e.target.value) }))}
-                          className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">GMV Mensual ($ MXN)</label>
-                        <input 
-                          type="number" 
-                          value={editingReport.gmv || 0} 
-                          onChange={e => setEditingReport(prev => ({ ...prev, gmv: Number(e.target.value) }))}
-                          className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-4 flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id="msi-checkbox"
-                        checked={editingReport.msi === "Sí" || editingReport.msi === "true" || !!editingReport.msi} 
-                        onChange={e => setEditingReport(prev => ({ ...prev, msi: e.target.checked ? "Sí" : "" }))}
-                        className="w-4 h-4 rounded text-accent-theme border-border-theme focus:ring-accent-theme bg-bg-theme cursor-pointer"
-                      />
-                      <label htmlFor="msi-checkbox" className="text-xs font-bold uppercase tracking-wider text-slate-200 cursor-pointer select-none">
-                        Ofrece Meses Sin Intereses (MSI)
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: SUBTABLA DE MÉTRICAS & FUGAS (ReportMetrics) */}
+              {/* TAB 1: SUBTABLA DE DATOS DEL COMERCIO & MÉTRICAS (ReportMetrics) */}
               {activeFormTab === "metrics" && (
                 <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
                   <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
@@ -3537,36 +3577,89 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <TrendingUp className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Subtabla: Métricas Operativas y Fugas (ReportMetrics)</h3>
-                        <p className="text-xs text-text-dim-theme">Establece el volumen del comercio y los rangos de ahorro en fugas calculados</p>
+                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Subtabla: Datos del Comercio & Métricas Operativas (ReportMetrics)</h3>
+                        <p className="text-xs text-text-dim-theme">Identificación del negocio, tráfico, ventas y rangos de ahorro calculados</p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-accent-theme">Model: ReportMetrics</span>
+                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-accent-theme">Model: Report & ReportMetrics</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Columna Izquierda: Identificación del Negocio */}
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Visitas Mensuales Estimadas *</label>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Nombre del Comercio *</label>
                         <input 
-                          type="number" 
-                          value={editingReport.visitasMensuales || 0} 
-                          onChange={e => setEditingReport(prev => ({ ...prev, visitasMensuales: Number(e.target.value) }))}
+                          type="text" 
+                          value={editingReport.name || ""} 
+                          onChange={e => setEditingReport(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Ej. Ginebra"
                           className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">GMV Mensual Estimado ($ MXN) *</label>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">URL del Negocio (Migración) *</label>
                         <input 
-                          type="number" 
-                          value={editingReport.gmv || 0} 
-                          onChange={e => setEditingReport(prev => ({ ...prev, gmv: Number(e.target.value) }))}
-                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
+                          type="text" 
+                          value={editingReport.businessUrl || ""} 
+                          onChange={e => setEditingReport(prev => ({ ...prev, businessUrl: e.target.value }))}
+                          placeholder="Ej. https://ginebra.com"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
                         />
                       </div>
 
-                      <div className="pt-2 flex items-center gap-2">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">URL Logo Comercio</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.logo || ""} 
+                          onChange={e => setEditingReport(prev => ({ ...prev, logo: e.target.value }))}
+                          placeholder="https://... o vacío"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Equipo Asignado</label>
+                        <select
+                          value={editingReport.teamId || "team-default"}
+                          onChange={e => setEditingReport(prev => ({ ...prev, teamId: e.target.value }))}
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
+                        >
+                          {teams.map(team => (
+                            <option key={team.id} value={team.id}>
+                              {team.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Columna Derecha: Métricas y Ahorros */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Visitas Mensuales Estimadas *</label>
+                          <input 
+                            type="number" 
+                            value={editingReport.visitasMensuales || 0} 
+                            onChange={e => setEditingReport(prev => ({ ...prev, visitasMensuales: Number(e.target.value) }))}
+                            className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">GMV Mensual Estimado ($ MXN) *</label>
+                          <input 
+                            type="number" 
+                            value={editingReport.gmv || 0} 
+                            onChange={e => setEditingReport(prev => ({ ...prev, gmv: Number(e.target.value) }))}
+                            className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex items-center gap-2">
                         <input 
                           type="checkbox" 
                           id="msi-checkbox-metrics"
@@ -3578,37 +3671,37 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           Ofrece Meses Sin Intereses (MSI)
                         </label>
                       </div>
-                    </div>
 
-                    <div className="p-5 rounded-xl border border-border-theme bg-bg-theme/60 space-y-4">
-                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-accent-theme" /> Rango de Ahorros Estimado
-                      </h4>
+                      <div className="p-4 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3 mt-2">
+                        <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-accent-theme" /> Rango de Ahorros Estimado
+                        </h4>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Mínimo ($ MXN)</label>
-                          <input 
-                            type="number"
-                            value={editingReport.fugasRangoMin || 0}
-                            onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMin: Number(e.target.value) }))}
-                            className="w-full text-sm px-3 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
-                          />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Mínimo ($ MXN)</label>
+                            <input 
+                              type="number"
+                              value={editingReport.fugasRangoMin || 0}
+                              onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMin: Number(e.target.value) }))}
+                              className="w-full text-sm px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Máximo ($ MXN)</label>
+                            <input 
+                              type="number"
+                              value={editingReport.fugasRangoMax || 0}
+                              onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMax: Number(e.target.value) }))}
+                              className="w-full text-sm px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Máximo ($ MXN)</label>
-                          <input 
-                            type="number"
-                            value={editingReport.fugasRangoMax || 0}
-                            onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMax: Number(e.target.value) }))}
-                            className="w-full text-sm px-3 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="text-[11px] text-text-dim-theme bg-surface-theme/40 p-3 rounded-lg border border-border-theme/40">
-                        <span>Fugas detectadas en stack: </span>
-                        <strong className="text-white">{(editingReport.tools || []).length} aplicaciones</strong>
+                        <div className="text-[11px] text-text-dim-theme bg-surface-theme/40 p-2.5 rounded-lg border border-border-theme/40">
+                          <span>Herramientas en stack: </span>
+                          <strong className="text-white">{(editingReport.tools || []).length} auditadas</strong>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.70 (Frontend) / v2.5.57 (Backend)] - 2026-08-23
+
+### ♻️ Refactorización de Código
+- **report:** modularizar tabla de report en subtablas (ReportMetrics, ReportPlatformConfig, ReportBranding, ReportAnalytics) [v2.5.69/v2.5.56] (`bb39ca5`)
+
 ## [v2.5.69 (Frontend) / v2.5.56 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

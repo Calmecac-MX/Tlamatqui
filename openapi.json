@@ -3,7 +3,7 @@
   "info": {
     "title": "Tlamatqui API",
     "description": "API para el Panel de Administración y Reportes de Diagnósticos de Shopify vs Tiendanube.",
-    "version": "2.5.56"
+    "version": "2.5.57"
   },
   "servers": [
     {
