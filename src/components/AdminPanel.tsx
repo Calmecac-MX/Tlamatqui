@@ -551,13 +551,18 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
-  // Guardia de navegación: Redirigir a Agentes fuera de secciones restringidas
+  // Guardia de navegación: Redirigir a usuarios no-superusuario fuera del Centro Superusuario
   useEffect(() => {
+    const isSuperUser = authUser?.role === "Superusuario" || userRole === "Superusuario";
+    if (adminTab === "superadmin" && !isSuperUser) {
+      setAdminTab("dashboard");
+    }
     if (userRole === "Agente") {
       if (adminTab === "config") setAdminTab("dashboard");
       if (teamSubTab !== "dashboard") setTeamSubTab("dashboard");
     }
-  }, [userRole, adminTab, teamSubTab]);
+  }, [userRole, authUser, adminTab, teamSubTab]);
+
 
 
   const handleSaveConfig = async () => {
@@ -2393,7 +2398,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                     onSubTabChange={setTeamSubTab}
                   />
                 </Suspense>
-              ) : adminTab === "superadmin" ? (
+              ) : adminTab === "superadmin" && (userRole === "Superusuario" || authUser?.role === "Superusuario") ? (
+
                 <Suspense fallback={
                   <div className="p-12 text-center text-text-dim-theme text-xs flex items-center justify-center gap-2">
                     <RefreshCw className="w-4 h-4 animate-spin text-accent-theme" />

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.53 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### 📌 Otros Cambios
+- eliminar nota explicativa debajo de la tarjeta de rol en el perfil (`56a8fe4`)
+
 ## [v2.5.52 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades
