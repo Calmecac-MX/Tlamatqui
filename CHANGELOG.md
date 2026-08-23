@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.64 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **realtime:** filtrar bitacora de interacciones a aperturas, navegacion y descargas del reporte (Frontend v2.5.63) (`eb97779`)
+
 ## [v2.5.63 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes

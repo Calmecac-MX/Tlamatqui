@@ -472,6 +472,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   });
   const [toolErrors, setToolErrors] = useState<Record<string, string>>({});
   const [isAddingToolOpen, setIsAddingToolOpen] = useState<boolean>(false);
+  const [editingToolId, setEditingToolId] = useState<string | null>(null);
 
   // Fetch Reports and Templates
   useEffect(() => {
@@ -724,7 +725,27 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
-  // Add Manual Tool Validation & Insertion
+  // Start Editing Tool
+  const handleStartEditTool = (tool: Tool) => {
+    setEditingToolId(tool.id);
+    setNewTool({
+      name: tool.name,
+      category: tool.category,
+      costType: tool.costType,
+      costExact: tool.costExact,
+      costMin: tool.costMin,
+      costMax: tool.costMax,
+      currency: tool.currency,
+      semaphore: tool.semaphore,
+      url: tool.url || "",
+      description: tool.description || "",
+      logo: tool.logo || ""
+    });
+    setToolErrors({});
+    setIsAddingToolOpen(true);
+  };
+
+  // Add or Update Manual Tool Validation & Insertion
   const handleAddManualTool = () => {
     const errors: Record<string, string> = {};
     if (!newTool.name?.trim()) errors.name = "El nombre es obligatorio";
@@ -748,7 +769,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
     setToolErrors({});
     const toolToInsert: Tool = {
-      id: `manual-${Date.now()}`,
+      id: editingToolId || `manual-${Date.now()}`,
       name: newTool.name || "",
       category: newTool.category || "Marketing",
       costType: newTool.costType as "exact" | "range",
@@ -764,8 +785,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
     setEditingReport(prev => ({
       ...prev,
-      tools: [...(prev?.tools || []), toolToInsert]
+      tools: editingToolId
+        ? (prev?.tools || []).map(t => t.id === editingToolId ? toolToInsert : t)
+        : [...(prev?.tools || []), toolToInsert]
     }));
+
+    setEditingToolId(null);
+    setIsAddingToolOpen(false);
 
     // Reset Tool form
     setNewTool({
@@ -3703,13 +3729,24 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                 </td>
                                 <td className="p-3 text-slate-300">{t.currency}</td>
                                 <td className="p-3 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveTool(t.id)}
-                                    className="p-1.5 rounded bg-red-theme/10 text-red-theme hover:bg-red-theme/20 border border-red-theme/10 transition-all cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditTool(t)}
+                                      className="p-1.5 rounded bg-accent-theme/10 text-accent-theme hover:bg-accent-theme/20 border border-accent-theme/20 transition-all cursor-pointer"
+                                      title="Editar aplicación"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveTool(t.id)}
+                                      className="p-1.5 rounded bg-red-theme/10 text-red-theme hover:bg-red-theme/20 border border-red-theme/20 transition-all cursor-pointer"
+                                      title="Eliminar aplicación"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -3733,10 +3770,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   ) : (
                     <div className="p-5 rounded-xl border border-border-theme bg-surface-theme relative animate-fade-in space-y-4">
                       <div className="flex items-center justify-between border-b border-border-theme/30 pb-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-white">Agregar Herramienta Manualmente</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                          {editingToolId ? "Editar Aplicación / Herramienta" : "Agregar Herramienta Manualmente"}
+                        </h4>
                         <button
                           type="button"
-                          onClick={() => setIsAddingToolOpen(false)}
+                          onClick={() => {
+                            setIsAddingToolOpen(false);
+                            setEditingToolId(null);
+                          }}
                           className="text-text-dim-theme hover:text-white transition-colors cursor-pointer"
                           title="Cerrar Formulario"
                         >

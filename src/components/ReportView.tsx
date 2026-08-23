@@ -478,36 +478,74 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
     return () => clearInterval(interval);
   }, [reportId]);
 
-  // Auto-save GMV and Visits to server
+  // Auto-save report edits (GMV, visitas, apps, funciones comparativas y planes) to database
   useEffect(() => {
     if (!reportId || !report) return;
 
     const hasGmvChanged = Number(calcGmv) !== Number(report.gmv);
     const hasVisitasChanged = Number(calcVisitas) !== Number(report.visitasMensuales);
+    const hasAppsUSDChanged = Number(calcAppsCostUSD) !== Number((report as any).shopifyAppsCostUSD || 0);
+    const hasAppsMXNChanged = Number(calcAppsCostMXN) !== Number((report as any).shopifyAppsCostMXN || 0);
+    const hasShopifyFeeChanged = Number(customShopifyFee) !== Number(report.shopifyFee || 0);
+    const hasShopifyPriceChanged = Number(customShopifyPrice) !== Number(report.shopifyPlanCustomPrice || 0);
+    const hasShopifyPlanChanged = calcShopifyPlan !== report.shopifyPlan;
+    const hasComparisonChanged = JSON.stringify(comparisonRows) !== JSON.stringify(report.comparisonRows || []);
 
-    if (!hasGmvChanged && !hasVisitasChanged) return;
+    if (
+      !hasGmvChanged && 
+      !hasVisitasChanged && 
+      !hasAppsUSDChanged && 
+      !hasAppsMXNChanged && 
+      !hasShopifyFeeChanged && 
+      !hasShopifyPriceChanged && 
+      !hasShopifyPlanChanged && 
+      !hasComparisonChanged
+    ) return;
 
     const saveTimeout = setTimeout(async () => {
       try {
+        const payload: Record<string, any> = {
+          gmv: calcGmv,
+          visitasMensuales: calcVisitas,
+          shopifyAppsCostUSD: calcAppsCostUSD,
+          shopifyAppsCostMXN: calcAppsCostMXN,
+          shopifyFee: customShopifyFee,
+          shopifyPlanCustomPrice: customShopifyPrice,
+          shopifyPlan: calcShopifyPlan,
+          comparisonRows: comparisonRows,
+          tools: report.tools || []
+        };
+
         const res = await fetch(`/api/reports/${reportId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gmv: calcGmv,
-            visitasMensuales: calcVisitas
-          })
+          body: JSON.stringify(payload)
         });
         if (res.ok) {
           const updatedReport = await res.json();
-          setReport(prev => prev ? { ...prev, gmv: calcGmv, visitasMensuales: calcVisitas } : null);
+          setReport(prev => prev ? { 
+            ...prev, 
+            ...payload
+          } : null);
         }
       } catch (err) {
-        console.error("Error auto-saving report", err);
+        console.error("Error auto-saving report data to database", err);
       }
     }, 1200);
 
     return () => clearTimeout(saveTimeout);
-  }, [calcGmv, calcVisitas, reportId, report]);
+  }, [
+    calcGmv, 
+    calcVisitas, 
+    calcAppsCostUSD, 
+    calcAppsCostMXN, 
+    customShopifyFee, 
+    customShopifyPrice, 
+    calcShopifyPlan, 
+    comparisonRows, 
+    reportId, 
+    report
+  ]);
 
   // Keyboard, wheel, and touch event listeners
   useEffect(() => {
