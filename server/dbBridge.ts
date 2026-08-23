@@ -42,6 +42,26 @@ async function writeJsonAsync<T>(filePath: string, data: T): Promise<void> {
   }
 }
 
+/**
+ * Enuelve cualquier consulta asíncrona de Prisma en un límite de tiempo (timeout) de 3.5s.
+ * Evita que bloqueos de red en el driver de base de datos demoren la respuesta del servidor.
+ */
+async function withDbTimeout<T>(promise: Promise<T>, ms: number = 3500): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Consulta a la base de datos excedió ${ms}ms.`)), ms);
+  });
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timer!);
+    return result;
+  } catch (err) {
+    clearTimeout(timer!);
+    throw err;
+  }
+}
+
+
 
 // File storage paths (for JSON fallback)
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -537,13 +557,14 @@ export async function getDbConfig(): Promise<any> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        const raw = await prisma.config.findUnique({ where: { id: "default" } });
+        const raw = await withDbTimeout(prisma.config.findUnique({ where: { id: "default" } }), 3500);
         if (raw) {
           config = decryptData(raw);
         }
       } catch (err) {
         console.error("Error reading config from database:", err);
       }
+
     }
   }
 
@@ -702,10 +723,14 @@ export async function getDbTeams(): Promise<Team[]> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        const dbTeams = await prisma.team.findMany({
-          include: { members: true }
-        });
+        const dbTeams = await withDbTimeout(
+          prisma.team.findMany({
+            include: { members: true }
+          }),
+          3500
+        );
         return dbTeams.map(t => ({
+
           id: t.id,
           name: t.name,
           image: t.image || undefined,
@@ -960,14 +985,18 @@ export async function getDbReports(): Promise<Report[]> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        const dbReports = await prisma.report.findMany({
-          include: {
-            tools: true,
-            comparisonRows: true,
-            interactions: true
-          }
-        });
+        const dbReports = await withDbTimeout(
+          prisma.report.findMany({
+            include: {
+              tools: true,
+              comparisonRows: true,
+              interactions: true
+            }
+          }),
+          3500
+        );
         return dbReports.map(r => ({
+
           id: r.id,
           name: r.name,
           logo: r.logo || undefined,
@@ -1663,10 +1692,14 @@ export async function getDbUsers(): Promise<UserAccount[]> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        const users = await prisma.user.findMany({
-          orderBy: { createdAt: "asc" }
-        });
+        const users = await withDbTimeout(
+          prisma.user.findMany({
+            orderBy: { createdAt: "asc" }
+          }),
+          3500
+        );
         return users.map((u: any) => ({
+
           id: u.id,
           email: u.email,
           name: u.name,

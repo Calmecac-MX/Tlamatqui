@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.49 (Frontend) / v2.5.48 (Backend)] - 2026-08-23
+
+### ⚡ Optimización y Rendimiento
+- **vercel:** ampliar maxDuration a 60s y optimizar inicializacion serverless (`84749b4`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- bump BACKEND_VERSION to 2.5.47 (`96771a0`)
+
 ## [v2.5.49 (Frontend) / v2.5.47 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

@@ -151,8 +151,10 @@ async function sendEmailViaBrevoApi(payload: {
       "Content-Type": "application/json",
       "Accept": "application/json"
     },
-    body: JSON.stringify(brevoPayload)
+    body: JSON.stringify(brevoPayload),
+    signal: AbortSignal.timeout(5000)
   });
+
 
   const responseData: any = await response.json().catch(() => ({}));
 
@@ -186,10 +188,14 @@ function createTransporter() {
       user: config.user,
       pass: config.pass
     } : undefined,
+    connectionTimeout: 4000,
+    greetingTimeout: 4000,
+    socketTimeout: 4000,
     tls: {
       rejectUnauthorized: false // Permite certificados autofirmados o conexiones de prueba
     }
   });
+
 }
 
 /**
