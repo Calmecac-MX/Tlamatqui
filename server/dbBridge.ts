@@ -10,7 +10,35 @@ import { encryptData, decryptData, encryptText, decryptText } from "./encryption
 // Caché en memoria RAM para archivos JSON (evita releer de disco e invalidar cifrado AES en cada consulta)
 const jsonMemoryCache = new Map<string, { data: any; mtime: number }>();
 
+// Caché ultra-rápido en RAM con TTL de 3s para peticiones GET frecuentes de la API REST
+const apiQueryCache = new Map<string, { data: any; expiresAt: number }>();
+
+function getCachedQueryResult<T>(key: string): T | null {
+  const item = apiQueryCache.get(key);
+  if (item && Date.now() < item.expiresAt) {
+    return item.data as T;
+  }
+  return null;
+}
+
+function setCachedQueryResult<T>(key: string, data: T, ttlMs: number = 3000): void {
+  apiQueryCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+export function invalidateApiQueryCache(prefix?: string): void {
+  if (!prefix) {
+    apiQueryCache.clear();
+    return;
+  }
+  for (const key of apiQueryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      apiQueryCache.delete(key);
+    }
+  }
+}
+
 // Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo y caché RAM)
+
 async function readJsonAsync<T>(filePath: string, fallback: T): Promise<T> {
   try {
     if (fs.existsSync(filePath)) {
@@ -552,6 +580,9 @@ export async function initializeDatabase() {
  * @returns {Promise<any>} Objeto con la configuración global del panel.
  */
 export async function getDbConfig(): Promise<any> {
+  const cachedConfig = getCachedQueryResult<any>("config");
+  if (cachedConfig) return cachedConfig;
+
   let config: any = null;
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
@@ -564,7 +595,6 @@ export async function getDbConfig(): Promise<any> {
       } catch (err) {
         console.error("Error reading config from database:", err);
       }
-
     }
   }
 
@@ -578,8 +608,10 @@ export async function getDbConfig(): Promise<any> {
     await saveDbConfig(config);
   }
 
+  setCachedQueryResult("config", config, 3000);
   return config;
 }
+
 
 /**
  * Guarda o actualiza los parámetros de configuración global en la base de datos o archivo JSON.
@@ -719,6 +751,10 @@ export async function verifyCustomDomainDNS(rawDomain: string, expectedToken: st
  * @returns {Promise<Team[]>} Arreglo de equipos con sus miembros asignados.
  */
 export async function getDbTeams(): Promise<Team[]> {
+  const cachedTeams = getCachedQueryResult<Team[]>("teams");
+  if (cachedTeams) return cachedTeams;
+
+  let result: Team[] = [];
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
@@ -729,8 +765,7 @@ export async function getDbTeams(): Promise<Team[]> {
           }),
           3500
         );
-        return dbTeams.map(t => ({
-
+        result = dbTeams.map(t => ({
           id: t.id,
           name: t.name,
           image: t.image || undefined,
@@ -753,9 +788,14 @@ export async function getDbTeams(): Promise<Team[]> {
     }
   }
 
-  // Local fallback
-  return readJsonAsync(TEAMS_FILE, []);
+  if (!result || result.length === 0) {
+    result = await readJsonAsync<Team[]>(TEAMS_FILE, []);
+  }
+
+  setCachedQueryResult("teams", result, 3000);
+  return result;
 }
+
 
 /**
  * Guarda o actualiza un equipo de trabajo con sus miembros asociados.
@@ -981,6 +1021,10 @@ export async function joinTeamViaInviteToken(
  * @returns {Promise<Report[]>} Arreglo de reportes con herramientas, comparativas e interacciones.
  */
 export async function getDbReports(): Promise<Report[]> {
+  const cachedReports = getCachedQueryResult<Report[]>("reports");
+  if (cachedReports) return cachedReports;
+
+  let result: Report[] = [];
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
@@ -995,8 +1039,7 @@ export async function getDbReports(): Promise<Report[]> {
           }),
           3500
         );
-        return dbReports.map(r => ({
-
+        result = dbReports.map(r => ({
           id: r.id,
           name: r.name,
           logo: r.logo || undefined,
@@ -1047,6 +1090,7 @@ export async function getDbReports(): Promise<Report[]> {
           brandCard2Logo: r.brandCard2Logo || undefined,
           brandCard2Link: r.brandCard2Link || undefined,
           finalSlideMainLogo: r.finalSlideMainLogo || undefined,
+          createdBy: r.createdBy || undefined,
           createdAt: r.createdAt.toISOString(),
           viewCount: r.viewCount,
           openCount: r.openCount,
@@ -1067,9 +1111,14 @@ export async function getDbReports(): Promise<Report[]> {
     }
   }
 
-  // Local fallback
-  return readJsonAsync(REPORTS_FILE, []);
+  if (!result || result.length === 0) {
+    result = await readJsonAsync<Report[]>(REPORTS_FILE, []);
+  }
+
+  setCachedQueryResult("reports", result, 3000);
+  return result;
 }
+
 
 /**
  * Obtiene un reporte de diagnóstico por su identificador único.
@@ -1336,8 +1385,10 @@ export async function saveDbReport(report: Report): Promise<Report> {
   } catch (err) {
     console.error("Error writing report to local file:", err);
   }
+  invalidateApiQueryCache("reports");
   return cleanReport;
 }
+
 
 /**
  * Elimina un reporte de diagnóstico por su ID.
@@ -1351,6 +1402,7 @@ export async function deleteDbReport(id: string): Promise<boolean> {
     if (prisma) {
       try {
         await prisma.report.delete({ where: { id } });
+        invalidateApiQueryCache("reports");
         return true;
       } catch (err) {
         console.error("Error deleting report from database:", err);
@@ -1366,7 +1418,9 @@ export async function deleteDbReport(id: string): Promise<boolean> {
   }
   try {
     fs.writeFileSync(REPORTS_FILE, JSON.stringify(filtered, null, 2), "utf-8");
+    invalidateApiQueryCache("reports");
     return true;
+
   } catch (err) {
     console.error("Error deleting report from local file:", err);
     return false;

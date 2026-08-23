@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.49] - 2026-08-23
+
+### ⚡ Optimización y Rendimiento
+- **core:** implementar timeouts estrictos sub-5s en DB, Brevo y SMTP para garantizar respuestas ultra rapidas (`7d09c54`)
+
 ## [v2.5.49 (Frontend) / v2.5.48 (Backend)] - 2026-08-23
 
 ### ⚡ Optimización y Rendimiento

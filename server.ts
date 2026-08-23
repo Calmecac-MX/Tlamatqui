@@ -153,6 +153,19 @@ app.use((req: Request, res: Response, next) => {
 // Habilitar parser JSON optimizado (límite 15MB suficiente para reportes con imágenes/PDFs)
 app.use(express.json({ limit: "15mb" }));
 
+// Middleware de rendimiento para seguimiento de tiempo de respuesta (X-Response-Time)
+app.use((req: Request, res: Response, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (duration > 1500) {
+      console.warn(`\x1b[33m[API Latency Warning]\x1b[0m ${req.method} ${req.originalUrl} tomó ${duration}ms`);
+    }
+  });
+  next();
+});
+
+
 
 // Middleware para validación de token secreto cliente-servidor
 app.use(verifyApiSecretToken);
