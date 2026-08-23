@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.49 (Frontend) / v2.5.47 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** integrar pagina dedicada de invitacion a equipo con registro Auth0 y auto-vinculacion (`37a0546`)
+
 ## [v2.5.49 (Frontend) / v2.5.46 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes

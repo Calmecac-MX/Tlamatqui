@@ -278,8 +278,14 @@ const DEFAULT_REPORTS = [
  * 
  * @returns {Promise<void>} Promesa que resuelve tras completar la verificación.
  */
+let isDatabaseInitialized = false;
+
 export async function initializeDatabase() {
+  if (isDatabaseInitialized) return;
+  isDatabaseInitialized = true;
+
   // Ensure local folders exist
+
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
