@@ -239,10 +239,6 @@ export default function TeamDashboard({
   // Handle Save Team Configuration
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teamName.trim() || !teamOwnerName.trim() || !teamOwnerEmail.trim()) {
-      setConfigError("El nombre, propietario y correo de propietario son obligatorios");
-      return;
-    }
 
     setIsSavingConfig(true);
     setConfigError(null);
@@ -1004,55 +1000,6 @@ export default function TeamDashboard({
                   <div className="flex items-center gap-2 mb-2 border-b border-border-theme/30 pb-2">
                     <Settings className="w-4 h-4 text-accent-theme" />
                     <h3 className="font-bold text-sm text-white uppercase tracking-wider">Configuración del reporte</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Nombre del Equipo *</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={teamName} 
-                        onChange={e => setTeamName(e.target.value)}
-                        placeholder="Ej. Equipo Evolución"
-                        className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Logo/Imagen del Equipo (URL)</label>
-                      <input 
-                        type="text" 
-                        value={teamImage} 
-                        onChange={e => setTeamImage(e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Nombre del Propietario *</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={teamOwnerName} 
-                        onChange={e => setTeamOwnerName(e.target.value)}
-                        placeholder="César Ayar"
-                        className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Correo del Propietario *</label>
-                      <input 
-                        type="email" 
-                        required
-                        value={teamOwnerEmail} 
-                        onChange={e => setTeamOwnerEmail(e.target.value)}
-                        placeholder="cesar@tiendanube.mx"
-                        className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                      />
-                    </div>
                   </div>
 
                   {/* SECCIÓN: Marca del Reporte */}

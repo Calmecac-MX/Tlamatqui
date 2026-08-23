@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.67 (Frontend) / v2.5.55 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **teams:** añadir configuración del reporte con marca teamBrand* y gestión de aliados (`59358fa`)
+
 ## [v2.5.66 (Frontend) / v2.5.55 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes
