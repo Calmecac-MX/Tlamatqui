@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.51] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **config:** agregar opcion para activar o desactivar dominio personalizado y prevenir llamadas a Vercel (`23addcf`)
+
 ## [v2.5.50 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### ⚡ Optimización y Rendimiento

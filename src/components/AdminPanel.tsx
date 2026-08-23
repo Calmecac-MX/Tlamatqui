@@ -16,7 +16,8 @@ import {
   Layers, Database, FileText, CheckCircle, RefreshCw, Moon, Sun, Laptop, ArrowRight,
   TrendingUp, Menu, ChevronLeft, ChevronRight, LayoutDashboard, Undo2,
   UploadCloud, Camera, Image as ImageIcon, X, Users, ChevronDown, Crown,
-  Search, Filter, SlidersHorizontal, Calendar, Table, LayoutGrid, LogOut, ShieldCheck
+  Search, Filter, SlidersHorizontal, Calendar, Table, LayoutGrid, LogOut, ShieldCheck, Lock
+
 } from "lucide-react";
 import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } from "../types";
 import { scrapeShopifyStore } from "../lib/scrapper";
@@ -2462,21 +2463,40 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Rol / Título de Trabajo</label>
-                        <select 
-                          value={userRole} 
-                          onChange={e => setUserRole(e.target.value)}
-                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white cursor-pointer"
-                        >
-                          {(userRole === "Superusuario" || authUser?.role === "Superusuario") && (
-                            <option value="Superusuario">Superusuario</option>
-                          )}
-                          <option value="Administrador">Administrador</option>
-                          <option value="Agente">Agente</option>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme">Rol / Permisos en la Plataforma</label>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 font-semibold">
+                            <Lock className="w-3 h-3" /> Solo Lectura en Perfil
+                          </span>
+                        </div>
 
-                          <option value="Visor">Visor</option>
-                        </select>
+                        <div className="flex items-center justify-between p-3 rounded-lg border bg-bg-theme/80 border-border-theme text-white">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center shrink-0">
+                              <ShieldCheck className="w-4 h-4 text-accent-theme" />
+                            </div>
+                            <div>
+                              <span className="block text-sm font-bold text-white leading-tight">
+                                {userRole || authUser?.role || "Administrador"}
+                              </span>
+                              <span className="block text-[11px] text-text-dim-theme">
+                                {userRole === "Superusuario" ? "Acceso total a todos los módulos y gestión global" :
+                                 userRole === "Administrador" ? "Acceso ejecutivo y administración de equipo" :
+                                 userRole === "Agente" ? "Gestión y creación de reportes propios" :
+                                 "Visor de reportes de la organización"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700 font-bold shrink-0">
+                            Asignado
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-text-dim-theme mt-1.5 leading-relaxed">
+                          El rol del sistema no se puede modificar desde el perfil propio. Solamente los <strong>Administradores</strong> o <strong>Superusuarios</strong> pueden reasignar roles a miembros desde la sección de <em>Mi Equipo</em>.
+                        </p>
                       </div>
+
 
                       <div className="col-span-1 lg:col-span-2 space-y-3">
                         <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme">Foto de Perfil</label>
