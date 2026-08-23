@@ -122,7 +122,9 @@ const DEFAULT_CONFIG = {
   brandCard2Desc: "Especialistas de confianza en migración, diseño UX/UI y optimización técnica para asegurar una transición fluida sin perder SEO.",
   brandCard2Logo: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=120&q=80",
   brandCard2Link: "mailto:cesar.ayar19@gmail.com",
+  customDomainEnabled: false,
   customDomain: "",
+
   domainVerificationToken: "tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex"),
   domainVerified: false,
   domainVerifiedAt: null
@@ -637,7 +639,9 @@ export async function saveDbConfig(config: any): Promise<any> {
     brandCard2Desc: config.brandCard2Desc || null,
     brandCard2Logo: config.brandCard2Logo || null,
     brandCard2Link: config.brandCard2Link || null,
+    customDomainEnabled: Boolean(config.customDomainEnabled !== undefined ? config.customDomainEnabled : (currentConfig.customDomainEnabled !== undefined ? currentConfig.customDomainEnabled : false)),
     customDomain: config.customDomain !== undefined ? config.customDomain : (currentConfig.customDomain || ""),
+
     domainVerificationToken: config.domainVerificationToken || currentConfig.domainVerificationToken || ("tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex")),
     domainVerified: Boolean(config.domainVerified !== undefined ? config.domainVerified : (currentConfig.domainVerified || false)),
     domainVerifiedAt: config.domainVerifiedAt !== undefined ? config.domainVerifiedAt : (currentConfig.domainVerifiedAt || null),

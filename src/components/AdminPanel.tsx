@@ -62,7 +62,9 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [defaultContactWhatsapp, setDefaultContactWhatsapp] = useState<string>("5512345678");
   const [customExchangeRate, setCustomExchangeRate] = useState<number>(18.50);
   const [metricsUpdateInterval, setMetricsUpdateInterval] = useState<number>(3000);
+  const [customDomainEnabled, setCustomDomainEnabled] = useState<boolean>(false);
   const [customDomain, setCustomDomain] = useState<string>("");
+
   const [domainVerificationToken, setDomainVerificationToken] = useState<string>("");
   const [domainVerified, setDomainVerified] = useState<boolean>(false);
   const [domainVerifiedAt, setDomainVerifiedAt] = useState<string | undefined>(undefined);
@@ -487,7 +489,9 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       setCustomExchangeRate(Number(data.customExchangeRate) || 18.50);
       setMetricsUpdateInterval(data.metricsUpdateInterval !== undefined ? Number(data.metricsUpdateInterval) : 3000);
       setGlobalConfig(data);
+      setCustomDomainEnabled(Boolean(data.customDomainEnabled));
       setCustomDomain(data.customDomain || "");
+
       setDomainVerificationToken(data.domainVerificationToken || "");
       setDomainVerified(Boolean(data.domainVerified));
       setDomainVerifiedAt(data.domainVerifiedAt);
@@ -575,8 +579,10 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           userRole,
           userAvatar,
           metricsUpdateInterval: Number(metricsUpdateInterval) || 3000,
+          customDomainEnabled,
           customDomain
         })
+
       });
 
       // Save Prisma LogoConfig
@@ -3095,62 +3101,93 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
                       {/* Tarjeta de Dominio Personalizado y Verificación TXT DNS */}
                       <div className="pt-4 border-t border-border-theme/20 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">
-                            Dominio Personalizado de Marca (Custom Domain)
+                        
+                        {/* Interruptor de Activación de Dominio Personalizado */}
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                          <div className="space-y-0.5 pr-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">Integración de Dominio Personalizado</span>
+                              {customDomainEnabled ? (
+                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">Activo</span>
+                              ) : (
+                                <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-bold">Desactivado (Ahorro de Recursos)</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              Al estar desactivado, se evitan solicitudes de aprovisionamiento en la API de Vercel para optimizar recursos del servidor.
+                            </p>
+                          </div>
+
+                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input 
+                              type="checkbox" 
+                              checked={customDomainEnabled} 
+                              onChange={(e) => setCustomDomainEnabled(e.target.checked)} 
+                              className="sr-only peer" 
+                            />
+                            <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                           </label>
-                          {domainVerified ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                              <ShieldCheck className="w-3.5 h-3.5" /> Verificado {domainVerifiedAt ? `(${new Date(domainVerifiedAt).toLocaleDateString()})` : ""}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
-                              <AlertTriangle className="w-3.5 h-3.5" /> Pendiente TXT
-                            </span>
-                          )}
                         </div>
 
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={customDomain} 
-                            onChange={e => setCustomDomain(e.target.value)}
-                            placeholder="https://reportes.miagencia.com"
-                            className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-mono"
-                          />
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!customDomain) return;
-                              setVerifyingDomainConfig(true);
-                              setDomainCheckMessage({ type: null, msg: "" });
-                              try {
-                                const res = await fetch("/api/config/verify-domain", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ domain: customDomain })
-                                });
-                                const data = await res.json();
-                                if (res.ok && data.success) {
-                                  setDomainCheckMessage({ type: "success", msg: data.message });
-                                  setDomainVerified(true);
-                                  setDomainVerifiedAt(new Date().toISOString());
-                                } else {
-                                  setDomainCheckMessage({ type: "error", msg: data.message || "No se pudo verificar el registro TXT." });
+                        <div className={`space-y-3 transition-opacity ${customDomainEnabled ? "opacity-100" : "opacity-50 pointer-events-none"}`}>
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-accent-theme">
+                              Dominio Personalizado de Marca (Custom Domain)
+                            </label>
+                            {domainVerified ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                                <ShieldCheck className="w-3.5 h-3.5" /> Verificado {domainVerifiedAt ? `(${new Date(domainVerifiedAt).toLocaleDateString()})` : ""}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                                <AlertTriangle className="w-3.5 h-3.5" /> Pendiente TXT
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              disabled={!customDomainEnabled}
+                              value={customDomain} 
+                              onChange={e => setCustomDomain(e.target.value)}
+                              placeholder="https://reportes.miagencia.com"
+                              className="w-full text-sm px-3.5 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-mono disabled:opacity-60"
+                            />
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!customDomain || !customDomainEnabled) return;
+                                setVerifyingDomainConfig(true);
+                                setDomainCheckMessage({ type: null, msg: "" });
+                                try {
+                                  const res = await fetch("/api/config/verify-domain", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ domain: customDomain })
+                                  });
+                                  const data = await res.json();
+                                  if (res.ok && data.success) {
+                                    setDomainCheckMessage({ type: "success", msg: data.message });
+                                    setDomainVerified(true);
+                                    setDomainVerifiedAt(new Date().toISOString());
+                                  } else {
+                                    setDomainCheckMessage({ type: "error", msg: data.message || "No se pudo verificar el registro TXT." });
+                                  }
+                                } catch (e: any) {
+                                  setDomainCheckMessage({ type: "error", msg: "Error al verificar el dominio." });
+                                } finally {
+                                  setVerifyingDomainConfig(false);
                                 }
-                              } catch (e: any) {
-                                setDomainCheckMessage({ type: "error", msg: "Error al verificar el dominio." });
-                              } finally {
-                                setVerifyingDomainConfig(false);
-                              }
-                            }}
-                            disabled={verifyingDomainConfig || !customDomain}
-                            className="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />
-                            Verificar TXT
-                          </button>
+                              }}
+                              disabled={verifyingDomainConfig || !customDomain || !customDomainEnabled}
+                              className="px-3.5 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${verifyingDomainConfig ? "animate-spin" : ""}`} />
+                              Verificar TXT
+                            </button>
                         </div>
+
 
                         {domainCheckMessage.msg && (
                           <div className={`p-2.5 rounded-lg text-xs border ${domainCheckMessage.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-rose-500/10 border-rose-500/30 text-rose-300"}`}>
@@ -3183,6 +3220,24 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                     </div>
                   </div>
                 </div>
+              </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 {/* Actions Bar */}
                 <div className="flex items-center justify-end gap-3 border-t border-border-theme pt-5">

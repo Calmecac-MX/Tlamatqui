@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.50 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### ⚡ Optimización y Rendimiento
+- **config:** optimizar endpoint /api/config con cache de lectura en RAM y encabezados HTTP (`033ae52`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- increment BACKEND_VERSION to 2.5.50 (`5bb2ff9`)
+
 ## [v2.5.49 (Frontend) / v2.5.50 (Backend)] - 2026-08-23
 
 ### ⚡ Optimización y Rendimiento

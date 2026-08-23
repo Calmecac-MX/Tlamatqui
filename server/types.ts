@@ -206,6 +206,8 @@ export interface Config {
   brandCard2Logo?: string;
   /** Enlace del socio consultor secundario */
   brandCard2Link?: string;
+  /** Indica si la integración de dominio personalizado está activa */
+  customDomainEnabled?: boolean;
   /** Dominio personalizado configurado para compartir reportes (ej. https://reportes.miagencia.com) */
   customDomain?: string;
   /** Token de verificación para registro TXT DNS */
@@ -215,6 +217,7 @@ export interface Config {
   /** Fecha ISO de verificación de la propiedad del dominio */
   domainVerifiedAt?: string;
 }
+
 
 export type UserRole = "Superusuario" | "Administrador" | "Agente" | "Visor";
 

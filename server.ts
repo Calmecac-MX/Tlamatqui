@@ -1054,8 +1054,8 @@ app.post("/api/config", async (req: Request, res: Response) => {
     const newConfig = { ...config, ...req.body };
     const saved = await saveDbConfig(newConfig);
 
-    // Auto-registrar automáticamente en la API de Vercel si se proporcionó un dominio personalizado
-    if (newConfig.customDomain && process.env.VERCEL_AUTH_TOKEN && process.env.VERCEL_PROJECT_ID) {
+    // Auto-registrar automáticamente en la API de Vercel si el dominio personalizado está activado
+    if (newConfig.customDomainEnabled && newConfig.customDomain && process.env.VERCEL_AUTH_TOKEN && process.env.VERCEL_PROJECT_ID) {
       provisionDomainOnVercel(newConfig.customDomain).catch((e) =>
         console.error("Auto-registro en Vercel en segundo plano:", e)
       );
@@ -1075,6 +1075,9 @@ app.post("/api/config/verify-domain", async (req: Request, res: Response) => {
   try {
     const { domain } = req.body;
     const config = await getDbConfig();
+    if (!config.customDomainEnabled) {
+      return res.status(400).json({ success: false, message: "La integración de dominio personalizado está desactivada." });
+    }
     const token = config.domainVerificationToken || "";
     const targetDomain = domain || config.customDomain || "";
     const result = await verifyCustomDomainDNS(targetDomain, token);
@@ -1098,8 +1101,8 @@ app.post("/api/config/dns/status", async (req: Request, res: Response) => {
     const targetDomain = sanitizeDomain(domain || config.customDomain || "");
     const token = config.domainVerificationToken || "";
 
-    // Intentar auto-registrar automáticamente en Vercel si la API está configurada
-    if (targetDomain && process.env.VERCEL_AUTH_TOKEN && process.env.VERCEL_PROJECT_ID) {
+    // Intentar auto-registrar en Vercel si está habilitado en configuración
+    if (config.customDomainEnabled && targetDomain && process.env.VERCEL_AUTH_TOKEN && process.env.VERCEL_PROJECT_ID) {
       await provisionDomainOnVercel(targetDomain).catch(() => {});
     }
 
@@ -1127,7 +1130,11 @@ app.post("/api/config/dns/provision", async (req: Request, res: Response) => {
   try {
     const { domain } = req.body;
     const config = await getDbConfig();
+    if (!config.customDomainEnabled) {
+      return res.status(400).json({ success: false, message: "La integración de dominio personalizado está desactivada para optimizar recursos." });
+    }
     const targetDomain = sanitizeDomain(domain || config.customDomain || "");
+
     const result = await provisionDomainOnVercel(targetDomain);
     if (!result.success) {
       return res.status(400).json(result);
