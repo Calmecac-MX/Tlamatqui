@@ -768,19 +768,21 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
 
     setToolErrors({});
+    const originalTool = editingToolId ? (editingReport.tools || []).find(t => t.id === editingToolId) : null;
+
     const toolToInsert: Tool = {
       id: editingToolId || `manual-${Date.now()}`,
-      name: newTool.name || "",
-      category: newTool.category || "Marketing",
+      name: originalTool ? originalTool.name : (newTool.name || ""),
+      category: originalTool ? originalTool.category : (newTool.category || "Marketing"),
       costType: newTool.costType as "exact" | "range",
       costExact: Number(newTool.costExact) || 0,
       costMin: Number(newTool.costMin) || 0,
       costMax: Number(newTool.costMax) || 0,
       currency: newTool.currency as "USD" | "MXN",
-      semaphore: newTool.semaphore as "green" | "yellow" | "red",
-      url: newTool.url,
-      description: newTool.description,
-      logo: newTool.logo || ""
+      semaphore: originalTool ? originalTool.semaphore : (newTool.semaphore as "green" | "yellow" | "red"),
+      url: originalTool ? originalTool.url : newTool.url,
+      description: originalTool ? originalTool.description : newTool.description,
+      logo: originalTool ? originalTool.logo : (newTool.logo || "")
     };
 
     setEditingReport(prev => ({
@@ -3771,7 +3773,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                     <div className="p-5 rounded-xl border border-border-theme bg-surface-theme relative animate-fade-in space-y-4">
                       <div className="flex items-center justify-between border-b border-border-theme/30 pb-2">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-                          {editingToolId ? "Editar Aplicación / Herramienta" : "Agregar Herramienta Manualmente"}
+                          {editingToolId ? `Modificar Precio de ${newTool.name || "Aplicación"}` : "Agregar Herramienta Manualmente"}
                         </h4>
                         <button
                           type="button"
@@ -3788,37 +3790,46 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Nombre App *</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                            Nombre App {editingToolId && "(Solo Lectura)"} *
+                          </label>
                           <input 
                             type="text" 
+                            disabled={Boolean(editingToolId)}
                             value={newTool.name || ""} 
                             onChange={e => setNewTool(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="Ej. Klaviyo"
-                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme ${toolErrors.name ? "border-red-theme focus:ring-1 focus:ring-red-theme" : "border-border-theme focus:ring-1 focus:ring-accent-theme text-white"}`}
+                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none ${editingToolId ? "bg-bg-theme/50 text-text-dim-theme border-border-theme/50 cursor-not-allowed" : "bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme"}`}
                           />
                           {toolErrors.name && <p className="text-[10px] text-red-theme mt-0.5">{toolErrors.name}</p>}
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Categoría *</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                            Categoría {editingToolId && "(Solo Lectura)"} *
+                          </label>
                           <input 
                             type="text" 
+                            disabled={Boolean(editingToolId)}
                             value={newTool.category || ""} 
                             onChange={e => setNewTool(prev => ({ ...prev, category: e.target.value }))}
                             placeholder="Ej. Marketing, Reviews, Envíos"
-                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme ${toolErrors.category ? "border-red-theme focus:ring-1 focus:ring-red-theme" : "border-border-theme focus:ring-1 focus:ring-accent-theme text-white"}`}
+                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none ${editingToolId ? "bg-bg-theme/50 text-text-dim-theme border-border-theme/50 cursor-not-allowed" : "bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme"}`}
                           />
                           {toolErrors.category && <p className="text-[10px] text-red-theme mt-0.5">{toolErrors.category}</p>}
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Semáforo de Reemplazo</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                            Semáforo {editingToolId && "(Solo Lectura)"}
+                          </label>
                           <select 
+                            disabled={Boolean(editingToolId)}
                             value={newTool.semaphore || "green"} 
                             onChange={e => setNewTool(prev => ({ ...prev, semaphore: e.target.value as any }))}
-                            className="w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme border-border-theme text-slate-200"
+                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none ${editingToolId ? "bg-bg-theme/50 text-text-dim-theme border-border-theme/50 cursor-not-allowed" : "bg-bg-theme border-border-theme text-slate-200"}`}
                           >
-                            <option value="green">Verde: Reemplazable Nativamente</option>
+                            <option value="green">Verde: Reemplazable Natively</option>
                             <option value="yellow">Amarillo: Neutral / Se mantiene</option>
                             <option value="red">Rojo: Costo Oculto</option>
                           </select>
@@ -3885,13 +3896,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">URL App (Opcional)</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                            URL App {editingToolId && "(Solo Lectura)"}
+                          </label>
                           <input 
                             type="text" 
+                            disabled={Boolean(editingToolId)}
                             value={newTool.url || ""} 
                             onChange={e => setNewTool(prev => ({ ...prev, url: e.target.value }))}
                             placeholder="https://apps.shopify.com/..."
-                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme ${toolErrors.url ? "border-red-theme" : "border-border-theme focus:ring-1 focus:ring-accent-theme text-white"}`}
+                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none ${editingToolId ? "bg-bg-theme/50 text-text-dim-theme border-border-theme/50 cursor-not-allowed" : "bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme"}`}
                           />
                           {toolErrors.url && <p className="text-[10px] text-red-theme mt-0.5">{toolErrors.url}</p>}
                         </div>
@@ -3899,23 +3913,29 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Descripción del costo o alternativa</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                            Descripción {editingToolId && "(Solo Lectura)"}
+                          </label>
                           <input 
                             type="text" 
+                            disabled={Boolean(editingToolId)}
                             value={newTool.description || ""} 
                             onChange={e => setNewTool(prev => ({ ...prev, description: e.target.value }))}
                             placeholder="Explica qué es y por qué en Tiendanube es gratuito o diferente"
-                            className="w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme border-border-theme focus:border-text-dim-theme text-white focus:ring-1 focus:ring-accent-theme"
+                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none ${editingToolId ? "bg-bg-theme/50 text-text-dim-theme border-border-theme/50 cursor-not-allowed" : "bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme"}`}
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">URL de Logo (Opcional)</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                            URL de Logo {editingToolId && "(Solo Lectura)"}
+                          </label>
                           <input 
                             type="text" 
+                            disabled={Boolean(editingToolId)}
                             value={newTool.logo || ""} 
                             onChange={e => setNewTool(prev => ({ ...prev, logo: e.target.value }))}
                             placeholder="https://logo.clearbit.com/klaviyo.com o similar"
-                            className="w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme border-border-theme focus:border-text-dim-theme text-white focus:ring-1 focus:ring-accent-theme"
+                            className={`w-full text-xs px-3 py-2 rounded-lg border outline-none ${editingToolId ? "bg-bg-theme/50 text-text-dim-theme border-border-theme/50 cursor-not-allowed" : "bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme"}`}
                           />
                         </div>
                       </div>

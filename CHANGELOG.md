@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.65 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **db:** sincronizar edicion de aplicaciones y funciones comparativas con la base de datos (Frontend v2.5.64) (`5d9e7b8`)
+
 ## [v2.5.64 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades
