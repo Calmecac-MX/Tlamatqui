@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.57 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **share:** simplificar modal de compartir usando únicamente URL predeterminada y remover botón de vista previa v2.5.56 (`cfa6a4a`)
+
 ## [v2.5.56 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades
