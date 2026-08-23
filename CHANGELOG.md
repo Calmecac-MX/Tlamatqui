@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.52 (Frontend) / v2.5.51 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** bloquear modificacion de roles en perfil de usuario y restringir edicion a administradores (`f29fd8f`)
+
 ## [v2.5.51] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

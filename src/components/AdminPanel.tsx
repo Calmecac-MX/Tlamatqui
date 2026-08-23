@@ -2488,14 +2488,9 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             </div>
                           </div>
 
-                          <span className="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700 font-bold shrink-0">
-                            Asignado
-                          </span>
                         </div>
-                        <p className="text-[10px] text-text-dim-theme mt-1.5 leading-relaxed">
-                          El rol del sistema no se puede modificar desde el perfil propio. Solamente los <strong>Administradores</strong> o <strong>Superusuarios</strong> pueden reasignar roles a miembros desde la sección de <em>Mi Equipo</em>.
-                        </p>
                       </div>
+
 
 
                       <div className="col-span-1 lg:col-span-2 space-y-3">
