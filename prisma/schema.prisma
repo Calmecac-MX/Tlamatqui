@@ -186,6 +186,10 @@ model Report {
   uniqueVisitors         Int                    @default(0)
   uniqueVisitorIds       Json?                  // Lista de visitor IDs: string[]
   interactions           ReportInteraction?
+  metrics                ReportMetrics?
+  platformConfig         ReportPlatformConfig?
+  branding               ReportBranding?
+  analytics              ReportAnalytics?
   teamId                 String?
   team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
   createdBy              String?
@@ -195,6 +199,62 @@ model Report {
 
   @@index([teamId])
   @@index([creatorId])
+}
+
+/// Métricas financieras y de fugas pertenecientes a la subtabla ReportMetrics.
+model ReportMetrics {
+  id               String   @id @default(uuid())
+  reportId         String   @unique
+  report           Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  visitasMensuales Int      @default(0)
+  gmv              Float    @default(0)
+  fugasCantidad    Int?
+  fugasRangoMin    Float?
+  fugasRangoMax    Float?
+}
+
+/// Configuración de plataformas (Shopify / Tiendanube) pertenecientes a la subtabla ReportPlatformConfig.
+model ReportPlatformConfig {
+  id                     String         @id @default(uuid())
+  reportId               String         @unique
+  report                 Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  shopifyPlan            ShopifyPlan    @default(grow)
+  shopifyFee             Float?
+  msi                    String?
+  shopifyPlanCustomFee   Float?
+  shopifyPlanCustomPrice Float?
+  shopifyAppsCostUSD     Float?
+  shopifyAppsCostMXN     Float?
+  tiendanubePlan         TiendanubePlan @default(evolution)
+}
+
+/// Elementos de branding y tarjetas de marca pertenecientes a la subtabla ReportBranding.
+model ReportBranding {
+  id                 String  @id @default(uuid())
+  reportId           String  @unique
+  report             Report  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  tagline            String?
+  adminLogos         Json?   // Lista de logos: string[]
+  brandCard1Title    String?
+  brandCard1Desc     String?
+  brandCard1Logo     String?
+  brandCard1Link     String?
+  brandCard2Title    String?
+  brandCard2Desc     String?
+  brandCard2Logo     String?
+  brandCard2Link     String?
+  finalSlideMainLogo String?
+}
+
+/// Métricas de interacción y analítica perteneciente a la subtabla ReportAnalytics.
+model ReportAnalytics {
+  id               String @id @default(uuid())
+  reportId         String @unique
+  report           Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  viewCount        Int    @default(0)
+  openCount        Int    @default(0)
+  uniqueVisitors   Int    @default(0)
+  uniqueVisitorIds Json?  // Lista de visitor IDs: string[]
 }
 
 /// Herramienta / App de e-commerce diagnosticada como punto de fuga dentro de un reporte.

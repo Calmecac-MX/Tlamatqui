@@ -3373,13 +3373,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
               </div>
             </div>
 
-            {/* Form Wizard Tabs Navigation */}
+            {/* Form Wizard Tabs Navigation (Subtablas Modulares) */}
             <div className="flex flex-wrap gap-2 border-b border-border-theme pb-3 mb-6">
               {[
-                { id: "general", label: "1. Datos Generales", icon: FileText },
-                { id: "plan", label: "2. Planes e Interfaces", icon: Settings },
-                { id: "tools", label: "3. Stack de Aplicaciones", icon: Layers },
-                { id: "comparison", label: "4. Tabla Comparativa", icon: Database }
+                { id: "general", label: "1. Marca & Branding", icon: FileText },
+                { id: "metrics", label: "2. Métricas & Fugas", icon: TrendingUp },
+                { id: "plan", label: "3. Configuración Plataformas", icon: Settings },
+                { id: "tools", label: "4. Aplicaciones Auditadas", icon: Layers },
+                { id: "comparison", label: "5. Matriz Comparativa", icon: Database },
+                { id: "analytics", label: "6. Analítica & Clics", icon: Eye }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isSelected = activeFormTab === tab.id;
@@ -3387,7 +3389,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                   <button
                     key={tab.id}
                     onClick={() => setActiveFormTab(tab.id)}
-                    className={`flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg border transition-all cursor-pointer ${isSelected ? "bg-accent-theme border-accent-theme text-white shadow-sm" : "bg-bg-theme hover:bg-surface-hover-theme border-border-theme text-text-dim-theme"}`}
+                    className={`flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-lg border transition-all cursor-pointer ${isSelected ? "bg-accent-theme border-accent-theme text-white shadow-sm" : "bg-bg-theme hover:bg-surface-hover-theme border-border-theme text-text-dim-theme"}`}
                   >
                     <Icon className="w-3.5 h-3.5" /> {tab.label}
                   </button>
@@ -3526,7 +3528,94 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 </div>
               )}
 
-              {/* TAB 2: PLANES Y ECONOMÍA */}
+              {/* TAB 2: SUBTABLA DE MÉTRICAS & FUGAS (ReportMetrics) */}
+              {activeFormTab === "metrics" && (
+                <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center text-accent-theme font-bold">
+                        <TrendingUp className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Subtabla: Métricas Operativas y Fugas (ReportMetrics)</h3>
+                        <p className="text-xs text-text-dim-theme">Establece el volumen del comercio y los rangos de ahorro en fugas calculados</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-accent-theme">Model: ReportMetrics</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">Visitas Mensuales Estimadas *</label>
+                        <input 
+                          type="number" 
+                          value={editingReport.visitasMensuales || 0} 
+                          onChange={e => setEditingReport(prev => ({ ...prev, visitasMensuales: Number(e.target.value) }))}
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">GMV Mensual Estimado ($ MXN) *</label>
+                        <input 
+                          type="number" 
+                          value={editingReport.gmv || 0} 
+                          onChange={e => setEditingReport(prev => ({ ...prev, gmv: Number(e.target.value) }))}
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          id="msi-checkbox-metrics"
+                          checked={editingReport.msi === "Sí" || editingReport.msi === "true" || !!editingReport.msi} 
+                          onChange={e => setEditingReport(prev => ({ ...prev, msi: e.target.checked ? "Sí" : "" }))}
+                          className="w-4 h-4 rounded text-accent-theme border-border-theme focus:ring-accent-theme bg-bg-theme cursor-pointer"
+                        />
+                        <label htmlFor="msi-checkbox-metrics" className="text-xs font-bold uppercase tracking-wider text-slate-200 cursor-pointer select-none">
+                          Ofrece Meses Sin Intereses (MSI)
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="p-5 rounded-xl border border-border-theme bg-bg-theme/60 space-y-4">
+                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-accent-theme" /> Rango de Ahorros Estimado
+                      </h4>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Mínimo ($ MXN)</label>
+                          <input 
+                            type="number"
+                            value={editingReport.fugasRangoMin || 0}
+                            onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMin: Number(e.target.value) }))}
+                            className="w-full text-sm px-3 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Máximo ($ MXN)</label>
+                          <input 
+                            type="number"
+                            value={editingReport.fugasRangoMax || 0}
+                            onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMax: Number(e.target.value) }))}
+                            className="w-full text-sm px-3 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-text-dim-theme bg-surface-theme/40 p-3 rounded-lg border border-border-theme/40">
+                        <span>Fugas detectadas en stack: </span>
+                        <strong className="text-white">{(editingReport.tools || []).length} aplicaciones</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: PLANES Y ECONOMÍA */}
               {activeFormTab === "plan" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Shopify Plan Column */}
@@ -4138,6 +4227,63 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       </div>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* TAB 6: SUBTABLA DE ANALÍTICA E INTERACCIÓN (ReportAnalytics & ReportInteraction) */}
+              {activeFormTab === "analytics" && (
+                <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center text-accent-theme font-bold">
+                        <Eye className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Subtabla: Métricas de Tráfico & Clics (ReportAnalytics)</h3>
+                        <p className="text-xs text-text-dim-theme">Historial de aperturas, vistas de diapositivas y comportamiento del usuario</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-accent-theme">Model: ReportAnalytics</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
+                      <div className="text-xs text-text-dim-theme uppercase font-bold">Total Impresiones</div>
+                      <div className="text-2xl font-black text-white mt-1">{editingReport.viewCount || 0}</div>
+                    </div>
+                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
+                      <div className="text-xs text-text-dim-theme uppercase font-bold">Aperturas Únicas</div>
+                      <div className="text-2xl font-black text-emerald-400 mt-1">{editingReport.openCount || 0}</div>
+                    </div>
+                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
+                      <div className="text-xs text-text-dim-theme uppercase font-bold">Visitantes Únicos</div>
+                      <div className="text-2xl font-black text-accent-theme mt-1">{editingReport.uniqueVisitors || 0}</div>
+                    </div>
+                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
+                      <div className="text-xs text-text-dim-theme uppercase font-bold">Tiempo en Reporte</div>
+                      <div className="text-2xl font-black text-amber-400 mt-1">
+                        {editingReport.interactions?.timeSpentSeconds ? `${Math.round(editingReport.interactions.timeSpentSeconds / 60)} min` : "0 min"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Métricas de Interacción en Tiempo Real</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
+                        <span className="text-text-dim-theme">Clics WhatsApp:</span>
+                        <strong className="text-white font-bold">{editingReport.interactions?.whatsappClicks || 0}</strong>
+                      </div>
+                      <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
+                        <span className="text-text-dim-theme">Clics Herramientas:</span>
+                        <strong className="text-white font-bold">{editingReport.interactions?.toolClicks || 0}</strong>
+                      </div>
+                      <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
+                        <span className="text-text-dim-theme">Uso Calculadora:</span>
+                        <strong className="text-white font-bold">{editingReport.interactions?.calculatorInteractions || 0}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 

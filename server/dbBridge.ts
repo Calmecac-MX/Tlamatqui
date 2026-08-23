@@ -1077,6 +1077,10 @@ export async function getDbReports(): Promise<Report[]> {
               tools: true,
               comparisonRows: true,
               interactions: true,
+              metrics: true,
+              platformConfig: true,
+              branding: true,
+              analytics: true,
               team: {
                 include: { allies: true }
               }
@@ -1148,6 +1152,78 @@ export async function getDbReports(): Promise<Report[]> {
             calculatorInteractions: r.interactions.calculatorInteractions,
             timeSpentSeconds: r.interactions.timeSpentSeconds
           } : undefined,
+          metrics: r.metrics ? {
+            id: r.metrics.id,
+            visitasMensuales: r.metrics.visitasMensuales,
+            gmv: r.metrics.gmv,
+            fugasCantidad: r.metrics.fugasCantidad || undefined,
+            fugasRangoMin: r.metrics.fugasRangoMin || undefined,
+            fugasRangoMax: r.metrics.fugasRangoMax || undefined
+          } : {
+            visitasMensuales: r.visitasMensuales,
+            gmv: r.gmv,
+            fugasCantidad: r.fugasCantidad || undefined,
+            fugasRangoMin: r.fugasRangoMin || undefined,
+            fugasRangoMax: r.fugasRangoMax || undefined
+          },
+          platformConfig: r.platformConfig ? {
+            id: r.platformConfig.id,
+            shopifyPlan: r.platformConfig.shopifyPlan as any,
+            shopifyFee: r.platformConfig.shopifyFee || undefined,
+            msi: r.platformConfig.msi || undefined,
+            shopifyPlanCustomFee: r.platformConfig.shopifyPlanCustomFee || undefined,
+            shopifyPlanCustomPrice: r.platformConfig.shopifyPlanCustomPrice || undefined,
+            shopifyAppsCostUSD: r.platformConfig.shopifyAppsCostUSD || undefined,
+            shopifyAppsCostMXN: r.platformConfig.shopifyAppsCostMXN || undefined,
+            tiendanubePlan: r.platformConfig.tiendanubePlan as any
+          } : {
+            shopifyPlan: r.shopifyPlan as any,
+            shopifyFee: r.shopifyFee || undefined,
+            msi: r.msi || undefined,
+            shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
+            shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
+            shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
+            shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
+            tiendanubePlan: r.tiendanubePlan as any
+          },
+          branding: r.branding ? {
+            id: r.branding.id,
+            tagline: r.branding.tagline || undefined,
+            adminLogos: r.branding.adminLogos as any as string[],
+            brandCard1Title: r.branding.brandCard1Title || undefined,
+            brandCard1Desc: r.branding.brandCard1Desc || undefined,
+            brandCard1Logo: r.branding.brandCard1Logo || undefined,
+            brandCard1Link: r.branding.brandCard1Link || undefined,
+            brandCard2Title: r.branding.brandCard2Title || undefined,
+            brandCard2Desc: r.branding.brandCard2Desc || undefined,
+            brandCard2Logo: r.branding.brandCard2Logo || undefined,
+            brandCard2Link: r.branding.brandCard2Link || undefined,
+            finalSlideMainLogo: r.branding.finalSlideMainLogo || undefined
+          } : {
+            tagline: r.tagline || undefined,
+            adminLogos: r.adminLogos as any as string[],
+            brandCard1Title: r.brandCard1Title || undefined,
+            brandCard1Desc: r.brandCard1Desc || undefined,
+            brandCard1Logo: r.brandCard1Logo || undefined,
+            brandCard1Link: r.brandCard1Link || undefined,
+            brandCard2Title: r.brandCard2Title || undefined,
+            brandCard2Desc: r.brandCard2Desc || undefined,
+            brandCard2Logo: r.brandCard2Logo || undefined,
+            brandCard2Link: r.brandCard2Link || undefined,
+            finalSlideMainLogo: r.finalSlideMainLogo || undefined
+          },
+          analytics: r.analytics ? {
+            id: r.analytics.id,
+            viewCount: r.analytics.viewCount,
+            openCount: r.analytics.openCount,
+            uniqueVisitors: r.analytics.uniqueVisitors,
+            uniqueVisitorIds: (r.analytics.uniqueVisitorIds as any as string[]) || []
+          } : {
+            viewCount: r.viewCount,
+            openCount: r.openCount,
+            uniqueVisitors: r.uniqueVisitors,
+            uniqueVisitorIds: (r.uniqueVisitorIds as any as string[]) || []
+          },
           teamId: r.teamId || undefined,
           team: r.team ? {
             id: r.team.id,
@@ -1381,7 +1457,95 @@ export async function saveDbReport(report: Report): Promise<Report> {
                     timeSpentSeconds: report.interactions.timeSpentSeconds
                   }
                 }
-              } : undefined
+              } : undefined,
+              metrics: {
+                upsert: {
+                  create: {
+                    visitasMensuales: Math.round(report.visitasMensuales),
+                    gmv: Number(report.gmv),
+                    fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
+                    fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
+                    fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
+                  },
+                  update: {
+                    visitasMensuales: Math.round(report.visitasMensuales),
+                    gmv: Number(report.gmv),
+                    fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
+                    fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
+                    fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
+                  }
+                }
+              },
+              platformConfig: {
+                upsert: {
+                  create: {
+                    shopifyPlan: report.shopifyPlan as any,
+                    shopifyFee: report.shopifyFee ? Number(report.shopifyFee) : null,
+                    msi: report.msi || null,
+                    shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
+                    shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
+                    shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
+                    shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
+                    tiendanubePlan: report.tiendanubePlan as any
+                  },
+                  update: {
+                    shopifyPlan: report.shopifyPlan as any,
+                    shopifyFee: report.shopifyFee ? Number(report.shopifyFee) : null,
+                    msi: report.msi || null,
+                    shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
+                    shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
+                    shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
+                    shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
+                    tiendanubePlan: report.tiendanubePlan as any
+                  }
+                }
+              },
+              branding: {
+                upsert: {
+                  create: {
+                    tagline: report.tagline || null,
+                    adminLogos: report.adminLogos as any || [],
+                    brandCard1Title: report.brandCard1Title || null,
+                    brandCard1Desc: report.brandCard1Desc || null,
+                    brandCard1Logo: report.brandCard1Logo || null,
+                    brandCard1Link: report.brandCard1Link || null,
+                    brandCard2Title: report.brandCard2Title || null,
+                    brandCard2Desc: report.brandCard2Desc || null,
+                    brandCard2Logo: report.brandCard2Logo || null,
+                    brandCard2Link: report.brandCard2Link || null,
+                    finalSlideMainLogo: report.finalSlideMainLogo || null
+                  },
+                  update: {
+                    tagline: report.tagline || null,
+                    adminLogos: report.adminLogos as any || [],
+                    brandCard1Title: report.brandCard1Title || null,
+                    brandCard1Desc: report.brandCard1Desc || null,
+                    brandCard1Logo: report.brandCard1Logo || null,
+                    brandCard1Link: report.brandCard1Link || null,
+                    brandCard2Title: report.brandCard2Title || null,
+                    brandCard2Desc: report.brandCard2Desc || null,
+                    brandCard2Logo: report.brandCard2Logo || null,
+                    brandCard2Link: report.brandCard2Link || null,
+                    finalSlideMainLogo: report.finalSlideMainLogo || null
+                  }
+                }
+              },
+              analytics: {
+                upsert: {
+                  create: {
+                    viewCount: report.viewCount || 0,
+                    openCount: report.openCount || 0,
+                    uniqueVisitors: report.uniqueVisitors || 0,
+                    uniqueVisitorIds: report.uniqueVisitorIds as any || []
+                  },
+                  update: {
+                    viewCount: report.viewCount || 0,
+                    openCount: report.openCount || 0,
+                    uniqueVisitors: report.uniqueVisitors || 0,
+                    uniqueVisitorIds: report.uniqueVisitorIds as any || []
+                  }
+                }
+              }
             },
             create: {
               id: report.id,
@@ -1420,7 +1584,51 @@ export async function saveDbReport(report: Report): Promise<Report> {
                   calculatorInteractions: report.interactions.calculatorInteractions,
                   timeSpentSeconds: report.interactions.timeSpentSeconds
                 }
-              } : undefined
+              } : undefined,
+              metrics: {
+                create: {
+                  visitasMensuales: Math.round(report.visitasMensuales),
+                  gmv: Number(report.gmv),
+                  fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
+                  fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
+                  fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
+                }
+              },
+              platformConfig: {
+                create: {
+                  shopifyPlan: report.shopifyPlan as any,
+                  shopifyFee: report.shopifyFee ? Number(report.shopifyFee) : null,
+                  msi: report.msi || null,
+                  shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
+                  shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
+                  shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
+                  shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
+                  tiendanubePlan: report.tiendanubePlan as any
+                }
+              },
+              branding: {
+                create: {
+                  tagline: report.tagline || null,
+                  adminLogos: report.adminLogos as any || [],
+                  brandCard1Title: report.brandCard1Title || null,
+                  brandCard1Desc: report.brandCard1Desc || null,
+                  brandCard1Logo: report.brandCard1Logo || null,
+                  brandCard1Link: report.brandCard1Link || null,
+                  brandCard2Title: report.brandCard2Title || null,
+                  brandCard2Desc: report.brandCard2Desc || null,
+                  brandCard2Logo: report.brandCard2Logo || null,
+                  brandCard2Link: report.brandCard2Link || null,
+                  finalSlideMainLogo: report.finalSlideMainLogo || null
+                }
+              },
+              analytics: {
+                create: {
+                  viewCount: report.viewCount || 0,
+                  openCount: report.openCount || 0,
+                  uniqueVisitors: report.uniqueVisitors || 0,
+                  uniqueVisitorIds: report.uniqueVisitorIds as any || []
+                }
+              }
             }
           })
         ]);

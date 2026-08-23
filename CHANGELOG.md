@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.69 (Frontend) / v2.5.56 (Backend)] - 2026-08-23
+
+### 🚀 Features & Nuevas Funcionalidades
+- **report-cover:** vincular el nombre del comercio en el título de la portada con su sitio web (`bbf62d6`)
+
 ## [v2.5.68 (Frontend) / v2.5.55 (Backend)] - 2026-08-23
 
 ### 🐛 Corregido & Bug Fixes

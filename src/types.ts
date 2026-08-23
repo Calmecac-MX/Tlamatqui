@@ -166,6 +166,62 @@ export interface Report {
     /** Tiempo acumulado de permanencia en segundos */
     timeSpentSeconds: number;
   };
+  /** Subtabla opcional de métricas financieras y de fugas */
+  metrics?: ReportMetricsSubtable;
+  /** Subtabla opcional de configuración de plataformas */
+  platformConfig?: ReportPlatformConfigSubtable;
+  /** Subtabla opcional de branding y tarjetas de marca */
+  branding?: ReportBrandingSubtable;
+  /** Subtabla opcional de analítica y visitantes */
+  analytics?: ReportAnalyticsSubtable;
+}
+
+export interface ReportMetricsSubtable {
+  id?: string;
+  reportId?: string;
+  visitasMensuales: number;
+  gmv: number;
+  fugasCantidad?: number;
+  fugasRangoMin?: number;
+  fugasRangoMax?: number;
+}
+
+export interface ReportPlatformConfigSubtable {
+  id?: string;
+  reportId?: string;
+  shopifyPlan: "basic" | "grow" | "advanced" | "plus" | "custom";
+  shopifyFee?: number;
+  msi?: string;
+  shopifyPlanCustomFee?: number;
+  shopifyPlanCustomPrice?: number;
+  shopifyAppsCostUSD?: number;
+  shopifyAppsCostMXN?: number;
+  tiendanubePlan: "basic" | "tiendanube" | "advanced" | "evolution";
+}
+
+export interface ReportBrandingSubtable {
+  id?: string;
+  reportId?: string;
+  tagline?: string;
+  adminLogos?: string[];
+  brandCard1Title?: string;
+  brandCard1Desc?: string;
+  brandCard1Logo?: string;
+  brandCard1Link?: string;
+  brandCard2Title?: string;
+  brandCard2Desc?: string;
+  brandCard2Logo?: string;
+  brandCard2Link?: string;
+  finalSlideMainLogo?: string;
+}
+
+export interface ReportAnalyticsSubtable {
+  id?: string;
+  reportId?: string;
+  viewCount?: number;
+  openCount?: number;
+  uniqueVisitors?: number;
+  uniqueVisitorIds?: string[];
 }
 
 /**
