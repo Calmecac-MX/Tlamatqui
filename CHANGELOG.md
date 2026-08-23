@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.61 (Frontend) / v2.5.54 (Backend)] - 2026-08-23
+
+### 🐛 Corregido & Bug Fixes
+- **auth:** preservar los roles asignados por cuenta e impedir que la configuración global los sobrescriba v2.5.61 (`04f333b`)
+
 ## [v2.5.61 (Frontend) / v2.5.53 (Backend)] - 2026-08-23
 
 ### 🚀 Features & Nuevas Funcionalidades

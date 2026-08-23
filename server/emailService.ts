@@ -250,144 +250,152 @@ function buildReportEmailHtml(options: SendReportEmailOptions): string {
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #0b0f19;
-      color: #e2e8f0;
+      background-color: #060b17 !important;
+      color: #e2e8f0 !important;
       margin: 0;
       padding: 0;
-      line-height: 1.6;
+      width: 100% !important;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
-    .container {
-      max-width: 600px;
-      margin: 30px auto;
-      background-color: #151d30;
-      border: 1px solid #23314f;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    .btn-glow:hover {
+      box-shadow: 0 0 25px rgba(46, 205, 183, 0.6) !important;
     }
-    .header {
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-    }
-    .header p {
-      margin: 8px 0 0;
-      font-size: 14px;
-      color: #e0e7ff;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .greeting {
-      font-size: 16px;
-      font-weight: 600;
-      color: #f8fafc;
-      margin-bottom: 16px;
-    }
-    .card {
-      background-color: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px 0;
-    }
-    .card-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #60a5fa;
-      margin-bottom: 8px;
-    }
-    .card-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #ffffff;
-    }
-    .note-box {
-      background-color: #1e293b;
-      border-left: 4px solid #6366f1;
-      padding: 16px;
-      border-radius: 6px;
-      margin: 20px 0;
-      font-style: italic;
-      color: #cbd5e1;
-    }
-    .btn-container {
-      text-align: center;
-      margin: 32px 0 20px;
-    }
-    .btn {
-      display: inline-block;
-      background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
-      color: #ffffff !important;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 15px;
-      padding: 14px 32px;
-      border-radius: 10px;
-      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-    }
-    .footer {
-      background-color: #0f172a;
-      padding: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #64748b;
-      border-top: 1px solid #1e293b;
-    }
-    .footer a {
-      color: #60a5fa;
-      text-decoration: none;
+    @media only screen and (max-width: 620px) {
+      .email-container {
+        width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .content-padding {
+        padding: 24px 18px !important;
+      }
+      .header-padding {
+        padding: 28px 18px !important;
+      }
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Tlamatqui Diagnostics</h1>
-      <p>Suite de Auditoría Financiera y Comparativa de Comercio Electrónico</p>
-    </div>
-    <div class="content">
-      <div class="greeting">Hola,</div>
-      <p>Adjunto encontrarás el resultado del análisis financiero y auditoría operativa realizado para el comercio <strong>${storeName}</strong>.</p>
-      
-      <div class="card">
-        <div class="card-title">Comercio Auditado</div>
-        <div class="card-value">${storeName}</div>
-        ${gmvFormatted ? `<div style="margin-top: 10px; font-size: 13px; color: #94a3b8;">GMV Mensual Estimado: <strong style="color: #38bdf8;">${gmvFormatted}</strong></div>` : ''}
-      </div>
+<body style="margin:0; padding:0; background-color:#060b17; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <!-- Wrapper Table -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#060b17; width:100%; margin:0; padding:20px 0;">
+    <tr>
+      <td align="center" style="padding:10px;">
+        
+        <!-- Main Email Container -->
+        <table class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#0e172a; border:1px solid rgba(46, 205, 183, 0.35); border-radius:16px; overflow:hidden; box-shadow:0 12px 35px rgba(0, 0, 0, 0.7);">
+          
+          <!-- Top Mint Glow Accent Line -->
+          <tr>
+            <td style="height:4px; background:linear-gradient(90deg, #01a89e 0%, #2ecdb7 50%, #34d399 100%); line-height:4px; font-size:0;">&nbsp;</td>
+          </tr>
 
-      ${note ? `
-      <div class="note-box">
-        <strong>Nota del Consultor:</strong><br>
-        ${note.replace(/\n/g, '<br>')}
-      </div>
-      ` : ''}
+          <!-- Header Section -->
+          <tr>
+            <td class="header-padding" align="center" style="background-color:#080d1a; padding:36px 32px; border-bottom:1px solid rgba(46, 205, 183, 0.15);">
+              <span style="display:inline-block; font-family:'Courier New', Courier, monospace; font-size:11px; font-weight:700; color:#2ecdb7; background-color:rgba(46, 205, 183, 0.12); border:1px solid rgba(46, 205, 183, 0.3); border-radius:20px; padding:4px 14px; text-transform:uppercase; letter-spacing:2px; margin-bottom:14px;">
+                [ CALMÉCAC OS // DIAGNÓSTICO ]
+              </span>
+              <h1 style="margin:12px 0 6px 0; font-size:26px; font-weight:900; color:#ffffff !important; letter-spacing:-0.5px; text-transform:uppercase;">
+                TLAMATQUI <span style="color:#2ecdb7 !important;">DIAGNOSTICS</span>
+              </h1>
+              <p style="margin:0; font-size:13px; color:#94a3b8 !important; font-weight:500; letter-spacing:0.5px;">
+                Suite de Auditoría Financiera y Comparativa de Comercio Electrónico
+              </p>
+            </td>
+          </tr>
 
-      <p>Puedes acceder al reporte interactivo completo, comparar plataformas y visualizar la proyección de ahorros haciendo clic en el siguiente botón:</p>
-      
-      <div class="btn-container">
-        <a href="${reportUrl}" class="btn" target="_blank">Ver Reporte Interactivo</a>
-      </div>
-      
-      <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-top: 24px;">
-        Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
-        <a href="${reportUrl}" style="color: #60a5fa; word-break: break-all;">${reportUrl}</a>
-      </p>
-    </div>
-    <div class="footer">
-      &copy; ${new Date().getFullYear()} Tlamatqui Diagnostics. Todos los derechos reservados.<br>
-      Este correo fue enviado de forma automática desde la plataforma de analítica ejecutiva.
-    </div>
-  </div>
+          <!-- Content Section -->
+          <tr>
+            <td class="content-padding" style="padding:36px 32px; background-color:#0e172a;">
+              <div style="font-size:18px; font-weight:700; color:#ffffff !important; margin-bottom:16px;">
+                Hola,
+              </div>
+              <p style="font-size:15px; color:#e2e8f0 !important; line-height:1.7; margin:0 0 24px 0;">
+                Adjunto encontrarás el resultado del análisis financiero y auditoría operativa ejecutado para el comercio <strong style="color:#2ecdb7 !important; font-weight:700;">${storeName}</strong>.
+              </p>
+              
+              <!-- Audit Card -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0; background-color:#131e36; border:1px solid rgba(46, 205, 183, 0.35); border-left:4px solid #2ecdb7; border-radius:14px; overflow:hidden;">
+                <tr>
+                  <td style="padding:24px;">
+                    <div style="font-family:'Courier New', Courier, monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#2ecdb7 !important; margin-bottom:8px;">
+                      [ COMERCIO AUDITADO ]
+                    </div>
+                    <div style="font-size:24px; font-weight:900; color:#ffffff !important; letter-spacing:-0.5px;">
+                      ${storeName}
+                    </div>
+                    ${gmvFormatted ? `
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px; padding-top:14px; border-top:1px solid rgba(255, 255, 255, 0.08);">
+                      <tr>
+                        <td style="font-size:13px; color:#94a3b8 !important;">GMV Mensual Estimado:</td>
+                        <td align="right" style="font-size:18px; font-weight:800; color:#2ecdb7 !important;">${gmvFormatted}</td>
+                      </tr>
+                    </table>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+
+              ${note ? `
+              <!-- Consultant Note Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0; background-color:rgba(46, 205, 183, 0.06); border:1px solid rgba(46, 205, 183, 0.25); border-left:4px solid #2ecdb7; border-radius:10px;">
+                <tr>
+                  <td style="padding:20px;">
+                    <div style="color:#2ecdb7 !important; font-size:12px; font-family:'Courier New', Courier, monospace; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
+                      💡 [ NOTA DEL CONSULTOR EJECUTIVO ]
+                    </div>
+                    <div style="color:#e2e8f0 !important; font-size:14px; font-style:italic; line-height:1.6;">
+                      ${note.replace(/\n/g, '<br>')}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+
+              <p style="font-size:14px; color:#cbd5e1 !important; line-height:1.6; margin:24px 0 28px 0;">
+                Puedes acceder al reporte interactivo completo, comparar plataformas y visualizar la proyección de ahorros haciendo clic en el siguiente botón:
+              </p>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${reportUrl}" target="_blank" class="btn-glow" style="display:inline-block; background:linear-gradient(135deg, #01a89e 0%, #2ecdb7 100%); color:#0b132b !important; font-size:15px; font-weight:800; text-decoration:none; text-transform:uppercase; letter-spacing:1px; padding:16px 36px; border-radius:12px; box-shadow:0 6px 22px rgba(46, 205, 183, 0.4); border:0;">
+                      VER REPORTE INTERACTIVO
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Direct Link Fallback -->
+              <p style="font-size:12px; color:#94a3b8 !important; text-align:center; margin-top:28px; line-height:1.5;">
+                Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+                <a href="${reportUrl}" style="color:#2ecdb7 !important; word-break:break-all; text-decoration:underline;">${reportUrl}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer Section -->
+          <tr>
+            <td style="background-color:#060b17; padding:30px 32px; text-align:center; border-top:1px solid rgba(46, 205, 183, 0.15);">
+              <p style="margin:0 0 10px 0; font-size:13px; font-weight:700; color:#2ecdb7 !important; letter-spacing:0.5px;">
+                "Aquí no venimos a ver si podemos, sino porque podemos venimos."
+              </p>
+              <p style="margin:0 0 14px 0; font-size:10px; color:#94a3b8 !important; text-transform:uppercase; letter-spacing:1.5px; font-family:'Courier New', Courier, monospace;">
+                [ CALMÉCAC OS // ALIANZA ESTRATÉGICA E-COMMERCE ]
+              </p>
+              <p style="margin:0; font-size:11px; color:#64748b !important; line-height:1.6;">
+                &copy; ${new Date().getFullYear()} Tlamatqui Diagnostics &bull; Calmécac. Todos los derechos reservados.<br>
+                Este correo fue enviado de forma automática desde la plataforma de analítica ejecutiva.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `;
@@ -471,155 +479,147 @@ function buildTeamInviteEmailHtml(options: SendTeamInviteEmailOptions): string {
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #0b0f19;
-      color: #e2e8f0;
+      background-color: #060b17 !important;
+      color: #e2e8f0 !important;
       margin: 0;
       padding: 0;
-      line-height: 1.6;
+      width: 100% !important;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
-    .container {
-      max-width: 600px;
-      margin: 30px auto;
-      background-color: #151d30;
-      border: 1px solid #23314f;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    .btn-glow:hover {
+      box-shadow: 0 0 25px rgba(46, 205, 183, 0.6) !important;
     }
-    .header {
-      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
-      padding: 32px 24px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-    }
-    .header p {
-      margin: 8px 0 0;
-      font-size: 14px;
-      color: #ecfdf5;
-    }
-    .content {
-      padding: 32px 24px;
-    }
-    .greeting {
-      font-size: 16px;
-      font-weight: 600;
-      color: #f8fafc;
-      margin-bottom: 16px;
-    }
-    .card {
-      background-color: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px 0;
-    }
-    .card-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #34d399;
-      margin-bottom: 8px;
-    }
-    .card-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #ffffff;
-    }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      background-color: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      margin-top: 8px;
-    }
-    .note-box {
-      background-color: #1e293b;
-      border-left: 4px solid #10b981;
-      padding: 16px;
-      border-radius: 6px;
-      margin: 20px 0;
-      font-style: italic;
-      color: #cbd5e1;
-    }
-    .btn-container {
-      text-align: center;
-      margin: 32px 0 20px;
-    }
-    .btn {
-      display: inline-block;
-      background: linear-gradient(135deg, #10b981 0%, #2563eb 100%);
-      color: #ffffff !important;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 15px;
-      padding: 14px 32px;
-      border-radius: 10px;
-      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-    }
-    .footer {
-      background-color: #0f172a;
-      padding: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #64748b;
-      border-top: 1px solid #1e293b;
-    }
-    .footer a {
-      color: #34d399;
-      text-decoration: none;
+    @media only screen and (max-width: 620px) {
+      .email-container {
+        width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .content-padding {
+        padding: 24px 18px !important;
+      }
+      .header-padding {
+        padding: 28px 18px !important;
+      }
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Tlamatqui Workspace</h1>
-      <p>Invitación a Colaborar en Diagnósticos Financieros</p>
-    </div>
-    <div class="content">
-      <div class="greeting">Hola ${recipientName ? recipientName : ''},</div>
-      <p>${inviterName ? `<strong>${inviterName}</strong>` : 'Un administrador'} te ha invitado a unirte al equipo de trabajo en Tlamatqui.</p>
-      
-      <div class="card">
-        <div class="card-title">Equipo de Trabajo</div>
-        <div class="card-value">${teamName}</div>
-        <div class="badge">Rol Asignado: ${role}</div>
-      </div>
+<body style="margin:0; padding:0; background-color:#060b17; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <!-- Wrapper Table -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#060b17; width:100%; margin:0; padding:20px 0;">
+    <tr>
+      <td align="center" style="padding:10px;">
+        
+        <!-- Main Email Container -->
+        <table class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#0e172a; border:1px solid rgba(46, 205, 183, 0.35); border-radius:16px; overflow:hidden; box-shadow:0 12px 35px rgba(0, 0, 0, 0.7);">
+          
+          <!-- Top Mint Glow Accent Line -->
+          <tr>
+            <td style="height:4px; background:linear-gradient(90deg, #01a89e 0%, #2ecdb7 50%, #34d399 100%); line-height:4px; font-size:0;">&nbsp;</td>
+          </tr>
 
-      ${customNote ? `
-      <div class="note-box">
-        <strong>Mensaje Personalizado:</strong><br>
-        ${customNote.replace(/\n/g, '<br>')}
-      </div>
-      ` : ''}
+          <!-- Header Section -->
+          <tr>
+            <td class="header-padding" align="center" style="background-color:#080d1a; padding:36px 32px; border-bottom:1px solid rgba(46, 205, 183, 0.15);">
+              <span style="display:inline-block; font-family:'Courier New', Courier, monospace; font-size:11px; font-weight:700; color:#2ecdb7; background-color:rgba(46, 205, 183, 0.12); border:1px solid rgba(46, 205, 183, 0.3); border-radius:20px; padding:4px 14px; text-transform:uppercase; letter-spacing:2px; margin-bottom:14px;">
+                [ CALMÉCAC WORKSPACE // INVITACIÓN ]
+              </span>
+              <h1 style="margin:12px 0 6px 0; font-size:26px; font-weight:900; color:#ffffff !important; letter-spacing:-0.5px; text-transform:uppercase;">
+                TLAMATQUI <span style="color:#2ecdb7 !important;">WORKSPACE</span>
+              </h1>
+              <p style="margin:0; font-size:13px; color:#94a3b8 !important; font-weight:500; letter-spacing:0.5px;">
+                Invitación a Colaborar en Diagnósticos Financieros
+              </p>
+            </td>
+          </tr>
 
-      <p>Haz clic en el siguiente botón para aceptar la invitación y unirte directamente al espacio de trabajo:</p>
-      
-      <div class="btn-container">
-        <a href="${inviteUrl}" class="btn" target="_blank">Aceptar Invitación y Unirme</a>
-      </div>
-      
-      <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-top: 24px;">
-        Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
-        <a href="${inviteUrl}" style="color: #34d399; word-break: break-all;">${inviteUrl}</a>
-      </p>
-    </div>
-    <div class="footer">
-      &copy; ${new Date().getFullYear()} Tlamatqui Diagnostics. Todos los derechos reservados.<br>
-      Plataforma de Auditoría Financiera y Analítica Ejecutiva para E-commerce.
-    </div>
-  </div>
+          <!-- Content Section -->
+          <tr>
+            <td class="content-padding" style="padding:36px 32px; background-color:#0e172a;">
+              <div style="font-size:18px; font-weight:700; color:#ffffff !important; margin-bottom:16px;">
+                Hola ${recipientName ? recipientName : ''},
+              </div>
+              <p style="font-size:15px; color:#e2e8f0 !important; line-height:1.7; margin:0 0 24px 0;">
+                ${inviterName ? `<strong style="color:#ffffff !important;">${inviterName}</strong>` : 'Un administrador'} te ha invitado a unirte como colaborador al equipo de trabajo en Tlamatqui.
+              </p>
+              
+              <!-- Team Card -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0; background-color:#131e36; border:1px solid rgba(46, 205, 183, 0.35); border-left:4px solid #2ecdb7; border-radius:14px; overflow:hidden;">
+                <tr>
+                  <td style="padding:24px;">
+                    <div style="font-family:'Courier New', Courier, monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#2ecdb7 !important; margin-bottom:8px;">
+                      [ EQUIPO DE TRABAJO ]
+                    </div>
+                    <div style="font-size:24px; font-weight:900; color:#ffffff !important; letter-spacing:-0.5px;">
+                      ${teamName}
+                    </div>
+                    <div style="margin-top:14px; display:inline-block; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; background-color:rgba(46, 205, 183, 0.15); color:#2ecdb7 !important; border:1px solid rgba(46, 205, 183, 0.4);">
+                      Rol Asignado: <strong style="color:#ffffff !important;">${role}</strong>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              ${customNote ? `
+              <!-- Personal Note Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0; background-color:rgba(46, 205, 183, 0.06); border:1px solid rgba(46, 205, 183, 0.25); border-left:4px solid #2ecdb7; border-radius:10px;">
+                <tr>
+                  <td style="padding:20px;">
+                    <div style="color:#2ecdb7 !important; font-size:12px; font-family:'Courier New', Courier, monospace; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
+                      📩 [ MENSAJE PERSONALIZADO ]
+                    </div>
+                    <div style="color:#e2e8f0 !important; font-size:14px; font-style:italic; line-height:1.6;">
+                      ${customNote.replace(/\n/g, '<br>')}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+
+              <p style="font-size:14px; color:#cbd5e1 !important; line-height:1.6; margin:24px 0 28px 0;">
+                Haz clic en el siguiente botón para aceptar la invitación y unirte directamente al espacio de trabajo:
+              </p>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${inviteUrl}" target="_blank" class="btn-glow" style="display:inline-block; background:linear-gradient(135deg, #01a89e 0%, #2ecdb7 100%); color:#0b132b !important; font-size:15px; font-weight:800; text-decoration:none; text-transform:uppercase; letter-spacing:1px; padding:16px 36px; border-radius:12px; box-shadow:0 6px 22px rgba(46, 205, 183, 0.4); border:0;">
+                      ACEPTAR INVITACIÓN Y UNIRME
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Direct Link Fallback -->
+              <p style="font-size:12px; color:#94a3b8 !important; text-align:center; margin-top:28px; line-height:1.5;">
+                Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+                <a href="${inviteUrl}" style="color:#2ecdb7 !important; word-break:break-all; text-decoration:underline;">${inviteUrl}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer Section -->
+          <tr>
+            <td style="background-color:#060b17; padding:30px 32px; text-align:center; border-top:1px solid rgba(46, 205, 183, 0.15);">
+              <p style="margin:0 0 10px 0; font-size:13px; font-weight:700; color:#2ecdb7 !important; letter-spacing:0.5px;">
+                "Aquí no venimos a ver si podemos, sino porque podemos venimos."
+              </p>
+              <p style="margin:0 0 14px 0; font-size:10px; color:#94a3b8 !important; text-transform:uppercase; letter-spacing:1.5px; font-family:'Courier New', Courier, monospace;">
+                [ CALMÉCAC OS // ALIANZA ESTRATÉGICA E-COMMERCE ]
+              </p>
+              <p style="margin:0; font-size:11px; color:#64748b !important; line-height:1.6;">
+                &copy; ${new Date().getFullYear()} Tlamatqui Diagnostics &bull; Calmécac. Todos los derechos reservados.<br>
+                Plataforma de Auditoría Financiera y Analítica Ejecutiva para E-commerce.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `;
