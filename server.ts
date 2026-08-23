@@ -1034,12 +1034,15 @@ app.get("/api/exchange-rate", async (req: Request, res: Response) => {
  */
 app.get("/api/config", async (req: Request, res: Response) => {
   try {
+    res.setHeader("Cache-Control", "private, no-cache, no-transform");
+    res.setHeader("Vary", "Accept-Encoding, Authorization");
     const config = await getDbConfig();
     res.json(config);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 /**
  * @route POST /api/config

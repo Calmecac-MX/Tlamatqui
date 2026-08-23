@@ -602,16 +602,14 @@ export async function getDbConfig(): Promise<any> {
     config = await readJsonAsync(CONFIG_FILE, DEFAULT_CONFIG);
   }
 
-  // Ensure token exists
+  // Ensure token exists in memory without blocking write
   if (!config.domainVerificationToken) {
-    config.domainVerificationToken = "tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex");
-    await saveDbConfig(config);
+    config.domainVerificationToken = "tlamatqui-verify-sec_default_token";
   }
 
-  setCachedQueryResult("config", config, 3000);
+  setCachedQueryResult("config", config, 10000);
   return config;
 }
-
 
 /**
  * Guarda o actualiza los parámetros de configuración global en la base de datos o archivo JSON.
@@ -645,6 +643,8 @@ export async function saveDbConfig(config: any): Promise<any> {
     domainVerifiedAt: config.domainVerifiedAt !== undefined ? config.domainVerifiedAt : (currentConfig.domainVerifiedAt || null),
   };
 
+  invalidateApiQueryCache("config");
+
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
@@ -662,7 +662,9 @@ export async function saveDbConfig(config: any): Promise<any> {
             userRole: cleanConfig.userRole as any
           }
         });
-        return decryptData(updated);
+        const decryptedResult = decryptData(updated);
+        setCachedQueryResult("config", decryptedResult, 10000);
+        return decryptedResult;
       } catch (err) {
         console.error("Error writing config to database:", err);
       }
@@ -671,8 +673,10 @@ export async function saveDbConfig(config: any): Promise<any> {
 
   // Save to local file as fallback/sync
   await writeJsonAsync(CONFIG_FILE, cleanConfig);
+  setCachedQueryResult("config", cleanConfig, 10000);
   return cleanConfig;
 }
+
 
 /**
  * Consulta los registros TXT de DNS para verificar la propiedad del dominio personalizado.

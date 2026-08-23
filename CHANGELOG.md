@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.49 (Frontend) / v2.5.50 (Backend)] - 2026-08-23
+
+### ⚡ Optimización y Rendimiento
+- **api:** optimizar API REST con cache en RAM TTL de 3s e invalidacion automatica de consultas (`ea5d352`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- update BACKEND_VERSION to 2.5.49 to match frontend and app versions (`1cd261b`)
+
 ## [v2.5.49] - 2026-08-23
 
 ### ⚡ Optimización y Rendimiento
