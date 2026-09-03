@@ -78,6 +78,42 @@ export async function scrapeShopifyStore(storeUrl: string): Promise<ScraperRespo
   }
 }
 
+export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: string): string {
+  if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com")) {
+    return currentLogo.trim();
+  }
+  const cleanName = (name || "").toLowerCase().trim();
+  const domainMap: Record<string, string> = {
+    klaviyo: "klaviyo.com",
+    loox: "loox.app",
+    "judge.me": "judge.me",
+    gorgias: "gorgias.com",
+    "bold subscriptions": "boldcommerce.com",
+    "smile.io": "smile.io",
+    "infinite options": "shoppad.com",
+    "lucky orange": "luckyorange.com",
+    yotpo: "yotpo.com",
+    recharge: "rechargepayments.com",
+    hotjar: "hotjar.com",
+    tidio: "tidio.com"
+  };
+
+  for (const [k, dom] of Object.entries(domainMap)) {
+    if (cleanName.includes(k)) {
+      return `https://www.google.com/s2/favicons?domain=${dom}&sz=128`;
+    }
+  }
+
+  if (url && url.length > 0) {
+    try {
+      const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+      return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=128`;
+    } catch (_) {}
+  }
+
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Tech")}&background=0F172A&color=00FF66&bold=true&size=128`;
+}
+
 /**
  * Generador adaptativo de auditorías simuladas basadas en el hash del nombre de dominio.
  * Permite presentar demostraciones comerciales fluidas con datos realistas cuando no hay conectividad externa.
@@ -96,7 +132,7 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       semaphore: "yellow",
       url: "https://www.klaviyo.com",
       description: "Emails de flujos automatizados de marketing y carritos abandonados.",
-      logo: "https://logo.clearbit.com/klaviyo.com"
+      logo: resolveTechnologyLogo("Klaviyo", "https://klaviyo.com")
     },
     {
       name: "Loox",
@@ -109,7 +145,7 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       semaphore: "green",
       url: "https://loox.io",
       description: "Reseñas de fotos y videos de clientes. En Tiendanube es 100% reemplazable de manera gratuita con apps del ecosistema.",
-      logo: "https://logo.clearbit.com/loox.io"
+      logo: resolveTechnologyLogo("Loox", "https://loox.app")
     },
     {
       name: "Infinite Options",
@@ -120,7 +156,7 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       semaphore: "green",
       url: "https://apps.shopify.com/infinite-options",
       description: "Añade infinitas variantes y opciones personalizadas. Tiendanube cuenta con variantes nativas sin límite de costo.",
-      logo: "https://logo.clearbit.com/shopcircle.co"
+      logo: resolveTechnologyLogo("Infinite Options", "https://shoppad.com")
     },
     {
       name: "Bold Subscriptions",
@@ -133,7 +169,7 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       semaphore: "red",
       url: "https://boldcommerce.com",
       description: "Ofrece productos por suscripción. En Shopify representa comisiones adicionales y costos de app ocultos.",
-      logo: "https://logo.clearbit.com/boldcommerce.com"
+      logo: resolveTechnologyLogo("Bold Subscriptions", "https://boldcommerce.com")
     },
     {
       name: "Gorgias",
@@ -146,7 +182,7 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       semaphore: "yellow",
       url: "https://gorgias.com",
       description: "Mesa de ayuda integrada para Shopify. Neutral y mantenible en Tiendanube.",
-      logo: "https://logo.clearbit.com/gorgias.com"
+      logo: resolveTechnologyLogo("Gorgias", "https://gorgias.com")
     },
     {
       name: "Lucky Orange",
@@ -157,7 +193,7 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       semaphore: "green",
       url: "https://luckyorange.com",
       description: "Grabación de pantallas de usuarios y mapas de calor. Reemplazable nativamente por integraciones gratuitas.",
-      logo: "https://logo.clearbit.com/luckyorange.com"
+      logo: resolveTechnologyLogo("Lucky Orange", "https://luckyorange.com")
     }
   ];
 

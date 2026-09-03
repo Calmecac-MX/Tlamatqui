@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.71 (Frontend) / v2.5.58 (Backend)] - 2026-09-03
+
+### ♻️ Refactorización de Código
+- **config:** migrar report branding a la configuración global (Config) y eliminar ReportBranding [v2.5.70/v2.5.57] (`f560b27`)
+
 ## [v2.5.70 (Frontend) / v2.5.57 (Backend)] - 2026-08-23
 
 ### ♻️ Refactorización de Código

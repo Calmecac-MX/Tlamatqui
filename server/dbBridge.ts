@@ -4,6 +4,7 @@ import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
 import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, UserRole, ApiKeyItem, SystemHealthData } from "./types.js";
+import { resolveTechnologyLogo } from "./scrapper.js";
 
 import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
 
@@ -1123,7 +1124,7 @@ export async function getDbReports(): Promise<Report[]> {
             semaphore: t.semaphore as any,
             url: t.url || undefined,
             description: t.description || undefined,
-            logo: t.logo || undefined
+            logo: resolveTechnologyLogo(t.name, t.url, t.logo)
           })),
           comparisonRows: r.comparisonRows.map(row => ({
             id: row.id,
@@ -1236,6 +1237,14 @@ export async function getDbReports(): Promise<Report[]> {
     result = await readJsonAsync<Report[]>(REPORTS_FILE, []);
   }
 
+  result = result.map(report => ({
+    ...report,
+    tools: (report.tools || []).map(t => ({
+      ...t,
+      logo: resolveTechnologyLogo(t.name, t.url, t.logo)
+    }))
+  }));
+
   setCachedQueryResult("reports", result, 3000);
   return result;
 }
@@ -1291,7 +1300,7 @@ export async function getDbReportById(id: string): Promise<Report | null> {
               semaphore: t.semaphore as any,
               url: t.url || undefined,
               description: t.description || undefined,
-              logo: t.logo || undefined
+              logo: resolveTechnologyLogo(t.name, t.url, t.logo)
             })),
             comparisonRows: r.comparisonRows.map(row => ({
               id: row.id,
