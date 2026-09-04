@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.73 (Frontend) / v2.5.60 (Backend)] - 2026-09-04
+
+### 🚀 Features & Nuevas Funcionalidades
+- **diagnostics:** add automatic store audit modal powered by Chismografo API (`dd76a08`)
+
 ## [v2.5.72 (Frontend) / v2.5.59 (Backend)] - 2026-09-04
 
 ### 🚀 Features & Nuevas Funcionalidades

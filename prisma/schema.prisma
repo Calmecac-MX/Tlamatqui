@@ -180,6 +180,24 @@ model Report {
   brandCard2Logo         String?
   brandCard2Link         String?
   finalSlideMainLogo     String?
+  // 🌐 Metadatos del Comercio detectados por Chismógrafo
+  detectedCms            String?                @default("Shopify")
+  activeTheme            String?
+  
+  // 📸 Capturas Visuales
+  screenshotDesktop      String?
+  screenshotMobile       String?
+
+  // 💳 Pasarelas y Stack Técnico Adicional
+  paymentGateways        Json?                  // Lista de pasarelas detectadas: string[]
+  pixels                 Json?                  // Lista de píxeles: { name: string, category?: string, web?: string }[]
+  infrastructure         Json?                  // Lista de infraestructura: { name: string, category?: string, web?: string }[]
+  
+  // 📍 Servidor y Rendimiento
+  serverLocation         Json?                  // { ip?: string, country?: string, city?: string, ll?: number[] }
+  serverLatencyMs        Int?
+  pageSpeed              ReportPageSpeed?
+
   createdAt              DateTime               @default(now())
   viewCount              Int                    @default(0)
   openCount              Int                    @default(0)
@@ -195,9 +213,28 @@ model Report {
   creatorId              String?
   creator                User?                  @relation("ReportCreator", fields: [creatorId], references: [id], onDelete: SetNull)
 
-
   @@index([teamId])
   @@index([creatorId])
+}
+
+/// Auditoría de rendimiento Google Lighthouse y Core Web Vitals para el reporte.
+model ReportPageSpeed {
+  id                 String   @id @default(uuid())
+  reportId           String   @unique
+  report             Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  performanceScore   Int      @default(0)   // 0 - 100
+  accessibilityScore Int      @default(0)
+  seoScore           Int      @default(0)
+  
+  fcp                String?                // First Contentful Paint (ej. "1.7 s")
+  lcp                String?                // Largest Contentful Paint (ej. "3.1 s")
+  tbt                String?                // Total Blocking Time (ej. "180 ms")
+  cls                String?                // Cumulative Layout Shift (ej. "0.03")
+  speedIndex         String?
+  interactive        String?
+  
+  isDemo             Boolean  @default(false)
 }
 
 /// Métricas financieras y de fugas pertenecientes a la subtabla ReportMetrics.

@@ -410,8 +410,21 @@ export interface ChismografoDiagnosticResult {
   paymentGateways: string[];
   pixels: Array<{ name: string; category?: string; web?: string }>;
   infrastructure: Array<{ name: string; category?: string; web?: string }>;
-  location?: { ip?: string; country?: string; city?: string };
+  location?: { ip?: string; country?: string; city?: string; ll?: number[] };
   latency?: { latencyMs?: number; description?: string };
+  screenshots?: { desktop?: string; mobile?: string };
+  pageSpeed?: {
+    performanceScore: number;
+    accessibilityScore?: number;
+    seoScore?: number;
+    fcp?: string;
+    lcp?: string;
+    tbt?: string;
+    cls?: string;
+    speedIndex?: string;
+    interactive?: string;
+    isDemo?: boolean;
+  };
   shopifyPlanEstimate: "basic" | "grow" | "advanced";
   estimatedMonthlyAppCostUSD: number;
 }
@@ -452,6 +465,29 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
       const infrastructure: any[] = data.infrastructure || [];
       const technology: string = data.technology || "Shopify";
       const siteLogo: string = data.siteLogo || resolveTechnologyLogo(storeName, cleanUrl);
+
+      // Extraer capturas de pantalla si están presentes
+      const screenshots = data.screenshots
+        ? { desktop: data.screenshots.desktop, mobile: data.screenshots.mobile }
+        : data.screenshotUrl
+        ? { desktop: data.screenshotUrl }
+        : undefined;
+
+      // Extraer datos de PageSpeed si vienen en la respuesta
+      const pageSpeed = data.pageSpeed?.scores
+        ? {
+            performanceScore: data.pageSpeed.scores.performance || 0,
+            accessibilityScore: data.pageSpeed.scores.accessibility || 0,
+            seoScore: data.pageSpeed.scores.seo || 0,
+            fcp: data.pageSpeed.metrics?.fcp,
+            lcp: data.pageSpeed.metrics?.lcp,
+            tbt: data.pageSpeed.metrics?.tbt,
+            cls: data.pageSpeed.metrics?.cls,
+            speedIndex: data.pageSpeed.metrics?.speedIndex,
+            interactive: data.pageSpeed.metrics?.interactive,
+            isDemo: Boolean(data.pageSpeed.isDemo),
+          }
+        : undefined;
 
       // Mapear plugins del Chismógrafo a la entidad Tool de Tlamatqui
       const detectedTools: Tool[] = [];
@@ -521,6 +557,8 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
         infrastructure: infrastructure.map((inf) => ({ name: inf.name, category: inf.category, web: inf.web })),
         location: data.location,
         latency: data.latency,
+        screenshots,
+        pageSpeed,
         shopifyPlanEstimate,
         estimatedMonthlyAppCostUSD: totalCostUSD,
       };
@@ -542,6 +580,8 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
     paymentGateways: ["Stripe", "PayPal"],
     pixels: [{ name: "Meta Pixel", category: "Publicidad" }, { name: "Google Analytics", category: "Analítica" }],
     infrastructure: [{ name: "Cloudflare", category: "CDN / Seguridad" }],
+    location: { ip: "23.227.38.65", country: "Canadá", city: "Ottawa" },
+    latency: { latencyMs: 85, description: "85ms (Rápido)" },
     shopifyPlanEstimate: native.shopifyPlanEstimate,
     estimatedMonthlyAppCostUSD: native.estimatedMonthlyAppCostUSD,
   };

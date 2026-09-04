@@ -44,8 +44,21 @@ export interface ChismografoAuditResult {
   paymentGateways: string[];
   pixels: Array<{ name: string; category?: string; web?: string }>;
   infrastructure: Array<{ name: string; category?: string; web?: string }>;
-  location?: { ip?: string; country?: string; city?: string };
+  location?: { ip?: string; country?: string; city?: string; ll?: number[] };
   latency?: { latencyMs?: number; description?: string };
+  screenshots?: { desktop?: string; mobile?: string };
+  pageSpeed?: {
+    performanceScore: number;
+    accessibilityScore?: number;
+    seoScore?: number;
+    fcp?: string;
+    lcp?: string;
+    tbt?: string;
+    cls?: string;
+    speedIndex?: string;
+    interactive?: string;
+    isDemo?: boolean;
+  };
   shopifyPlanEstimate: "basic" | "grow" | "advanced";
   estimatedMonthlyAppCostUSD: number;
 }
@@ -104,6 +117,8 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         infrastructure: data.infrastructure || [],
         location: data.location,
         latency: data.latency,
+        screenshots: data.screenshots,
+        pageSpeed: data.pageSpeed,
         shopifyPlanEstimate: data.shopifyPlanEstimate || "grow",
         estimatedMonthlyAppCostUSD: data.estimatedMonthlyAppCostUSD || 0,
       };
@@ -135,6 +150,27 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         logo: p.shopifyAppIcon || resolveTechnologyLogo(p.name, p.web),
       }));
 
+      const screenshots = data.screenshots
+        ? { desktop: data.screenshots.desktop, mobile: data.screenshots.mobile }
+        : data.screenshotUrl
+        ? { desktop: data.screenshotUrl }
+        : undefined;
+
+      const pageSpeed = data.pageSpeed?.scores
+        ? {
+            performanceScore: data.pageSpeed.scores.performance || 0,
+            accessibilityScore: data.pageSpeed.scores.accessibility || 0,
+            seoScore: data.pageSpeed.scores.seo || 0,
+            fcp: data.pageSpeed.metrics?.fcp,
+            lcp: data.pageSpeed.metrics?.lcp,
+            tbt: data.pageSpeed.metrics?.tbt,
+            cls: data.pageSpeed.metrics?.cls,
+            speedIndex: data.pageSpeed.metrics?.speedIndex,
+            interactive: data.pageSpeed.metrics?.interactive,
+            isDemo: Boolean(data.pageSpeed.isDemo),
+          }
+        : undefined;
+
       return {
         success: true,
         url: cleanDomain,
@@ -150,6 +186,8 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         infrastructure: data.infrastructure || [],
         location: data.location,
         latency: data.latency,
+        screenshots,
+        pageSpeed,
         shopifyPlanEstimate: apps.length >= 5 ? "advanced" : apps.length >= 2 ? "grow" : "basic",
         estimatedMonthlyAppCostUSD: apps.reduce((sum, a) => sum + a.costEstimate, 0),
       };
@@ -169,6 +207,8 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
     paymentGateways: ["Stripe", "PayPal"],
     pixels: [{ name: "Meta Pixel" }, { name: "Google Analytics" }],
     infrastructure: [{ name: "Cloudflare" }],
+    location: { ip: "23.227.38.65", country: "Canadá", city: "Ottawa" },
+    latency: { latencyMs: 85, description: "85ms (Rápido)" },
     shopifyPlanEstimate: "grow",
     estimatedMonthlyAppCostUSD: mock.apps.reduce((sum, a) => sum + a.costEstimate, 0),
   };

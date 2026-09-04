@@ -1087,6 +1087,7 @@ export async function getDbReports(): Promise<Report[]> {
               metrics: true,
               platformConfig: true,
               analytics: true,
+              pageSpeed: true,
               team: {
                 include: { allies: true }
               }
@@ -1112,6 +1113,28 @@ export async function getDbReports(): Promise<Report[]> {
           shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
           shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
           tiendanubePlan: r.tiendanubePlan as any,
+          detectedCms: r.detectedCms || undefined,
+          activeTheme: r.activeTheme || undefined,
+          screenshotDesktop: r.screenshotDesktop || undefined,
+          screenshotMobile: r.screenshotMobile || undefined,
+          paymentGateways: (r.paymentGateways as any as string[]) || undefined,
+          pixels: (r.pixels as any) || undefined,
+          infrastructure: (r.infrastructure as any) || undefined,
+          serverLocation: (r.serverLocation as any) || undefined,
+          serverLatencyMs: r.serverLatencyMs || undefined,
+          pageSpeed: r.pageSpeed ? {
+            id: r.pageSpeed.id,
+            performanceScore: r.pageSpeed.performanceScore,
+            accessibilityScore: r.pageSpeed.accessibilityScore,
+            seoScore: r.pageSpeed.seoScore,
+            fcp: r.pageSpeed.fcp || undefined,
+            lcp: r.pageSpeed.lcp || undefined,
+            tbt: r.pageSpeed.tbt || undefined,
+            cls: r.pageSpeed.cls || undefined,
+            speedIndex: r.pageSpeed.speedIndex || undefined,
+            interactive: r.pageSpeed.interactive || undefined,
+            isDemo: r.pageSpeed.isDemo
+          } : undefined,
           tools: r.tools.map(t => ({
             id: t.id,
             name: t.name,
@@ -1266,7 +1289,8 @@ export async function getDbReportById(id: string): Promise<Report | null> {
           include: {
             tools: true,
             comparisonRows: true,
-            interactions: true
+            interactions: true,
+            pageSpeed: true
           }
         });
         if (r) {
@@ -1288,6 +1312,28 @@ export async function getDbReportById(id: string): Promise<Report | null> {
             shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
             shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
             tiendanubePlan: r.tiendanubePlan as any,
+            detectedCms: r.detectedCms || undefined,
+            activeTheme: r.activeTheme || undefined,
+            screenshotDesktop: r.screenshotDesktop || undefined,
+            screenshotMobile: r.screenshotMobile || undefined,
+            paymentGateways: (r.paymentGateways as any as string[]) || undefined,
+            pixels: (r.pixels as any) || undefined,
+            infrastructure: (r.infrastructure as any) || undefined,
+            serverLocation: (r.serverLocation as any) || undefined,
+            serverLatencyMs: r.serverLatencyMs || undefined,
+            pageSpeed: r.pageSpeed ? {
+              id: r.pageSpeed.id,
+              performanceScore: r.pageSpeed.performanceScore,
+              accessibilityScore: r.pageSpeed.accessibilityScore,
+              seoScore: r.pageSpeed.seoScore,
+              fcp: r.pageSpeed.fcp || undefined,
+              lcp: r.pageSpeed.lcp || undefined,
+              tbt: r.pageSpeed.tbt || undefined,
+              cls: r.pageSpeed.cls || undefined,
+              speedIndex: r.pageSpeed.speedIndex || undefined,
+              interactive: r.pageSpeed.interactive || undefined,
+              isDemo: r.pageSpeed.isDemo
+            } : undefined,
             tools: r.tools.map(t => ({
               id: t.id,
               name: t.name,
@@ -1358,19 +1404,29 @@ export async function saveDbReport(report: Report): Promise<Report> {
     name: report.name,
     logo: report.logo || null,
     tagline: report.tagline,
-    fugasCantidad: Math.round(report.fugasCantidad),
-    fugasRangoMin: Number(report.fugasRangoMin),
-    fugasRangoMax: Number(report.fugasRangoMax),
-    visitasMensuales: Math.round(report.visitasMensuales),
-    gmv: Number(report.gmv),
-    shopifyFee: Number(report.shopifyFee),
-    msi: report.msi,
+    fugasCantidad: Math.round(report.fugasCantidad || 0),
+    fugasRangoMin: Number(report.fugasRangoMin || 0),
+    fugasRangoMax: Number(report.fugasRangoMax || 0),
+    visitasMensuales: Math.round(report.visitasMensuales || 0),
+    gmv: Number(report.gmv || 0),
+    shopifyFee: Number(report.shopifyFee || 0),
+    msi: report.msi || null,
+    businessUrl: report.businessUrl || null,
     shopifyPlan: report.shopifyPlan as any,
     shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
     shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
     shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
     shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
     tiendanubePlan: report.tiendanubePlan as any,
+    detectedCms: report.detectedCms || null,
+    activeTheme: report.activeTheme || null,
+    screenshotDesktop: report.screenshotDesktop || null,
+    screenshotMobile: report.screenshotMobile || null,
+    paymentGateways: report.paymentGateways as any || null,
+    pixels: report.pixels as any || null,
+    infrastructure: report.infrastructure as any || null,
+    serverLocation: report.serverLocation as any || null,
+    serverLatencyMs: report.serverLatencyMs ? Math.round(report.serverLatencyMs) : null,
     contactEmail: report.contactEmail,
     contactWhatsapp: report.contactWhatsapp,
     adminLogos: report.adminLogos as any,
@@ -1446,18 +1502,46 @@ export async function saveDbReport(report: Report): Promise<Report> {
                   }
                 }
               } : undefined,
+              pageSpeed: report.pageSpeed ? {
+                upsert: {
+                  create: {
+                    performanceScore: report.pageSpeed.performanceScore || 0,
+                    accessibilityScore: report.pageSpeed.accessibilityScore || 0,
+                    seoScore: report.pageSpeed.seoScore || 0,
+                    fcp: report.pageSpeed.fcp || null,
+                    lcp: report.pageSpeed.lcp || null,
+                    tbt: report.pageSpeed.tbt || null,
+                    cls: report.pageSpeed.cls || null,
+                    speedIndex: report.pageSpeed.speedIndex || null,
+                    interactive: report.pageSpeed.interactive || null,
+                    isDemo: Boolean(report.pageSpeed.isDemo)
+                  },
+                  update: {
+                    performanceScore: report.pageSpeed.performanceScore || 0,
+                    accessibilityScore: report.pageSpeed.accessibilityScore || 0,
+                    seoScore: report.pageSpeed.seoScore || 0,
+                    fcp: report.pageSpeed.fcp || null,
+                    lcp: report.pageSpeed.lcp || null,
+                    tbt: report.pageSpeed.tbt || null,
+                    cls: report.pageSpeed.cls || null,
+                    speedIndex: report.pageSpeed.speedIndex || null,
+                    interactive: report.pageSpeed.interactive || null,
+                    isDemo: Boolean(report.pageSpeed.isDemo)
+                  }
+                }
+              } : undefined,
               metrics: {
                 upsert: {
                   create: {
-                    visitasMensuales: Math.round(report.visitasMensuales),
-                    gmv: Number(report.gmv),
+                    visitasMensuales: Math.round(report.visitasMensuales || 0),
+                    gmv: Number(report.gmv || 0),
                     fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
                     fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
                     fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
                   },
                   update: {
-                    visitasMensuales: Math.round(report.visitasMensuales),
-                    gmv: Number(report.gmv),
+                    visitasMensuales: Math.round(report.visitasMensuales || 0),
+                    gmv: Number(report.gmv || 0),
                     fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
                     fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
                     fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
@@ -1543,10 +1627,24 @@ export async function saveDbReport(report: Report): Promise<Report> {
                   timeSpentSeconds: report.interactions.timeSpentSeconds
                 }
               } : undefined,
+              pageSpeed: report.pageSpeed ? {
+                create: {
+                  performanceScore: report.pageSpeed.performanceScore || 0,
+                  accessibilityScore: report.pageSpeed.accessibilityScore || 0,
+                  seoScore: report.pageSpeed.seoScore || 0,
+                  fcp: report.pageSpeed.fcp || null,
+                  lcp: report.pageSpeed.lcp || null,
+                  tbt: report.pageSpeed.tbt || null,
+                  cls: report.pageSpeed.cls || null,
+                  speedIndex: report.pageSpeed.speedIndex || null,
+                  interactive: report.pageSpeed.interactive || null,
+                  isDemo: Boolean(report.pageSpeed.isDemo)
+                }
+              } : undefined,
               metrics: {
                 create: {
-                  visitasMensuales: Math.round(report.visitasMensuales),
-                  gmv: Number(report.gmv),
+                  visitasMensuales: Math.round(report.visitasMensuales || 0),
+                  gmv: Number(report.gmv || 0),
                   fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
                   fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
                   fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null

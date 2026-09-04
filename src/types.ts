@@ -136,6 +136,31 @@ export interface Report {
   finalSlideLogo2?: string;
   /** Logo adicional 2 mostrado en la diapositiva final */
   finalSlideLogo3?: string;
+  /** CMS o tecnología base detectada (ej. Shopify, WooCommerce, Magento, Tiendanube) */
+  detectedCms?: string;
+  /** Tema o plantilla activa detectada en la tienda */
+  activeTheme?: string;
+  /** URL de captura de pantalla en versión escritorio */
+  screenshotDesktop?: string;
+  /** URL de captura de pantalla en versión móvil */
+  screenshotMobile?: string;
+  /** Pasarelas de pago detectadas activas en la tienda */
+  paymentGateways?: string[];
+  /** Píxeles de rastreo y etiquetas detectadas */
+  pixels?: Array<{ name: string; category?: string; web?: string }>;
+  /** Componentes de infraestructura y CDN detectados */
+  infrastructure?: Array<{ name: string; category?: string; web?: string }>;
+  /** Ubicación geográfica y DNS del servidor */
+  serverLocation?: {
+    ip?: string;
+    country?: string;
+    city?: string;
+    ll?: number[];
+  };
+  /** Latencia estimada en milisegundos hacia el servidor */
+  serverLatencyMs?: number;
+  /** Auditoría de rendimiento Google Lighthouse / Core Web Vitals */
+  pageSpeed?: ReportPageSpeed;
   /** Fecha ISO de creación del reporte */
   createdAt?: string;
   /** Conteo total de impresiones de la presentación */
@@ -172,6 +197,24 @@ export interface Report {
   platformConfig?: ReportPlatformConfigSubtable;
   /** Subtabla opcional de analítica y visitantes */
   analytics?: ReportAnalyticsSubtable;
+}
+
+/**
+ * Auditoría de rendimiento Google Lighthouse y Core Web Vitals para un reporte.
+ */
+export interface ReportPageSpeed {
+  id?: string;
+  reportId?: string;
+  performanceScore: number;
+  accessibilityScore?: number;
+  seoScore?: number;
+  fcp?: string;
+  lcp?: string;
+  tbt?: string;
+  cls?: string;
+  speedIndex?: string;
+  interactive?: string;
+  isDemo?: boolean;
 }
 
 export interface ReportMetricsSubtable {

@@ -993,6 +993,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       name: auditResult.storeName || "",
       businessUrl: auditResult.url || "",
       logo: auditResult.siteLogo || "",
+      detectedCms: auditResult.technology || "Shopify",
+      activeTheme: auditResult.theme || undefined,
+      screenshotDesktop: auditResult.screenshots?.desktop || undefined,
+      screenshotMobile: auditResult.screenshots?.mobile || undefined,
+      paymentGateways: auditResult.paymentGateways || [],
+      pixels: auditResult.pixels || [],
+      infrastructure: auditResult.infrastructure || [],
+      serverLocation: auditResult.location || undefined,
+      serverLatencyMs: auditResult.latency?.latencyMs || undefined,
+      pageSpeed: auditResult.pageSpeed || undefined,
       teamId: selectedTeamId,
       tagline: `Hemos detectado ${tools.length} aplicaciones operativas y oportunidades de ahorro en ${auditResult.storeName}.`,
       fugasCantidad: tools.length || 3,
@@ -3617,7 +3627,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 { id: "plan", label: "2. Configuración Plataformas", icon: Settings },
                 { id: "tools", label: "3. Aplicaciones Auditadas", icon: Layers },
                 { id: "comparison", label: "4. Matriz Comparativa", icon: Database },
-                { id: "analytics", label: "5. Analítica & Clics", icon: Eye }
+                { id: "analytics", label: "5. Analítica & Clics", icon: Eye },
+                { id: "audit", label: "6. Auditoría Técnica & PageSpeed", icon: Sparkles }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isSelected = activeFormTab === tab.id;
@@ -4442,6 +4453,220 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
                         <span className="text-text-dim-theme">Uso Calculadora:</span>
                         <strong className="text-white font-bold">{editingReport.interactions?.calculatorInteractions || 0}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: SUBTABLA AUDITORÍA TÉCNICA & PAGESPEED (Chismógrafo / Lighthouse) */}
+              {activeFormTab === "audit" && (
+                <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Subtabla: Auditoría Técnica, PageSpeed & Screenshots</h3>
+                        <p className="text-xs text-text-dim-theme">Metadatos del CMS, infraestructura detectada, geolocalización y métricas de velocidad móvil</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-purple-400">Chismógrafo v1.14</span>
+                  </div>
+
+                  {/* Metadata CMS y Tema */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-text-dim-theme block mb-1">CMS / Plataforma Base</label>
+                      <input 
+                        type="text" 
+                        value={editingReport.detectedCms || ""} 
+                        onChange={(e) => setEditingReport({ ...editingReport, detectedCms: e.target.value })}
+                        placeholder="ej. Shopify, WooCommerce"
+                        className="w-full bg-bg-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-text-dim-theme block mb-1">Tema Activo Detectado</label>
+                      <input 
+                        type="text" 
+                        value={editingReport.activeTheme || ""} 
+                        onChange={(e) => setEditingReport({ ...editingReport, activeTheme: e.target.value })}
+                        placeholder="ej. Dawn, Prestige, Impulse"
+                        className="w-full bg-bg-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-text-dim-theme block mb-1">Latencia al Servidor (ms)</label>
+                      <input 
+                        type="number" 
+                        value={editingReport.serverLatencyMs || ""} 
+                        onChange={(e) => setEditingReport({ ...editingReport, serverLatencyMs: Number(e.target.value) || undefined })}
+                        placeholder="ej. 85"
+                        className="w-full bg-bg-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Capturas de Pantalla */}
+                  <div className="p-5 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-purple-400" /> Capturas de Pantalla de la Tienda
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-text-dim-theme block mb-1">URL Captura Desktop</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.screenshotDesktop || ""} 
+                          onChange={(e) => setEditingReport({ ...editingReport, screenshotDesktop: e.target.value })}
+                          placeholder="https://.../desktop.png"
+                          className="w-full bg-surface-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-text-dim-theme block mb-1">URL Captura Mobile</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.screenshotMobile || ""} 
+                          onChange={(e) => setEditingReport({ ...editingReport, screenshotMobile: e.target.value })}
+                          placeholder="https://.../mobile.png"
+                          className="w-full bg-surface-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PageSpeed / Lighthouse Scores */}
+                  <div className="p-5 rounded-xl border border-border-theme bg-bg-theme/60 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-400" /> Auditoría Google PageSpeed / Lighthouse
+                      </h4>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                        Model: ReportPageSpeed
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-3.5 rounded-lg bg-surface-theme border border-border-theme">
+                        <label className="text-[11px] text-text-dim-theme uppercase font-bold block mb-1">Rendimiento (0-100)</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="100"
+                          value={editingReport.pageSpeed?.performanceScore || 0}
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              performanceScore: Number(e.target.value) || 0
+                            }
+                          })}
+                          className="w-full bg-bg-theme border border-border-theme rounded px-2.5 py-1.5 text-white font-bold text-sm outline-none focus:border-accent-theme"
+                        />
+                      </div>
+                      <div className="p-3.5 rounded-lg bg-surface-theme border border-border-theme">
+                        <label className="text-[11px] text-text-dim-theme uppercase font-bold block mb-1">Accesibilidad (0-100)</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="100"
+                          value={editingReport.pageSpeed?.accessibilityScore || 0}
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              accessibilityScore: Number(e.target.value) || 0
+                            }
+                          })}
+                          className="w-full bg-bg-theme border border-border-theme rounded px-2.5 py-1.5 text-white font-bold text-sm outline-none focus:border-accent-theme"
+                        />
+                      </div>
+                      <div className="p-3.5 rounded-lg bg-surface-theme border border-border-theme">
+                        <label className="text-[11px] text-text-dim-theme uppercase font-bold block mb-1">SEO (0-100)</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="100"
+                          value={editingReport.pageSpeed?.seoScore || 0}
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              seoScore: Number(e.target.value) || 0
+                            }
+                          })}
+                          className="w-full bg-bg-theme border border-border-theme rounded px-2.5 py-1.5 text-white font-bold text-sm outline-none focus:border-accent-theme"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <label className="text-[10px] text-text-dim-theme block mb-1">FCP</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.pageSpeed?.fcp || ""} 
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              fcp: e.target.value
+                            }
+                          })}
+                          placeholder="ej. 1.7 s"
+                          className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-text-dim-theme block mb-1">LCP</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.pageSpeed?.lcp || ""} 
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              lcp: e.target.value
+                            }
+                          })}
+                          placeholder="ej. 3.2 s"
+                          className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-text-dim-theme block mb-1">TBT</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.pageSpeed?.tbt || ""} 
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              tbt: e.target.value
+                            }
+                          })}
+                          placeholder="ej. 180 ms"
+                          className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-text-dim-theme block mb-1">CLS</label>
+                        <input 
+                          type="text" 
+                          value={editingReport.pageSpeed?.cls || ""} 
+                          onChange={(e) => setEditingReport({
+                            ...editingReport,
+                            pageSpeed: {
+                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
+                              cls: e.target.value
+                            }
+                          })}
+                          placeholder="ej. 0.04"
+                          className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
+                        />
                       </div>
                     </div>
                   </div>
