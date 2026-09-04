@@ -7,6 +7,16 @@
  */
 
 /**
+ * Plan de precios disponible para una herramienta o aplicación.
+ */
+export interface ToolPricePlan {
+  id?: number | string;
+  plan: string;
+  precio: number;
+  moneda: string;
+}
+
+/**
  * Representa una aplicación o herramienta de terceros auditada dentro de una tienda Shopify.
  */
 export interface Tool {
@@ -34,6 +44,10 @@ export interface Tool {
   description?: string;
   /** URL del logotipo de la aplicación */
   logo?: string;
+  /** Listado de planes de precios disponibles para esta app */
+  precios?: ToolPricePlan[];
+  /** ID del plan de precios seleccionado activamente */
+  selectedPlanId?: string | number;
 }
 
 /**
@@ -205,15 +219,21 @@ export interface Report {
 export interface ReportPageSpeed {
   id?: string;
   reportId?: string;
-  performanceScore: number;
+  performanceScore?: number;
+  performance?: number;
   accessibilityScore?: number;
+  accessibility?: number;
+  bestPractices?: number;
   seoScore?: number;
+  seo?: number;
   fcp?: string;
   lcp?: string;
   tbt?: string;
   cls?: string;
   speedIndex?: string;
   interactive?: string;
+  latencyMs?: number;
+  loadTimeSeconds?: number;
   isDemo?: boolean;
 }
 

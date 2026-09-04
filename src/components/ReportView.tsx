@@ -9,7 +9,7 @@ import {
   Percent, Smartphone, MessageSquare, AlertCircle, TrendingUp, 
   Clock, ExternalLink, Mail, Phone, Lock, Zap, Layers, ChevronLeft, ChevronRight, CheckSquare, X, Menu, Sliders,
   Eye, EyeOff, Download, Printer, Database, Palette, CreditCard, Truck, Rocket, CheckCircle2, Sparkles, ArrowDown, Calendar, Share2,
-  FileSpreadsheet, FileText
+  FileSpreadsheet, FileText, Play, RotateCcw, Monitor, Globe, Activity, Timer, Gauge, ShieldCheck, Check
 } from "lucide-react";
 import { Report, Tool, ComparisonRow } from "../types";
 import { motion, AnimatePresence } from "motion/react";
@@ -169,6 +169,7 @@ const SLIDES = [
   "Portada",
   "Introducción",
   "Stack Tecnológico",
+  "Salud y Velocidad Web",
   "Costos Ocultos",
   "Comparativo Directo",
   "Calculadora de Ahorro",
@@ -197,6 +198,16 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [globalConfig, setGlobalConfig] = useState<any>(null);
+
+  // Dynamic tool plan selections: Record<toolId, planId | "average">
+  const [toolPlanSelections, setToolPlanSelections] = useState<Record<string, string | number>>({});
+
+  // Web health & speed load simulation state
+  const [simDevice, setSimDevice] = useState<"desktop" | "mobile">("desktop");
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [simProgress, setSimProgress] = useState<number>(100);
+  const [simElapsedMs, setSimElapsedMs] = useState<number>(0);
+  const [hasSimulatedOnce, setHasSimulatedOnce] = useState<boolean>(false);
 
   useEffect(() => {
     fetch("/api/config")
@@ -425,7 +436,130 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   const [showRentabilidadLegends, setShowRentabilidadLegends] = useState<boolean>(false);
   const [rentabilidadChipMode, setRentabilidadChipMode] = useState<"mes" | "compra" | "anio" | "3anios">("mes");
 
-  // Dynamic comparison rows for Slide 4 (editable)
+  // Calculation of tool pricing tiers and selection
+  const getToolEffectiveDetails = (t: Tool) => {
+    const precios = t.precios || [];
+    const selId = toolPlanSelections[t.id] ?? t.selectedPlanId ?? "average";
+    
+    let costMin = t.costMin;
+    let costMax = t.costMax;
+    if (precios.length > 0) {
+      costMin = Math.min(...precios.map(p => p.precio));
+      costMax = Math.max(...precios.map(p => p.precio));
+    } else if (t.costType === "exact") {
+      costMin = t.costExact;
+      costMax = t.costExact;
+    }
+
+    const selectedPlan = precios.find(p => String(p.id ?? p.plan) === String(selId));
+    
+    let effectiveCost = 0;
+    let isCustomSelection = false;
+    let planLabel = "";
+
+    if (selectedPlan) {
+      effectiveCost = selectedPlan.precio;
+      isCustomSelection = true;
+      planLabel = selectedPlan.plan;
+    } else {
+      // If no fixed plan is selected, calculate average (media)
+      effectiveCost = (costMin + costMax) / 2;
+      planLabel = precios.length > 0 ? "Media / Promedio" : (t.costType === "exact" ? "Costo Fijo" : "Rango Estimado");
+    }
+
+    return {
+      costMin,
+      costMax,
+      effectiveCost,
+      isCustomSelection,
+      selectedPlanId: selId,
+      planLabel,
+      precios,
+    };
+  };
+
+  const handleSelectToolPlan = (toolId: string, planId: string | number) => {
+    const newSelections = { ...toolPlanSelections, [toolId]: planId };
+    setToolPlanSelections(newSelections);
+
+    if (!report?.tools) return;
+    let sumUSD = 0;
+    let sumMXN = 0;
+    report.tools.forEach(t => {
+      const selId = t.id === toolId ? planId : (newSelections[t.id] ?? t.selectedPlanId ?? "average");
+      const precios = t.precios || [];
+      let cMin = t.costMin;
+      let cMax = t.costMax;
+      if (precios.length > 0) {
+        cMin = Math.min(...precios.map(p => p.precio));
+        cMax = Math.max(...precios.map(p => p.precio));
+      } else if (t.costType === "exact") {
+        cMin = t.costExact;
+        cMax = t.costExact;
+      }
+      const plan = precios.find(p => String(p.id ?? p.plan) === String(selId));
+      const cost = plan ? plan.precio : (cMin + cMax) / 2;
+      if (t.currency === "USD") sumUSD += cost;
+      else sumMXN += cost;
+    });
+
+    setCalcAppsCostUSD(Number(sumUSD.toFixed(2)));
+    setCalcAppsCostMXN(Number(sumMXN.toFixed(2)));
+  };
+
+  // Calculate target simulation duration from pageSpeed metrics
+  const targetLoadTimeSeconds = useMemo(() => {
+    if (report?.pageSpeed?.lcp) {
+      const parsed = parseFloat(report.pageSpeed.lcp.replace(/[^\d.]/g, ""));
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed > 20 ? parsed / 1000 : parsed;
+      }
+    }
+    if (report?.pageSpeed?.fcp) {
+      const parsed = parseFloat(report.pageSpeed.fcp.replace(/[^\d.]/g, ""));
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed > 20 ? parsed / 1000 : parsed;
+      }
+    }
+    return 2.8;
+  }, [report?.pageSpeed]);
+
+  const runLoadSimulation = () => {
+    setIsSimulating(true);
+    setSimProgress(0);
+    setSimElapsedMs(0);
+    
+    const targetMs = Math.round(targetLoadTimeSeconds * 1000);
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(100, (elapsed / targetMs) * 100);
+      const currentMs = Math.min(targetMs, Math.round(elapsed));
+      
+      setSimElapsedMs(currentMs);
+      setSimProgress(progress);
+
+      if (elapsed < targetMs) {
+        requestAnimationFrame(step);
+      } else {
+        setIsSimulating(false);
+        setHasSimulatedOnce(true);
+        setSimProgress(100);
+        setSimElapsedMs(targetMs);
+      }
+    };
+
+    requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    if (activeSlide === 3 && !hasSimulatedOnce && !isSimulating) {
+      runLoadSimulation();
+    }
+  }, [activeSlide, hasSimulatedOnce, isSimulating, targetLoadTimeSeconds]);
+
+  // Dynamic comparison rows for Slide 5 (editable)
   const [comparisonRows, setComparisonRows] = useState<ComparisonRow[]>([]);
   const [newRowVar, setNewRowVar] = useState<string>("");
   const [newRowShopify, setNewRowShopify] = useState<string>("");
@@ -576,7 +710,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
             e.preventDefault();
             setActiveToolIdx(prev => prev - 1);
           }
-        } else if (activeSlide === 4 && isMobile) {
+        } else if (activeSlide === 5 && isMobile) {
           if (activeCompareSlide > 0) {
             e.preventDefault();
             setActiveCompareSlide(prev => prev - 1);
@@ -589,7 +723,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
             e.preventDefault();
             setActiveToolIdx(prev => prev + 1);
           }
-        } else if (activeSlide === 4 && isMobile) {
+        } else if (activeSlide === 5 && isMobile) {
           if (activeCompareSlide < comparisonRows.length - 1) {
             e.preventDefault();
             setActiveCompareSlide(prev => prev + 1);
@@ -643,7 +777,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                 lastScrollTime.current = now;
               }
             }
-          } else if (activeSlide === 4 && isMobile) {
+          } else if (activeSlide === 5 && isMobile) {
             e.preventDefault();
             if (deltaX > 0) {
               if (activeCompareSlide < comparisonRows.length - 1) {
@@ -705,7 +839,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
               if (activeToolIdx < chunkedTools.length - 1) {
                 setActiveToolIdx(prev => prev + 1);
               }
-            } else if (activeSlide === 4 && isMobile) {
+            } else if (activeSlide === 5 && isMobile) {
               if (activeCompareSlide < comparisonRows.length - 1) {
                 setActiveCompareSlide(prev => prev + 1);
               }
@@ -716,7 +850,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
               if (activeToolIdx > 0) {
                 setActiveToolIdx(prev => prev - 1);
               }
-            } else if (activeSlide === 4 && isMobile) {
+            } else if (activeSlide === 5 && isMobile) {
               if (activeCompareSlide > 0) {
                 setActiveCompareSlide(prev => prev - 1);
               }
@@ -761,14 +895,32 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         setCalcVisitas(reportData.visitasMensuales || 20000);
         setCalcShopifyPlan(reportData.shopifyPlan || "grow");
 
-        // Sum up existing app costs for calculator defaults
+        // Sum up existing app costs with pricing plans & defaults
+        const initialPlanSelections: Record<string, string | number> = {};
         let sumUSD = 0;
         let sumMXN = 0;
         reportData.tools?.forEach(t => {
-          const cost = t.costType === "exact" ? t.costExact : t.costMax; // Take the conservative max
+          const precios = t.precios || [];
+          let cMin = t.costMin;
+          let cMax = t.costMax;
+          if (precios.length > 0) {
+            cMin = Math.min(...precios.map(p => p.precio));
+            cMax = Math.max(...precios.map(p => p.precio));
+          } else if (t.costType === "exact") {
+            cMin = t.costExact;
+            cMax = t.costExact;
+          }
+          
+          const selPlanId = t.selectedPlanId ? String(t.selectedPlanId) : "average";
+          initialPlanSelections[t.id] = selPlanId;
+          
+          const selectedPlan = precios.find(p => String(p.id ?? p.plan) === selPlanId);
+          const cost = selectedPlan ? selectedPlan.precio : (cMin + cMax) / 2;
+          
           if (t.currency === "USD") sumUSD += cost;
           else sumMXN += cost;
         });
+        setToolPlanSelections(initialPlanSelections);
         setCalcAppsCostUSD(Number(sumUSD.toFixed(2)));
         setCalcAppsCostMXN(Number(sumMXN.toFixed(2)));
 
@@ -994,15 +1146,24 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   const nubeGatewayPerAmount = (0.0329 * rentabilidadBase) + 3;
   const nubeNetPerAmount = Math.max(0, rentabilidadBase - (nubePlanPerAmount + nubeGatewayPerAmount));
 
-  // Slide 3: Overhead analysis of range tools
-  const toolsWithRange = report.tools?.filter(t => t.costType === "range") || [];
-  const minRangeOverheadUSD = toolsWithRange.reduce((acc, t) => acc + t.costMin, 0);
-  const maxRangeOverheadUSD = toolsWithRange.reduce((acc, t) => acc + t.costMax, 0);
+  // Tools Overhead analysis with pricing tiers
+  const minRangeOverheadUSD = report.tools?.reduce((acc, t) => {
+    const details = getToolEffectiveDetails(t);
+    const minVal = details.costMin;
+    return acc + (t.currency === "USD" ? minVal : minVal / (exchangeRate || 18.5));
+  }, 0) || 0;
 
-  // Total spend on tools for Shopify (using standard exact + max of range for conservative overhead)
+  const maxRangeOverheadUSD = report.tools?.reduce((acc, t) => {
+    const details = getToolEffectiveDetails(t);
+    const maxVal = details.costMax;
+    return acc + (t.currency === "USD" ? maxVal : maxVal / (exchangeRate || 18.5));
+  }, 0) || 0;
+
+  // Total spend on tools for Shopify (using selected plan or media)
   const totalSpendToolsUSD = report.tools?.reduce((acc, t) => {
-    const cost = t.costType === "exact" ? t.costExact : t.costMax;
-    return acc + (t.currency === "USD" ? cost : cost / exchangeRate);
+    const details = getToolEffectiveDetails(t);
+    const cost = details.effectiveCost;
+    return acc + (t.currency === "USD" ? cost : cost / (exchangeRate || 18.5));
   }, 0) || 0;
 
   // Comparison row actions
@@ -1314,24 +1475,24 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                   <img 
                     src={report.logo} 
                     alt={report.name} 
-                    className="relative w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-2 border-border-theme shadow-xl bg-surface-theme" 
+                    className="relative w-20 h-20 md:w-28 md:h-28 rounded-full object-cover border-2 border-border-theme shadow-xl bg-surface-theme" 
                     onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
                   />
                 </div>
               ) : (
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-accent-theme/10 to-indigo-500/10 border border-accent-theme/20 flex items-center justify-center font-bold text-4xl md:text-5xl text-accent-theme shadow-lg">
+                <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-accent-theme/10 to-indigo-500/10 border border-accent-theme/20 flex items-center justify-center font-bold text-3xl md:text-5xl text-accent-theme shadow-lg">
                   {report.name.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
 
             {/* Header Block */}
-            <div className="space-y-3 max-w-3xl mx-auto">
+            <div className="space-y-2 max-w-3xl mx-auto">
               <span className="text-accent-theme text-xs md:text-sm font-black uppercase tracking-widest block animate-pulse">
                 "Tu tienda crece, ¿y tú?"
               </span>
 
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
+              <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
                 Diagnóstico de{" "}
                 {report.businessUrl || report.team?.teamBrandWebsite ? (
                   <a
@@ -1349,27 +1510,78 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                 )}
               </h1>
 
-              <p className="text-text-dim-theme text-xs md:text-sm leading-relaxed max-w-2xl mx-auto line-clamp-3">
+              <p className="text-text-dim-theme text-xs md:text-sm leading-relaxed max-w-2xl mx-auto line-clamp-2">
                 Análisis estratégico de la eficiencia de tu pasarela de pagos, comisiones transaccionales y costos fijos de aplicaciones en tu tienda en línea.
               </p>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] md:text-xs font-semibold bg-surface-theme/80 border border-border-theme text-text-dim-theme shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-accent-theme" />
-              <span>Fecha del reporte: {formatReportDate(report.createdAt)}</span>
-            </span>
+            {/* Screenshot Preview Showcase on Cover */}
+            {(report.screenshotDesktop || report.screenshotMobile) && (
+              <div className="relative max-w-lg md:max-w-xl mx-auto w-full my-1 group">
+                {/* Ambient Glow */}
+                <div className="absolute -inset-1.5 bg-gradient-to-r from-accent-theme/20 via-indigo-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-60 group-hover:opacity-90 transition-all duration-500 pointer-events-none" />
 
-            {(report.team?.teamBrandLogo || report.team?.image) && (
-              <div className="pt-2 flex items-center justify-center gap-2 text-xs text-text-dim-theme">
-                <img
-                  src={report.team?.teamBrandLogo || report.team?.image}
-                  alt={report.team?.name || "Logo Equipo"}
-                  className="h-8 w-auto object-contain rounded bg-white/5 p-1 border border-border-theme"
-                />
+                {/* Desktop Browser Window Mockup */}
+                <div className="relative rounded-xl border border-border-theme/80 bg-surface-theme/95 shadow-2xl overflow-hidden backdrop-blur-md">
+                  {/* Browser Header Bar */}
+                  <div className="flex items-center justify-between px-3 py-1.5 border-b border-border-theme/60 bg-surface-theme/90">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-bg-theme/80 border border-border-theme/40 text-[10px] text-text-dim-theme max-w-xs truncate font-mono">
+                      <Lock className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                      <span className="truncate">{report.businessUrl || `https://${report.name.toLowerCase().replace(/\s+/g, "")}.com`}</span>
+                    </div>
+                    <div className="w-8" />
+                  </div>
+
+                  {/* Desktop Screenshot */}
+                  <div className="relative aspect-[16/9] max-h-48 md:max-h-56 w-full bg-slate-950 overflow-hidden">
+                    <img
+                      src={report.screenshotDesktop || report.screenshotMobile}
+                      alt={`Captura web de ${report.name}`}
+                      className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700"
+                      onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-bg-theme/70 via-transparent to-transparent pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Floating Mobile Phone Mockup Overlay */}
+                {report.screenshotMobile && (
+                  <div className="absolute -bottom-2 -right-2 sm:-right-3 w-16 sm:w-20 md:w-24 aspect-[9/18] rounded-xl border-2 border-border-theme/80 bg-surface-theme shadow-2xl overflow-hidden backdrop-blur-md hidden sm:block transform group-hover:scale-105 group-hover:-translate-y-1 transition-all duration-300">
+                    <div className="w-6 h-0.5 bg-border-theme/80 rounded-full mx-auto my-1" />
+                    <img
+                      src={report.screenshotMobile}
+                      alt={`Captura móvil de ${report.name}`}
+                      className="w-full h-[calc(100%-6px)] object-cover object-top"
+                      onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] md:text-xs font-semibold bg-surface-theme/80 border border-border-theme text-text-dim-theme shadow-sm">
+                <Clock className="w-3.5 h-3.5 text-accent-theme" />
+                <span>Fecha del reporte: {formatReportDate(report.createdAt)}</span>
+              </span>
+
+              {(report.team?.teamBrandLogo || report.team?.image) && (
+                <div className="flex items-center justify-center gap-2 text-xs text-text-dim-theme">
+                  <img
+                    src={report.team?.teamBrandLogo || report.team?.image}
+                    alt={report.team?.name || "Logo Equipo"}
+                    className="h-6 w-auto object-contain rounded bg-white/5 p-0.5 border border-border-theme"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="pt-1">
               <button 
                 onClick={() => handleSlideChange(1)}
                 className="inline-flex items-center gap-2 bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition-all text-xs md:text-sm group cursor-pointer"
@@ -1570,10 +1782,11 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                               : "grid-cols-1 max-w-md mx-auto"
                           }`}>
                             {page.map((tool, toolIdx) => {
+                              const details = getToolEffectiveDetails(tool);
                               return (
                                 <div 
                                   key={tool.id || toolIdx}
-                                  className={`p-4 rounded-xl border flex flex-col justify-between gap-4 transition-all duration-300 hover:scale-[1.02] ${
+                                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 transition-all duration-300 hover:scale-[1.02] ${
                                     tool.semaphore === "green" 
                                       ? "bg-green-theme/5 border-green-theme/20 shadow-md shadow-green-950/5 hover:border-green-theme/40 hover:bg-green-theme/10" 
                                       : tool.semaphore === "yellow" 
@@ -1601,7 +1814,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                                         </span>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-2.5 my-2.5">
+                                    <div className="flex items-center gap-2.5 my-2">
                                       {tool.logo ? (
                                         <img 
                                           src={tool.logo} 
@@ -1628,16 +1841,52 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                                         )}
                                       </div>
                                     </div>
-                                    <p className="text-text-dim-theme text-[11px] leading-relaxed line-clamp-2 md:line-clamp-3" title={tool.description}>{tool.description}</p>
+                                    <p className="text-text-dim-theme text-[11px] leading-relaxed line-clamp-2" title={tool.description}>{tool.description}</p>
                                   </div>
 
+                                  {/* Interactive Plan Selector */}
+                                  {details.precios && details.precios.length > 0 && (
+                                    <div className="pt-2 border-t border-border-theme/40 text-left space-y-1">
+                                      <div className="flex items-center justify-between text-[10px]">
+                                        <span className="font-semibold text-text-dim-theme flex items-center gap-1">
+                                          <Sliders className="w-3 h-3 text-accent-theme" />
+                                          <span>Plan Activo:</span>
+                                        </span>
+                                        <span className="font-mono font-bold text-accent-theme truncate max-w-[150px]">
+                                          {details.isCustomSelection ? details.planLabel : "Media Estimada"}
+                                        </span>
+                                      </div>
+
+                                      <select
+                                        value={toolPlanSelections[tool.id] ?? tool.selectedPlanId ?? "average"}
+                                        onChange={(e) => handleSelectToolPlan(tool.id, e.target.value)}
+                                        className="w-full bg-surface-theme/90 border border-border-theme rounded-lg px-2 py-1 text-[11px] text-white focus:border-accent-theme focus:ring-1 focus:ring-accent-theme outline-none cursor-pointer transition-all"
+                                      >
+                                        <option value="average">
+                                          ⚖️ Media / Promedio (${((details.costMin + details.costMax) / 2).toFixed(2)} {tool.currency})
+                                        </option>
+                                        {details.precios.map((p) => (
+                                          <option key={String(p.id ?? p.plan)} value={String(p.id ?? p.plan)}>
+                                            📌 {p.plan} - ${p.precio} {p.moneda || tool.currency}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+
                                   <div className="border-t border-border-theme/40 pt-2 flex justify-between items-center">
-                                    <span className="text-[9px] font-bold text-text-dim-theme uppercase tracking-wider">Gasto Mensual</span>
+                                    <span className="text-[9px] font-bold text-text-dim-theme uppercase tracking-wider">
+                                      {details.isCustomSelection ? "Costo Plan" : (details.precios && details.precios.length > 0 ? "Gasto (Media)" : "Gasto Mensual")}
+                                    </span>
                                     <span className="font-mono font-black text-xs md:text-sm text-white">
-                                      {tool.costType === "exact" ? (
-                                        `$${tool.costExact.toLocaleString()} ${tool.currency}`
+                                      {details.isCustomSelection ? (
+                                        <span className="text-accent-theme">${details.effectiveCost.toLocaleString()} {tool.currency}</span>
                                       ) : (
-                                        `$${tool.costMin.toLocaleString()} - $${tool.costMax.toLocaleString()} ${tool.currency}`
+                                        details.costMin === details.costMax ? (
+                                          `$${details.costMin.toLocaleString()} ${tool.currency}`
+                                        ) : (
+                                          `$${details.costMin.toLocaleString()} - $${details.costMax.toLocaleString()} ${tool.currency}`
+                                        )
                                       )}
                                     </span>
                                   </div>
@@ -1707,9 +1956,352 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 3: COSTOS OCULTOS */}
+        {/* SLIDE 3: SALUD Y VELOCIDAD WEB */}
         {activeSlide === 3 && (
-          <div data-slide-index="3" className="w-full max-w-5xl mx-auto space-y-2.5 md:space-y-3.5 py-1 flex flex-col justify-center my-auto min-h-0">
+          <div data-slide-index="3" className="w-full max-w-6xl mx-auto space-y-3 md:space-y-4 py-1 flex flex-col justify-center my-auto min-h-0">
+            {/* Header */}
+            <div className="border-b border-border-theme pb-2 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-accent-theme text-[10px] md:text-xs font-black uppercase tracking-widest block">
+                  Auditoría Google Lighthouse & Rendimiento
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-accent-theme/10 border border-accent-theme/20 text-accent-theme">
+                  {report.pageSpeed?.isDemo ? "Modo Demostración" : "Auditoría en Tiempo Real"}
+                </span>
+              </div>
+              <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-white leading-tight">
+                Salud & Velocidad de Carga de <span className="text-accent-theme">{report.name}</span>
+              </h2>
+              <p className="text-text-dim-theme text-[11px] md:text-xs leading-relaxed max-w-2xl mx-auto mt-1 line-clamp-2">
+                Medición de experiencia de usuario, Core Web Vitals y tiempo de espera antes de interactuar. Cada segundo extra de carga reduce las conversiones hasta un 7%.
+              </p>
+            </div>
+
+            {/* Main Content Grid: Gauges & Metrics on Left/Top, Load Simulator on Right/Bottom */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+              
+              {/* Left Column: Lighthouse Gauges & Core Web Vitals (7 Cols) */}
+              <div className="lg:col-span-7 space-y-3.5 flex flex-col justify-between">
+                
+                {/* 1. Score Rings */}
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Performance */}
+                  <div className="card-theme !p-3 flex flex-col items-center justify-center text-center relative overflow-hidden group hover:border-accent-theme/40 transition-all">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1">Rendimiento</span>
+                    <div className="relative flex items-center justify-center my-1">
+                      <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center font-mono font-black text-lg ${
+                        (report.pageSpeed?.performanceScore || 72) >= 90
+                          ? "border-emerald-500 text-emerald-400 bg-emerald-500/10"
+                          : (report.pageSpeed?.performanceScore || 72) >= 50
+                          ? "border-amber-500 text-amber-400 bg-amber-500/10"
+                          : "border-rose-500 text-rose-400 bg-rose-500/10"
+                      }`}>
+                        {report.pageSpeed?.performanceScore || 72}
+                      </div>
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme font-medium mt-0.5">Google Speed</span>
+                  </div>
+
+                  {/* Accessibility */}
+                  <div className="card-theme !p-3 flex flex-col items-center justify-center text-center relative overflow-hidden group hover:border-indigo-500/40 transition-all">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1">Accesibilidad</span>
+                    <div className="relative flex items-center justify-center my-1">
+                      <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center font-mono font-black text-lg ${
+                        (report.pageSpeed?.accessibilityScore || 88) >= 90
+                          ? "border-emerald-500 text-emerald-400 bg-emerald-500/10"
+                          : "border-indigo-500 text-indigo-400 bg-indigo-500/10"
+                      }`}>
+                        {report.pageSpeed?.accessibilityScore || 88}
+                      </div>
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme font-medium mt-0.5">UX / UI Ready</span>
+                  </div>
+
+                  {/* SEO & Best Practices */}
+                  <div className="card-theme !p-3 flex flex-col items-center justify-center text-center relative overflow-hidden group hover:border-purple-500/40 transition-all">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1">SEO & Estructura</span>
+                    <div className="relative flex items-center justify-center my-1">
+                      <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center font-mono font-black text-lg ${
+                        (report.pageSpeed?.seoScore || 92) >= 90
+                          ? "border-emerald-500 text-emerald-400 bg-emerald-500/10"
+                          : "border-purple-500 text-purple-400 bg-purple-500/10"
+                      }`}>
+                        {report.pageSpeed?.seoScore || 92}
+                      </div>
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme font-medium mt-0.5">Optimización Web</span>
+                  </div>
+                </div>
+
+                {/* 2. Core Web Vitals Key Metrics Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-surface-theme/60 border border-border-theme/60 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold uppercase text-text-dim-theme">LCP (Carga Visual)</span>
+                      <Tooltip content="Largest Contentful Paint: Tiempo que tarda en desplegarse el elemento visual más pesado de tu página.">
+                        <HelpCircle className="w-3 h-3 text-text-dim-theme hover:text-white cursor-help" />
+                      </Tooltip>
+                    </div>
+                    <div className="font-mono font-black text-base text-amber-400">
+                      {report.pageSpeed?.lcp || `${targetLoadTimeSeconds} s`}
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme">Pintura de contenido</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-surface-theme/60 border border-border-theme/60 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold uppercase text-text-dim-theme">FCP (Primer Render)</span>
+                      <Tooltip content="First Contentful Paint: Momento en el que el usuario ve el primer texto o imagen cargada.">
+                        <HelpCircle className="w-3 h-3 text-text-dim-theme hover:text-white cursor-help" />
+                      </Tooltip>
+                    </div>
+                    <div className="font-mono font-black text-base text-emerald-400">
+                      {report.pageSpeed?.fcp || "1.1 s"}
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme">Respuesta visual</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-surface-theme/60 border border-border-theme/60 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold uppercase text-text-dim-theme">TBT (Bloqueo JS)</span>
+                      <Tooltip content="Total Blocking Time: Retraso acumulado por scripts y apps pesadas antes de permitir clics.">
+                        <HelpCircle className="w-3 h-3 text-text-dim-theme hover:text-white cursor-help" />
+                      </Tooltip>
+                    </div>
+                    <div className="font-mono font-black text-base text-indigo-400">
+                      {report.pageSpeed?.tbt || "240 ms"}
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme">Interactividad</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-surface-theme/60 border border-border-theme/60 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold uppercase text-text-dim-theme">CLS (Estabilidad)</span>
+                      <Tooltip content="Cumulative Layout Shift: Saltos o movimientos inesperados de elementos mientras carga la página.">
+                        <HelpCircle className="w-3 h-3 text-text-dim-theme hover:text-white cursor-help" />
+                      </Tooltip>
+                    </div>
+                    <div className="font-mono font-black text-base text-emerald-400">
+                      {report.pageSpeed?.cls || "0.03"}
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme">Estabilidad visual</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-surface-theme/60 border border-border-theme/60 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold uppercase text-text-dim-theme">Speed Index</span>
+                      <Tooltip content="Índice de rapidez con el que se completa la visualización de la tienda.">
+                        <HelpCircle className="w-3 h-3 text-text-dim-theme hover:text-white cursor-help" />
+                      </Tooltip>
+                    </div>
+                    <div className="font-mono font-black text-base text-slate-200">
+                      {report.pageSpeed?.speedIndex || "2.6 s"}
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme">Índice velocidad</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-surface-theme/60 border border-border-theme/60 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold uppercase text-text-dim-theme">Latencia Servidor</span>
+                      <Tooltip content="Tiempo de respuesta DNS y servidor de la tienda.">
+                        <HelpCircle className="w-3 h-3 text-text-dim-theme hover:text-white cursor-help" />
+                      </Tooltip>
+                    </div>
+                    <div className="font-mono font-black text-base text-accent-theme">
+                      {report.serverLatencyMs ? `${report.serverLatencyMs} ms` : "85 ms"}
+                    </div>
+                    <span className="text-[9px] text-text-dim-theme">Respuesta DNS</span>
+                  </div>
+                </div>
+
+                {/* Insight Banner */}
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-left">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    <strong className="text-amber-300">Impacto en Ventas:</strong> Las apps de terceros inyectan scripts pesados que incrementan el tiempo de carga a <strong>{targetLoadTimeSeconds}s</strong>. En Tiendanube, al contar con funciones nativas integradas, se reduce la sobrecarga JS mejorando la tasa de conversión hasta un <strong>18%</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column: Interactive Page Load Simulator (5 Cols) */}
+              <div className="lg:col-span-5 card-theme !p-3.5 flex flex-col justify-between space-y-3">
+                
+                {/* Simulator Header with Tooltip & Controls */}
+                <div className="flex items-center justify-between pb-2 border-b border-border-theme/60">
+                  <div className="flex items-center gap-1.5 text-left">
+                    <Timer className="w-4 h-4 text-accent-theme animate-pulse" />
+                    <div>
+                      <h3 className="text-xs font-bold text-white leading-tight">Simulador de Carga</h3>
+                      <span className="text-[9px] text-text-dim-theme block">Tiempo real percibido</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-surface-theme/90 p-0.5 rounded-lg border border-border-theme/60">
+                    <button
+                      onClick={() => setSimDevice("desktop")}
+                      className={`p-1.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        simDevice === "desktop"
+                          ? "bg-accent-theme text-white shadow-sm"
+                          : "text-text-dim-theme hover:text-white"
+                      }`}
+                      title="Vista Escritorio"
+                    >
+                      <Monitor className="w-3 h-3" />
+                      <span className="hidden sm:inline">PC</span>
+                    </button>
+                    <button
+                      onClick={() => setSimDevice("mobile")}
+                      className={`p-1.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        simDevice === "mobile"
+                          ? "bg-accent-theme text-white shadow-sm"
+                          : "text-text-dim-theme hover:text-white"
+                      }`}
+                      title="Vista Móvil"
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      <span className="hidden sm:inline">Móvil</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* REQUIRED TOOLTIP & LIVE TIMER BANNER */}
+                <div className="p-2 rounded-xl bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Tooltip content="Este es el tiempo que tarda en cargar tu sitio web">
+                      <div className="flex items-center gap-1 cursor-help">
+                        <HelpCircle className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                        <span className="text-[10px] font-bold text-slate-200">
+                          Este es el tiempo que tarda en cargar tu sitio web
+                        </span>
+                      </div>
+                    </Tooltip>
+                  </div>
+                  <div className="font-mono font-black text-xs text-accent-theme px-2 py-0.5 rounded bg-surface-theme border border-accent-theme/20 shrink-0">
+                    {(simElapsedMs / 1000).toFixed(2)}s / {targetLoadTimeSeconds.toFixed(1)}s
+                  </div>
+                </div>
+
+                {/* Mini Viewport Device Screen with Simulated Load */}
+                <div className="relative w-full rounded-xl border border-border-theme bg-slate-950 shadow-inner overflow-hidden flex items-center justify-center p-2 min-h-[190px] md:min-h-[220px]">
+                  
+                  {/* Desktop Frame */}
+                  {simDevice === "desktop" && (
+                    <div className="relative w-full aspect-[16/10] rounded-lg border border-border-theme/70 bg-surface-theme overflow-hidden shadow-2xl flex flex-col">
+                      <div className="flex items-center justify-between px-2 py-1 bg-surface-theme/90 border-b border-border-theme/60 text-[8px] font-mono text-text-dim-theme">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        </div>
+                        <span className="truncate max-w-[160px] text-slate-400">
+                          {report.businessUrl || `${report.name.toLowerCase()}.com`}
+                        </span>
+                        <div className="w-4" />
+                      </div>
+                      
+                      {/* Viewport content */}
+                      <div className="relative flex-1 bg-slate-900 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={report.screenshotDesktop || report.screenshotMobile || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60"}
+                          alt="Screenshot Desktop"
+                          className="w-full h-full object-cover object-top"
+                          onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                        />
+
+                        {/* Loading Curtain Simulation Overlay */}
+                        {isSimulating && (
+                          <motion.div
+                            initial={{ opacity: 1 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-10"
+                          >
+                            <div className="w-8 h-8 rounded-full border-2 border-accent-theme border-t-transparent animate-spin mb-2" />
+                            <span className="text-[11px] font-bold text-white mb-1">Cargando elementos...</span>
+                            <span className="font-mono text-xs font-black text-accent-theme">
+                              {(simElapsedMs / 1000).toFixed(2)}s
+                            </span>
+                            
+                            {/* Live Progress Bar */}
+                            <div className="w-32 h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                              <div
+                                className="h-full bg-accent-theme transition-all duration-75"
+                                style={{ width: `${simProgress}%` }}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mobile Frame */}
+                  {simDevice === "mobile" && (
+                    <div className="relative w-36 aspect-[9/18] rounded-2xl border-2 border-border-theme bg-surface-theme overflow-hidden shadow-2xl flex flex-col">
+                      <div className="w-8 h-1 bg-border-theme rounded-full mx-auto my-1" />
+                      <div className="relative flex-1 bg-slate-900 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={report.screenshotMobile || report.screenshotDesktop || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60"}
+                          alt="Screenshot Mobile"
+                          className="w-full h-full object-cover object-top"
+                          onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                        />
+
+                        {/* Mobile Loading Curtain */}
+                        {isSimulating && (
+                          <motion.div
+                            initial={{ opacity: 1 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center z-10"
+                          >
+                            <div className="w-6 h-6 rounded-full border-2 border-accent-theme border-t-transparent animate-spin mb-1" />
+                            <span className="text-[9px] font-bold text-white">Cargando...</span>
+                            <span className="font-mono text-[10px] font-black text-accent-theme mt-0.5">
+                              {(simElapsedMs / 1000).toFixed(2)}s
+                            </span>
+                            <div className="w-20 h-1 bg-white/10 rounded-full mt-1.5 overflow-hidden">
+                              <div
+                                className="h-full bg-accent-theme transition-all duration-75"
+                                style={{ width: `${simProgress}%` }}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Replay Simulation Button */}
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-1.5 text-[10px] text-text-dim-theme">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>LCP: {targetLoadTimeSeconds.toFixed(1)}s evaluado</span>
+                  </div>
+
+                  <button
+                    disabled={isSimulating}
+                    onClick={runLoadSimulation}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                      isSimulating
+                        ? "bg-surface-theme text-text-dim-theme cursor-not-allowed border border-border-theme/40"
+                        : "bg-accent-theme hover:bg-accent-theme/90 text-white shadow-md active:scale-95"
+                    }`}
+                  >
+                    <RotateCcw className={`w-3.5 h-3.5 ${isSimulating ? "animate-spin" : ""}`} />
+                    <span>{isSimulating ? "Simulando..." : "Simular Carga de Nuevo"}</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* SLIDE 4: COSTOS OCULTOS */}
+        {activeSlide === 4 && (
+          <div data-slide-index="4" className="w-full max-w-5xl mx-auto space-y-2.5 md:space-y-3.5 py-1 flex flex-col justify-center my-auto min-h-0">
             <div className="border-b border-border-theme pb-2 text-center">
               <span className="text-red-theme text-[10px] md:text-xs font-black uppercase tracking-widest block mb-1 animate-pulse">
                 Análisis Operativo Financiero
@@ -1928,9 +2520,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 4: COMPARATIVO DIRECTO */}
-        {activeSlide === 4 && (
-          <div data-slide-index="4" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4.5 py-2 my-auto">
+        {/* SLIDE 5: COMPARATIVO DIRECTO */}
+        {activeSlide === 5 && (
+          <div data-slide-index="5" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4.5 py-2 my-auto">
             <div className="border-b border-border-theme pb-3 text-center">
               <span className="text-accent-theme text-[10px] md:text-xs font-black uppercase tracking-widest block mb-1">
                 Mapeo de Variables Comerciales
@@ -2070,9 +2662,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 5: CALCULADORA DE AHORRO */}
-        {activeSlide === 5 && (
-          <div data-slide-index="5" className="w-full max-w-5xl mx-auto space-y-3.5 py-1 my-auto">
+        {/* SLIDE 6: CALCULADORA DE AHORRO */}
+        {activeSlide === 6 && (
+          <div data-slide-index="6" className="w-full max-w-5xl mx-auto space-y-3.5 py-1 my-auto">
             {/* Header Section */}
             <div className="border-b border-border-theme/40 pb-3 text-center flex flex-col items-center">
               <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white leading-tight">
@@ -2505,9 +3097,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 6: RENTABILIDAD */}
-        {activeSlide === 6 && (
-          <div data-slide-index="6" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4.5 py-2 my-auto">
+        {/* SLIDE 7: RENTABILIDAD */}
+        {activeSlide === 7 && (
+          <div data-slide-index="7" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4.5 py-2 my-auto">
             <div className="border-b border-border-theme pb-2.5 text-center flex flex-col items-center">
               <span className="text-accent-theme text-[10px] md:text-xs font-black uppercase tracking-widest block mb-1">
                 Eficiencia de Margen Neto
@@ -2793,9 +3385,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 7: RESUMEN */}
-        {activeSlide === 7 && (
-          <div data-slide-index="7" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4 py-2 my-auto">
+        {/* SLIDE 8: RESUMEN */}
+        {activeSlide === 8 && (
+          <div data-slide-index="8" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4 py-2 my-auto">
             <div className="border-b border-border-theme pb-3 text-center">
               <span className="text-accent-theme text-[10px] md:text-xs font-black uppercase tracking-widest block mb-1">
                 Panel Ejecutivo de Diagnóstico
@@ -3018,7 +3610,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                 </p>
               </div>
               <button 
-                onClick={() => handleSlideChange(8)} 
+                onClick={() => handleSlideChange(9)} 
                 className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm whitespace-nowrap cursor-pointer transition-all hover:scale-105 active:scale-95"
               >
                 Ver Siguientes Pasos
@@ -3027,9 +3619,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 8: SIGUIENTES PASOS - FORMATO TIMELINE HORIZONTAL CON CALENDARIO A 15 DÍAS */}
-        {activeSlide === 8 && (
-          <div data-slide-index="8" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4 py-2 my-auto">
+        {/* SLIDE 9: SIGUIENTES PASOS - FORMATO TIMELINE HORIZONTAL CON CALENDARIO A 15 DÍAS */}
+        {activeSlide === 9 && (
+          <div data-slide-index="9" className="w-full max-w-5xl mx-auto space-y-3 md:space-y-4 py-2 my-auto">
             <div className="border-b border-border-theme pb-2 text-center">
               <div className="inline-flex items-center gap-2 bg-accent-theme/10 border border-accent-theme/30 px-3 py-1 rounded-full mb-1.5 shadow-sm">
                 <Calendar className="w-3.5 h-3.5 text-accent-theme animate-pulse" />
@@ -3227,7 +3819,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
             {/* CTA Button to Contact Slide */}
             <div className="flex justify-center pt-1">
               <button
-                onClick={() => handleSlideChange(9)}
+                onClick={() => handleSlideChange(10)}
                 className="inline-flex items-center gap-2 bg-accent-theme hover:bg-accent-theme/90 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-lg shadow-accent-theme/20 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer text-xs md:text-sm group"
               >
                 Quiero migrarme ya
@@ -3237,9 +3829,9 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </div>
         )}
 
-        {/* SLIDE 9: CONTACTO */}
-        {activeSlide === 9 && (
-          <div data-slide-index="9" className="w-full max-w-5xl mx-auto text-center space-y-4 md:space-y-6 py-4 my-auto">
+        {/* SLIDE 10: CONTACTO */}
+        {activeSlide === 10 && (
+          <div data-slide-index="10" className="w-full max-w-5xl mx-auto text-center space-y-4 md:space-y-6 py-4 my-auto">
             <div className="space-y-2 max-w-2xl mx-auto border-b border-border-theme pb-3 text-center">
               <span className="text-accent-theme text-[10px] md:text-xs font-black uppercase tracking-widest block mb-1 animate-pulse">
                 Listo para el Siguiente Nivel

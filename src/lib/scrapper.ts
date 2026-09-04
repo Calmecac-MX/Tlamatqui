@@ -1,10 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * 
- * Módulo de Scraping y Auditoría Inteligente Asistida por IA por URL de Dominio.
- * Consume la API Chismógrafo Scraper y genera evaluaciones adaptativas de apps instaladas en tiendas Shopify.
- */
+import { ToolPricePlan } from "../types";
 
 export interface ScrapedApp {
   name: string;
@@ -18,6 +12,8 @@ export interface ScrapedApp {
   url: string;
   description: string;
   logo?: string;
+  precios?: ToolPricePlan[];
+  selectedPlanId?: string | number;
 }
 
 export interface ScraperResponse {
@@ -111,6 +107,8 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
           url: t.url || "",
           description: t.description || "",
           logo: t.logo || resolveTechnologyLogo(t.name, t.url),
+          precios: t.precios,
+          selectedPlanId: t.selectedPlanId,
         })),
         paymentGateways: data.paymentGateways || [],
         pixels: data.pixels || [],

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.74 (Frontend) / v2.5.61 (Backend)] - 2026-09-04
+
+### 🚀 Features & Nuevas Funcionalidades
+- **report:** integrar esquema extendido de chismografo con pagespeed y screenshots (`9957475`)
+
 ## [v2.5.73 (Frontend) / v2.5.60 (Backend)] - 2026-09-04
 
 ### 🚀 Features & Nuevas Funcionalidades

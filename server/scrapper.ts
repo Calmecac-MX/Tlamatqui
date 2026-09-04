@@ -1,4 +1,4 @@
-import { Tool } from "./types.js";
+import { Tool, ToolPricePlan } from "./types.js";
 
 /**
  * Diccionario de tecnologías populares y sus dominios oficiales para resolver sus iconos.
@@ -109,73 +109,99 @@ interface AppSignature {
   description: string;
   logo: string;
   patterns: Array<string | RegExp>;
+  precios?: ToolPricePlan[];
 }
 
 const KNOWN_APP_SIGNATURES: AppSignature[] = [
   {
     name: "Klaviyo",
     category: "Marketing & Automatización",
-    costType: "exact",
-    costExact: 120,
-    costMin: 0,
-    costMax: 0,
+    costType: "range",
+    costExact: 0,
+    costMin: 20,
+    costMax: 350,
     currency: "USD",
     semaphore: "yellow",
     description: "Email marketing, flujos de carritos abandonados y segmentación avanzada.",
     logo: resolveTechnologyLogo("Klaviyo", "https://klaviyo.com"),
     patterns: ["klaviyo.com", "static.klaviyo.com", "_klaviyo"],
+    precios: [
+      { id: "free", plan: "Gratuito (hasta 250 contactos)", precio: 0, moneda: "USD" },
+      { id: "starter", plan: "Starter (500 contactos)", precio: 20, moneda: "USD" },
+      { id: "growth", plan: "Growth (1,500 contactos)", precio: 45, moneda: "USD" },
+      { id: "scale", plan: "Scale (5,000 contactos)", precio: 110, moneda: "USD" },
+      { id: "enterprise", plan: "Enterprise (15,000+ contactos)", precio: 350, moneda: "USD" },
+    ],
   },
   {
     name: "Loox",
     category: "Reviews & Social Proof",
     costType: "range",
     costExact: 0,
-    costMin: 29.99,
+    costMin: 9.99,
     costMax: 99.99,
     currency: "USD",
     semaphore: "red",
     description: "Reseñas de clientes con fotos y estrellas en páginas de producto.",
     logo: resolveTechnologyLogo("Loox", "https://loox.app"),
     patterns: ["loox.io", "loox-rating", "loox.app"],
+    precios: [
+      { id: "beginner", plan: "Beginner (100 solicitudes/mes)", precio: 9.99, moneda: "USD" },
+      { id: "growth", plan: "Growth (300 solicitudes/mes)", precio: 34.99, moneda: "USD" },
+      { id: "unlimited", plan: "Unlimited Pro", precio: 99.99, moneda: "USD" },
+    ],
   },
   {
     name: "Judge.me",
     category: "Reviews & Ratings",
-    costType: "exact",
-    costExact: 15,
+    costType: "range",
+    costExact: 0,
     costMin: 0,
-    costMax: 0,
+    costMax: 15,
     currency: "USD",
     semaphore: "green",
     description: "Plataforma de reseñas para productos y testimonios de compradores.",
     logo: resolveTechnologyLogo("Judge.me", "https://judge.me"),
     patterns: ["judge.me", "jdgm", "cdn.judge.me"],
+    precios: [
+      { id: "forever-free", plan: "Forever Free", precio: 0, moneda: "USD" },
+      { id: "awesome", plan: "Awesome Plan", precio: 15, moneda: "USD" },
+    ],
   },
   {
     name: "Gorgias",
     category: "Atención al Cliente & Helpdesk",
-    costType: "exact",
-    costExact: 60,
-    costMin: 0,
-    costMax: 0,
+    costType: "range",
+    costExact: 0,
+    costMin: 10,
+    costMax: 360,
     currency: "USD",
     semaphore: "yellow",
     description: "Helpdesk multicanal y chat en vivo para e-commerce.",
     logo: resolveTechnologyLogo("Gorgias", "https://gorgias.com"),
     patterns: ["gorgias.chat", "gorgias.com", "config.gorgias.chat"],
+    precios: [
+      { id: "starter", plan: "Starter (50 tickets)", precio: 10, moneda: "USD" },
+      { id: "basic", plan: "Basic (300 tickets)", precio: 60, moneda: "USD" },
+      { id: "pro", plan: "Pro (2,000 tickets)", precio: 360, moneda: "USD" },
+    ],
   },
   {
     name: "Bold Subscriptions",
     category: "Suscripciones & Venta Recurrente",
-    costType: "exact",
-    costExact: 49.99,
-    costMin: 0,
-    costMax: 0,
+    costType: "range",
+    costExact: 0,
+    costMin: 49.99,
+    costMax: 199.99,
     currency: "USD",
     semaphore: "red",
     description: "Gestión de compras recurrentes y clubes de suscripción mensual.",
     logo: resolveTechnologyLogo("Bold Subscriptions", "https://boldcommerce.com"),
     patterns: ["boldcommerce.com", "bold-brain", "boldapps.net"],
+    precios: [
+      { id: "core", plan: "Core Plan", precio: 49.99, moneda: "USD" },
+      { id: "plus", plan: "Plus Enterprise", precio: 199.99, moneda: "USD" },
+    ],
   },
   {
     name: "Smile.io",
@@ -189,32 +215,45 @@ const KNOWN_APP_SIGNATURES: AppSignature[] = [
     description: "Programa de puntos, lealtad y sistema de referidos.",
     logo: resolveTechnologyLogo("Smile.io", "https://smile.io"),
     patterns: ["smile.io", "sweettooth"],
+    precios: [
+      { id: "free", plan: "Free Plan", precio: 0, moneda: "USD" },
+      { id: "starter", plan: "Starter Plan", precio: 49, moneda: "USD" },
+      { id: "growth", plan: "Growth Plan", precio: 199, moneda: "USD" },
+    ],
   },
   {
     name: "Infinite Options",
     category: "Personalización de Productos",
     costType: "exact",
     costExact: 12.99,
-    costMin: 0,
-    costMax: 0,
+    costMin: 12.99,
+    costMax: 12.99,
     currency: "USD",
     semaphore: "red",
     description: "Campos de texto personalizados y opciones avanzadas de producto.",
     logo: resolveTechnologyLogo("Infinite Options", "https://shoppad.com"),
     patterns: ["shoppad.com", "infinite-options"],
+    precios: [
+      { id: "standard", plan: "Standard Plan", precio: 12.99, moneda: "USD" },
+    ],
   },
   {
     name: "Lucky Orange",
     category: "Analítica & Mapas de Calor",
-    costType: "exact",
-    costExact: 35,
-    costMin: 0,
-    costMax: 0,
+    costType: "range",
+    costExact: 0,
+    costMin: 32,
+    costMax: 145,
     currency: "USD",
     semaphore: "green",
     description: "Mapas de calor, grabaciones de sesión y analítica de comportamiento.",
     logo: resolveTechnologyLogo("Lucky Orange", "https://luckyorange.com"),
     patterns: ["luckyorange.com", "luckyorange.net"],
+    precios: [
+      { id: "build", plan: "Build (500 sesiones/mes)", precio: 32, moneda: "USD" },
+      { id: "grow", plan: "Grow (4,000 sesiones/mes)", precio: 70, moneda: "USD" },
+      { id: "expand", plan: "Expand (10,000 sesiones/mes)", precio: 145, moneda: "USD" },
+    ],
   },
   {
     name: "Yotpo",
@@ -222,12 +261,18 @@ const KNOWN_APP_SIGNATURES: AppSignature[] = [
     costType: "range",
     costExact: 0,
     costMin: 19,
-    costMax: 119,
+    costMax: 199,
     currency: "USD",
     semaphore: "yellow",
     description: "Reseñas de producto, SMS marketing y programas de lealtad.",
     logo: resolveTechnologyLogo("Yotpo", "https://yotpo.com"),
     patterns: ["yotpo.com", "staticw2.yotpo.com"],
+    precios: [
+      { id: "free", plan: "Free Plan", precio: 0, moneda: "USD" },
+      { id: "starter", plan: "Starter (200 pedidos/mes)", precio: 19, moneda: "USD" },
+      { id: "pro", plan: "Pro Plan", precio: 79, moneda: "USD" },
+      { id: "premium", plan: "Premium Scale", precio: 199, moneda: "USD" },
+    ],
   },
   {
     name: "Recharge",
@@ -235,51 +280,172 @@ const KNOWN_APP_SIGNATURES: AppSignature[] = [
     costType: "range",
     costExact: 0,
     costMin: 99,
-    costMax: 300,
+    costMax: 499,
     currency: "USD",
     semaphore: "red",
     description: "Plataforma de pagos y pedidos por suscripción recurrente.",
     logo: resolveTechnologyLogo("Recharge", "https://rechargepayments.com"),
     patterns: ["rechargepayments.com", "rechargecdn.com"],
+    precios: [
+      { id: "standard", plan: "Standard Plan", precio: 99, moneda: "USD" },
+      { id: "pro", plan: "Pro Scale", precio: 499, moneda: "USD" },
+    ],
   },
   {
     name: "Hotjar",
     category: "Mapas de Calor & Grabaciones",
-    costType: "exact",
-    costExact: 39,
+    costType: "range",
+    costExact: 0,
     costMin: 0,
-    costMax: 0,
+    costMax: 99,
     currency: "USD",
     semaphore: "green",
-    description: "Mapas de calor, encuestas y grabaciones de navegación.",
+    description: "Grabación de sesiones, heatmaps y encuestas de satisfacción.",
     logo: resolveTechnologyLogo("Hotjar", "https://hotjar.com"),
     patterns: ["hotjar.com", "static.hotjar.com"],
+    precios: [
+      { id: "basic", plan: "Basic Free (35 sesiones/día)", precio: 0, moneda: "USD" },
+      { id: "plus", plan: "Plus (100 sesiones/día)", precio: 39, moneda: "USD" },
+      { id: "business", plan: "Business (500 sesiones/día)", precio: 99, moneda: "USD" },
+    ],
+  },
+  {
+    name: "PageFly Landing Page Builder",
+    category: "Diseño & Páginas de Aterrizaje",
+    costType: "range",
+    costExact: 0,
+    costMin: 24,
+    costMax: 99,
+    currency: "USD",
+    semaphore: "red",
+    description: "Constructor visual de páginas de producto, landings y blogs.",
+    logo: resolveTechnologyLogo("PageFly", "https://pagefly.io"),
+    patterns: ["pagefly.io", "cdn.pagefly.io"],
+    precios: [
+      { id: "payg", plan: "Pay As You Go (5 slots)", precio: 24, moneda: "USD" },
+      { id: "unlimited", plan: "Enterprise Unlimited", precio: 99, moneda: "USD" },
+    ],
+  },
+  {
+    name: "Shogun Page Builder",
+    category: "Diseño & Páginas de Aterrizaje",
+    costType: "range",
+    costExact: 0,
+    costMin: 39,
+    costMax: 149,
+    currency: "USD",
+    semaphore: "red",
+    description: "Editor de arrastrar y soltar para crear páginas de alta conversión.",
+    logo: resolveTechnologyLogo("Shogun", "https://getshogun.com"),
+    patterns: ["getshogun.com", "cdn.getshogun.com"],
+    precios: [
+      { id: "build", plan: "Build Plan (25 páginas)", precio: 39, moneda: "USD" },
+      { id: "grow", plan: "Grow Plan (100 páginas)", precio: 149, moneda: "USD" },
+    ],
+  },
+  {
+    name: "AfterShip Tracking",
+    category: "Rastreo de Envíos & Notificaciones",
+    costType: "range",
+    costExact: 0,
+    costMin: 11,
+    costMax: 119,
+    currency: "USD",
+    semaphore: "yellow",
+    description: "Portal de seguimiento de paquetes de marca y notificaciones de entrega.",
+    logo: resolveTechnologyLogo("AfterShip", "https://aftership.com"),
+    patterns: ["aftership.com", "widgets.aftership.com"],
+    precios: [
+      { id: "essentials", plan: "Essentials (100 envíos/mes)", precio: 11, moneda: "USD" },
+      { id: "pro", plan: "Pro (2,000 envíos/mes)", precio: 119, moneda: "USD" },
+    ],
+  },
+  {
+    name: "Triple Whale",
+    category: "Analítica & Atribución de Ventas",
+    costType: "range",
+    costExact: 0,
+    costMin: 129,
+    costMax: 279,
+    currency: "USD",
+    semaphore: "yellow",
+    description: "Atribución multicanal de ROAS y métricas financieras de comercio.",
+    logo: resolveTechnologyLogo("Triple Whale", "https://triplewhale.com"),
+    patterns: ["triplewhale.com", "api.triplewhale.com"],
+    precios: [
+      { id: "starter", plan: "Starter Analytics", precio: 129, moneda: "USD" },
+      { id: "growth", plan: "Growth Pixel Attribution", precio: 279, moneda: "USD" },
+    ],
+  },
+  {
+    name: "Postscript SMS Marketing",
+    category: "SMS Marketing & Conversación",
+    costType: "range",
+    costExact: 0,
+    costMin: 35,
+    costMax: 100,
+    currency: "USD",
+    semaphore: "yellow",
+    description: "Automatización de mensajes SMS transaccionales y campañas masivas.",
+    logo: resolveTechnologyLogo("Postscript", "https://postscript.io"),
+    patterns: ["postscript.io", "sdk.postscript.io"],
+    precios: [
+      { id: "starter", plan: "Starter Tier", precio: 35, moneda: "USD" },
+      { id: "growth", plan: "Growth Tier", precio: 100, moneda: "USD" },
+    ],
+  },
+  {
+    name: "WideBundle",
+    category: "Bundles & Ofertas de Cantidad",
+    costType: "range",
+    costExact: 0,
+    costMin: 18,
+    costMax: 36,
+    currency: "USD",
+    semaphore: "red",
+    description: "Generación de paquetes de producto, descuentos por volumen y bundles.",
+    logo: resolveTechnologyLogo("WideBundle", "https://widebundle.com"),
+    patterns: ["widebundle.com", "app.widebundle.com"],
+    precios: [
+      { id: "basic", plan: "Basic Plan", precio: 18, moneda: "USD" },
+      { id: "pro", plan: "Pro Tier", precio: 36, moneda: "USD" },
+    ],
+  },
+  {
+    name: "Back in Stock",
+    category: "Alertas de Restock & Notificaciones",
+    costType: "range",
+    costExact: 0,
+    costMin: 19,
+    costMax: 59,
+    currency: "USD",
+    semaphore: "yellow",
+    description: "Notificaciones automáticas por email y SMS de productos agotados.",
+    logo: resolveTechnologyLogo("Back in Stock", "https://backinstock.org"),
+    patterns: ["backinstock.org", "app.backinstock.org"],
+    precios: [
+      { id: "starter", plan: "Starter (500 alertas/mes)", precio: 19, moneda: "USD" },
+      { id: "medium", plan: "Medium (2,000 alertas/mes)", precio: 39, moneda: "USD" },
+      { id: "large", plan: "Large (5,000 alertas/mes)", precio: 59, moneda: "USD" },
+    ],
   },
   {
     name: "Tidio",
     category: "Chat en Vivo & Chatbots",
-    costType: "exact",
-    costExact: 29,
-    costMin: 0,
-    costMax: 0,
+    costType: "range",
+    costExact: 0,
+    costMin: 29,
+    costMax: 399,
     currency: "USD",
     semaphore: "green",
     description: "Chat en vivo, automatización de atención y chatbots con IA.",
     logo: resolveTechnologyLogo("Tidio", "https://tidio.com"),
     patterns: ["tidio.co", "tidiochat.com"],
-  },
-  {
-    name: "Triple Whale",
-    category: "Atribución & Analítica de Ventas",
-    costType: "exact",
-    costExact: 129,
-    costMin: 0,
-    costMax: 0,
-    currency: "USD",
-    semaphore: "yellow",
-    description: "Dashboard de atribución de anuncios, ROAS y analítica financiera.",
-    logo: resolveTechnologyLogo("Triple Whale", "https://triplewhale.com"),
-    patterns: ["triplewhale.com", "triplewhale-pixel.js"],
+    precios: [
+      { id: "starter", plan: "Starter Plan", precio: 29, moneda: "USD" },
+      { id: "growth", plan: "Growth Plan", precio: 59, moneda: "USD" },
+      { id: "plus", plan: "Tidio+ Enterprise", precio: 399, moneda: "USD" },
+    ],
   },
 ];
 
@@ -333,21 +499,27 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
     });
 
     if (isDetected) {
-      const toolCost = sig.costType === "exact" ? sig.costExact : (sig.costMin + sig.costMax) / 2;
+      const precios = sig.precios;
+      const costMin = precios && precios.length > 0 ? Math.min(...precios.map(p => p.precio)) : sig.costMin;
+      const costMax = precios && precios.length > 0 ? Math.max(...precios.map(p => p.precio)) : sig.costMax;
+      const costType: "exact" | "range" = (precios && precios.length > 1) || sig.costType === "range" ? "range" : "exact";
+      const costExact = sig.costExact || costMin;
+      const toolCost = costType === "exact" ? costExact : (costMin + costMax) / 2;
       totalCostUSD += toolCost;
 
       detectedTools.push({
         id: `tool-${Math.random().toString(36).substring(2, 9)}`,
         name: sig.name,
         category: sig.category,
-        costType: sig.costType,
-        costExact: sig.costExact,
-        costMin: sig.costMin,
-        costMax: sig.costMax,
+        costType,
+        costExact,
+        costMin,
+        costMax,
         currency: sig.currency,
         semaphore: sig.semaphore,
         description: sig.description,
         logo: resolveTechnologyLogo(sig.name, undefined, sig.logo),
+        precios: sig.precios,
       });
     }
   }
@@ -359,14 +531,21 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
         id: "tool-klaviyo",
         name: "Klaviyo",
         category: "Marketing & Emailing",
-        costType: "exact",
-        costExact: 120,
-        costMin: 0,
-        costMax: 0,
+        costType: "range",
+        costExact: 0,
+        costMin: 20,
+        costMax: 350,
         currency: "USD",
         semaphore: "yellow",
         description: "Automatización de secuencias de carrito abandonado y correos transaccionales.",
         logo: resolveTechnologyLogo("Klaviyo", "https://klaviyo.com"),
+        precios: [
+          { id: "free", plan: "Gratuito (hasta 250 contactos)", precio: 0, moneda: "USD" },
+          { id: "starter", plan: "Starter (500 contactos)", precio: 20, moneda: "USD" },
+          { id: "growth", plan: "Growth (1,500 contactos)", precio: 45, moneda: "USD" },
+          { id: "scale", plan: "Scale (5,000 contactos)", precio: 110, moneda: "USD" },
+          { id: "enterprise", plan: "Enterprise (15,000+ contactos)", precio: 350, moneda: "USD" },
+        ],
       },
       {
         id: "tool-loox",
@@ -374,12 +553,17 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
         category: "Reseñas de Clientes",
         costType: "range",
         costExact: 0,
-        costMin: 29.99,
+        costMin: 9.99,
         costMax: 99.99,
         currency: "USD",
         semaphore: "red",
         description: "Widgets de testimonios y valoraciones de compradores con fotos.",
         logo: resolveTechnologyLogo("Loox", "https://loox.app"),
+        precios: [
+          { id: "beginner", plan: "Beginner (100 solicitudes/mes)", precio: 9.99, moneda: "USD" },
+          { id: "growth", plan: "Growth (300 solicitudes/mes)", precio: 34.99, moneda: "USD" },
+          { id: "unlimited", plan: "Unlimited Pro", precio: 99.99, moneda: "USD" },
+        ],
       },
     ];
     detectedTools.push(...defaultTools);
@@ -502,10 +686,15 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
           sig.patterns.some((pat) => (typeof pat === "string" ? pluginName.toLowerCase().includes(pat.toLowerCase()) : pat.test(pluginName)))
         );
 
-        let costType: "exact" | "range" = matchedSig ? matchedSig.costType : "exact";
-        let costExact = matchedSig ? matchedSig.costExact : 29;
-        let costMin = matchedSig ? matchedSig.costMin : 0;
-        let costMax = matchedSig ? matchedSig.costMax : 0;
+        const precios: ToolPricePlan[] | undefined = p.precios || matchedSig?.precios;
+        let costMin = precios && precios.length > 0 ? Math.min(...precios.map((pr: any) => pr.precio)) : (matchedSig ? matchedSig.costMin : 0);
+        let costMax = precios && precios.length > 0 ? Math.max(...precios.map((pr: any) => pr.precio)) : (matchedSig ? matchedSig.costMax : 0);
+        let costType: "exact" | "range" = (precios && precios.length > 1) || (matchedSig && matchedSig.costType === "range") ? "range" : "exact";
+        let costExact = matchedSig ? matchedSig.costExact : (costMin || 29);
+        if (costMin === 0 && costMax === 0 && costExact > 0) {
+          costMin = costExact;
+          costMax = costExact;
+        }
         let category = matchedSig ? matchedSig.category : (p.category || "Herramientas de E-commerce");
         let semaphore: "green" | "yellow" | "red" = matchedSig ? matchedSig.semaphore : "yellow";
         let description = matchedSig
@@ -530,6 +719,7 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
           description,
           logo,
           url: p.web || "",
+          precios,
         });
       }
 

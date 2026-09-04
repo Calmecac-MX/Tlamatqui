@@ -279,20 +279,22 @@ model ReportAnalytics {
 
 /// Herramienta / App de e-commerce diagnosticada como punto de fuga dentro de un reporte.
 model ReportTool {
-  id          String    @id @default(uuid())
-  name        String
-  category    String
-  costType    CostType  @default(exact)
-  costExact   Float     @default(0)
-  costMin     Float     @default(0)
-  costMax     Float     @default(0)
-  currency    Currency  @default(USD)
-  semaphore   Semaphore @default(green)
-  url         String?
-  description String?
-  logo        String?
-  reportId    String
-  report      Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid())
+  name           String
+  category       String
+  costType       CostType  @default(exact)
+  costExact      Float     @default(0)
+  costMin        Float     @default(0)
+  costMax        Float     @default(0)
+  currency       Currency  @default(USD)
+  semaphore      Semaphore @default(green)
+  url            String?
+  description    String?
+  logo           String?
+  precios        Json?     // Lista de planes de precios: { id, plan, precio, moneda }[]
+  selectedPlanId String?
+  reportId       String
+  report         Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
 }

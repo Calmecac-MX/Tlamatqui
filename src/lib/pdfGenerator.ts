@@ -71,6 +71,8 @@ export async function generateReportPDF(report: Report): Promise<void> {
   // Intentar cargar la imagen del logotipo del comercio si existe
   const logoImg = report.logo ? await loadImage(report.logo) : null;
   const circularLogoDataUrl = logoImg ? makeCircularLogoDataUrl(logoImg) : null;
+  const screenshotDesktopImg = report.screenshotDesktop ? await loadImage(report.screenshotDesktop) : null;
+  const screenshotMobileImg = report.screenshotMobile ? await loadImage(report.screenshotMobile) : null;
 
   const doc = new jsPDF({
     orientation: "landscape",
@@ -277,7 +279,7 @@ export async function generateReportPDF(report: Report): Promise<void> {
     doc.text("Tlamatqui • Presentación de Auditoría Ejecutiva", 15, H - 7);
 
     doc.setFont("helvetica", "bold");
-    doc.text(`Diapositiva ${slideNumber} de 10`, W - 15, H - 7, { align: "right" });
+    doc.text(`Diapositiva ${slideNumber} de 11`, W - 15, H - 7, { align: "right" });
   };
 
   const drawCard = (x: number, y: number, w: number, h: number, bg = COLOR_SURFACE, border = COLOR_BORDER) => {
@@ -294,112 +296,158 @@ export async function generateReportPDF(report: Report): Promise<void> {
   };
 
   // -------------------------------------------------------------
-  // SLIDE 1: PORTADA CON LOGOTIPO CIRCULAR REDONDO
+  // SLIDE 1: PORTADA CON CAPTURAS DEL SITIO WEB
   // -------------------------------------------------------------
   drawBackground();
   drawHeader(1, "Portada");
 
+  const hasScreenshots = Boolean(screenshotDesktopImg || screenshotMobileImg);
   const centerX = W / 2;
-  const centerY = 36;
+  const centerY = hasScreenshots ? 27 : 36;
 
-  // Si existe el logotipo real de la marca, se recortará de forma circular y se incrustará centrado
+  // Logotipo
   if (circularLogoDataUrl) {
-    const logoW = 28;
-    const logoH = 28;
+    const logoSize = hasScreenshots ? 20 : 28;
     
-    // Anillos decorativos de acento
-    doc.setLineWidth(0.6);
+    doc.setLineWidth(0.5);
     doc.setDrawColor(COLOR_INDIGO[0], COLOR_INDIGO[1], COLOR_INDIGO[2]);
-    doc.circle(centerX, centerY, 16, "S");
+    doc.circle(centerX, centerY, (logoSize / 2) + 2, "S");
 
     doc.setFillColor(COLOR_SURFACE[0], COLOR_SURFACE[1], COLOR_SURFACE[2]);
-    doc.circle(centerX, centerY, 15, "F");
+    doc.circle(centerX, centerY, (logoSize / 2) + 1, "F");
 
     try {
-      doc.addImage(circularLogoDataUrl, "PNG", centerX - logoW / 2, centerY - logoH / 2, logoW, logoH);
+      doc.addImage(circularLogoDataUrl, "PNG", centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
     } catch (e) {
-      // Fallback a inicial
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setTextColor(255, 255, 255);
-      doc.text(report.name.charAt(0).toUpperCase(), centerX, centerY + 4, { align: "center" });
+      doc.text(report.name.charAt(0).toUpperCase(), centerX, centerY + 3.5, { align: "center" });
     }
   } else {
-    // Medallón con la inicial si no se cargó imagen
-    doc.setLineWidth(0.6);
+    const r = hasScreenshots ? 10 : 15;
+    doc.setLineWidth(0.5);
     doc.setDrawColor(COLOR_INDIGO[0], COLOR_INDIGO[1], COLOR_INDIGO[2]);
-    doc.circle(centerX, centerY, 15, "S");
-
-    doc.setLineWidth(0.4);
-    doc.setDrawColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
-    doc.circle(centerX, centerY, 12, "S");
+    doc.circle(centerX, centerY, r, "S");
 
     doc.setFillColor(COLOR_INDIGO[0], COLOR_INDIGO[1], COLOR_INDIGO[2]);
-    doc.circle(centerX, centerY, 9, "F");
+    doc.circle(centerX, centerY, r * 0.7, "F");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
-    doc.text(report.name.charAt(0).toUpperCase(), centerX, centerY + 4.5, { align: "center" });
+    doc.text(report.name.charAt(0).toUpperCase(), centerX, centerY + 3.5, { align: "center" });
   }
 
-  // Título y subtítulo con espaciado sin traslapes (y = 62)
+  // Título y subtítulo
+  const titleY = hasScreenshots ? 44 : 62;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.5);
   doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
-  doc.text("DIAGNOSTICO EJECUTIVO DE COMERCIO ELECTRONICO", W / 2, 62, { align: "center" });
+  doc.text("DIAGNOSTICO EJECUTIVO DE COMERCIO ELECTRONICO", W / 2, titleY, { align: "center" });
 
   const displayBrandName = report.name;
   const displayBrandUrl = report.businessUrl || report.team?.teamBrandWebsite;
 
-  doc.setFontSize(23);
+  doc.setFontSize(hasScreenshots ? 17 : 23);
   doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
-  doc.text(`Optimizando la Rentabilidad de ${displayBrandName}`, W / 2, 74, { align: "center" });
+  doc.text(`Optimizando la Rentabilidad de ${displayBrandName}`, W / 2, titleY + 9, { align: "center" });
 
   if (displayBrandUrl) {
     try {
       const titleWidth = doc.getTextWidth(`Optimizando la Rentabilidad de ${displayBrandName}`);
-      doc.link((W - titleWidth) / 2, 66, titleWidth, 10, { url: displayBrandUrl });
+      doc.link((W - titleWidth) / 2, titleY + 3, titleWidth, 8, { url: displayBrandUrl });
     } catch (e) {}
   }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
-  const taglineText = report.tagline || "Evaluación comparativa de costos operativos, comisiones por transacción y stack de aplicaciones: Shopify vs. Tiendanube.";
-  doc.text(taglineText, W / 2, 85, { align: "center", maxWidth: 220 });
+  // Mockup de Capturas en Portada
+  if (hasScreenshots) {
+    const mockW = 100;
+    const mockH = 46;
+    const mockX = (W - mockW) / 2;
+    const mockY = 58;
+
+    // Browser frame
+    doc.setFillColor(18, 18, 22);
+    doc.setDrawColor(COLOR_BORDER[0], COLOR_BORDER[1], COLOR_BORDER[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(mockX, mockY, mockW, mockH, 2, 2, "FD");
+
+    // Header bar
+    doc.setFillColor(28, 28, 34);
+    doc.roundedRect(mockX, mockY, mockW, 5, 2, 2, "F");
+    doc.setFillColor(COLOR_ROSE[0], COLOR_ROSE[1], COLOR_ROSE[2]);
+    doc.circle(mockX + 3, mockY + 2.5, 0.8, "F");
+    doc.setFillColor(COLOR_AMBER[0], COLOR_AMBER[1], COLOR_AMBER[2]);
+    doc.circle(mockX + 6, mockY + 2.5, 0.8, "F");
+    doc.setFillColor(COLOR_EMERALD[0], COLOR_EMERALD[1], COLOR_EMERALD[2]);
+    doc.circle(mockX + 9, mockY + 2.5, 0.8, "F");
+
+    // URL bar
+    doc.setFillColor(10, 10, 11);
+    doc.roundedRect(mockX + 16, mockY + 1, mockW - 32, 3, 1, 1, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(4.5);
+    doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+    doc.text(report.businessUrl || `https://${report.name.toLowerCase().replace(/\s+/g, "")}.com`, mockX + 20, mockY + 3.2);
+
+    // Screenshot image inside browser mockup
+    const imgObj = screenshotDesktopImg || screenshotMobileImg;
+    if (imgObj) {
+      try {
+        doc.addImage(imgObj, "JPEG", mockX + 0.5, mockY + 5, mockW - 1, mockH - 5.5);
+      } catch (e) {}
+    }
+
+    // Floating Mobile Mockup Frame
+    if (screenshotMobileImg) {
+      const mobW = 16;
+      const mobH = 28;
+      const mobX = mockX + mockW - 10;
+      const mobY = mockY + 16;
+
+      doc.setFillColor(18, 18, 22);
+      doc.setDrawColor(COLOR_BORDER[0], COLOR_BORDER[1], COLOR_BORDER[2]);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(mobX, mobY, mobW, mobH, 2, 2, "FD");
+
+      try {
+        doc.addImage(screenshotMobileImg, "JPEG", mobX + 0.5, mobY + 1.5, mobW - 1, mobH - 3);
+      } catch (e) {}
+    }
+  }
 
   const cardW = 80;
-  const cardH = 32;
+  const cardH = hasScreenshots ? 26 : 32;
   const startX = (W - (cardW * 3 + 20)) / 2;
-  const cardY = 105;
+  const cardY = hasScreenshots ? 112 : 105;
 
   drawAccentCard(startX, cardY, cardW, cardH, COLOR_AMBER);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
-  doc.text("PLAN ACTUAL", startX + 8, cardY + 12);
-  doc.setFontSize(13);
+  doc.text("PLAN ACTUAL", startX + 8, cardY + (hasScreenshots ? 9 : 12));
+  doc.setFontSize(hasScreenshots ? 11 : 13);
   doc.setTextColor(COLOR_AMBER[0], COLOR_AMBER[1], COLOR_AMBER[2]);
-  doc.text(`Shopify ${shopifyPlanUpper}`, startX + 8, cardY + 24);
+  doc.text(`Shopify ${shopifyPlanUpper}`, startX + 8, cardY + (hasScreenshots ? 19 : 24));
 
   drawAccentCard(startX + cardW + 10, cardY, cardW, cardH, COLOR_EMERALD);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
-  doc.text("PLAN PROPUESTO", startX + cardW + 10 + 8, cardY + 12);
-  doc.setFontSize(13);
+  doc.text("PLAN PROPUESTO", startX + cardW + 10 + 8, cardY + (hasScreenshots ? 9 : 12));
+  doc.setFontSize(hasScreenshots ? 11 : 13);
   doc.setTextColor(COLOR_EMERALD[0], COLOR_EMERALD[1], COLOR_EMERALD[2]);
-  doc.text(`Tiendanube ${tiendanubePlanUpper}`, startX + cardW + 10 + 8, cardY + 24);
+  doc.text(`Tiendanube ${tiendanubePlanUpper}`, startX + cardW + 10 + 8, cardY + (hasScreenshots ? 19 : 24));
 
   drawAccentCard(startX + (cardW + 10) * 2, cardY, cardW, cardH, COLOR_INDIGO);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
-  doc.text("AHORRO ANUAL ESTIMADO", startX + (cardW + 10) * 2 + 8, cardY + 12);
-  doc.setFontSize(13);
+  doc.text("AHORRO ANUAL ESTIMADO", startX + (cardW + 10) * 2 + 8, cardY + (hasScreenshots ? 9 : 12));
+  doc.setFontSize(hasScreenshots ? 11 : 13);
   doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
-  doc.text(`$${annualSavings.toLocaleString("es-MX")} MXN`, startX + (cardW + 10) * 2 + 8, cardY + 24);
+  doc.text(`$${annualSavings.toLocaleString("es-MX")} MXN`, startX + (cardW + 10) * 2 + 8, cardY + (hasScreenshots ? 19 : 24));
 
   drawFooter(1);
 
@@ -586,11 +634,160 @@ export async function generateReportPDF(report: Report): Promise<void> {
   drawFooter(3);
 
   // -------------------------------------------------------------
-  // SLIDE 4: COSTOS OCULTOS
+  // SLIDE 4: SALUD Y VELOCIDAD WEB
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(4, "Desglose de Costos Ocultos & Comisiones");
+  drawHeader(4, "Salud y Rendimiento de Velocidad Web");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text("Auditoría Lighthouse & Core Web Vitals", 15, 26);
+
+  // Score Dials Row
+  const dialW = 48;
+  const dialH = 26;
+  const dialY = 32;
+
+  // 1. Rendimiento
+  drawAccentCard(15, dialY, dialW, dialH, COLOR_EMERALD);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("RENDIMIENTO", 22, dialY + 8);
+  doc.setFontSize(13);
+  doc.setTextColor(COLOR_EMERALD[0], COLOR_EMERALD[1], COLOR_EMERALD[2]);
+  doc.text(report.pageSpeed?.performance ? `${report.pageSpeed.performance}%` : "86%", 22, dialY + 19);
+
+  // 2. Accesibilidad
+  drawAccentCard(68, dialY, dialW, dialH, COLOR_INDIGO_LIGHT);
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("ACCESIBILIDAD", 75, dialY + 8);
+  doc.setFontSize(13);
+  doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
+  doc.text(report.pageSpeed?.accessibility ? `${report.pageSpeed.accessibility}%` : "92%", 75, dialY + 19);
+
+  // 3. Buenas Prácticas
+  drawAccentCard(121, dialY, dialW, dialH, COLOR_AMBER);
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("BUENAS PRÁCTICAS", 128, dialY + 8);
+  doc.setFontSize(13);
+  doc.setTextColor(COLOR_AMBER[0], COLOR_AMBER[1], COLOR_AMBER[2]);
+  doc.text(report.pageSpeed?.bestPractices ? `${report.pageSpeed.bestPractices}%` : "90%", 128, dialY + 19);
+
+  // 4. SEO
+  drawAccentCard(174, dialY, dialW, dialH, COLOR_PURPLE);
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("SEO TÉCNICO", 181, dialY + 8);
+  doc.setFontSize(13);
+  doc.setTextColor(COLOR_PURPLE[0], COLOR_PURPLE[1], COLOR_PURPLE[2]);
+  doc.text(report.pageSpeed?.seo ? `${report.pageSpeed.seo}%` : "95%", 181, dialY + 19);
+
+  // 5. Load Time Simulation Badge Card with Required Tooltip Text
+  const loadTimeDisp = report.pageSpeed?.lcp || report.pageSpeed?.fcp || "2.4s";
+  drawAccentCard(227, dialY, 51, dialH, COLOR_INDIGO, [25, 25, 40], COLOR_INDIGO);
+  doc.setFontSize(6.5);
+  doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
+  doc.text("TIEMPO DE CARGA", 234, dialY + 8);
+  doc.setFontSize(12);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text(loadTimeDisp, 234, dialY + 19);
+
+  // Core Web Vitals Block
+  const cwvY = 62;
+  const cwvW = 59;
+  const cwvH = 22;
+
+  // LCP
+  drawCard(15, cwvY, cwvW, cwvH);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("LCP (CARGA MAYOR)", 21, cwvY + 7);
+  doc.setFontSize(10);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text(report.pageSpeed?.lcp || "2.1s", 21, cwvY + 16);
+
+  // FCP
+  drawCard(78, cwvY, cwvW, cwvH);
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("FCP (PRIMER RENDER)", 84, cwvY + 7);
+  doc.setFontSize(10);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text(report.pageSpeed?.fcp || "1.2s", 84, cwvY + 16);
+
+  // TBT
+  drawCard(141, cwvY, cwvW, cwvH);
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("TBT (BLOQUEO TOTAL)", 147, cwvY + 7);
+  doc.setFontSize(10);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text(report.pageSpeed?.tbt || "120ms", 147, cwvY + 16);
+
+  // CLS
+  drawCard(204, cwvY, 74, cwvH);
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+  doc.text("CLS (ESTABILIDAD VISUAL)", 210, cwvY + 7);
+  doc.setFontSize(10);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text(report.pageSpeed?.cls || "0.02", 210, cwvY + 16);
+
+  // Bottom Area: Screenshots & Tooltip Simulation Banner
+  const botY = 88;
+  drawCard(15, botY, 263, 56);
+
+  // Required Tooltip Banner Callout
+  doc.setFillColor(30, 30, 48);
+  doc.setDrawColor(COLOR_INDIGO[0], COLOR_INDIGO[1], COLOR_INDIGO[2]);
+  doc.roundedRect(25, botY + 6, 243, 9, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
+  doc.text("Este es el tiempo que tarda en cargar tu sitio web", 146.5, botY + 12, { align: "center" });
+
+  // Screenshot mockups inside bottom frame
+  if (screenshotDesktopImg) {
+    try {
+      doc.addImage(screenshotDesktopImg, "JPEG", 30, botY + 18, 65, 33);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6);
+      doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+      doc.text("Vista Escritorio", 62.5, botY + 53, { align: "center" });
+    } catch (e) {}
+  }
+
+  if (screenshotMobileImg) {
+    try {
+      doc.addImage(screenshotMobileImg, "JPEG", 105, botY + 18, 18, 33);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6);
+      doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
+      doc.text("Móvil", 114, botY + 53, { align: "center" });
+    } catch (e) {}
+  }
+
+  // Speed summary insights text
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
+  doc.text("• La velocidad de carga móvil impacta directamente en tu tasa de conversión y retorno de inversión en pauta publicitaria.", 132, botY + 24, { maxWidth: 130 });
+  doc.text("• Al migrar a Tiendanube Evolución, tu infraestructura se optimiza con CDN local de ultra baja latencia y compresión de activos automática.", 132, botY + 36, { maxWidth: 130 });
+
+  drawFooter(4);
+
+  // -------------------------------------------------------------
+  // SLIDE 5: COSTOS OCULTOS
+  // -------------------------------------------------------------
+  doc.addPage([W, H], "landscape");
+  drawBackground();
+  drawHeader(5, "Desglose de Costos Ocultos & Comisiones");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -669,14 +866,14 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_EMERALD[0], COLOR_EMERALD[1], COLOR_EMERALD[2]);
   doc.text(`$${Math.round(projectedTiendanubeCostMXN).toLocaleString("es-MX")} MXN (Ahorro del ${Math.round((avgMonthlySavings / totalShopifyMonthlyCostMXN) * 100)}%)`, 52 + tiendanubeBarW, barChartY + 32);
 
-  drawFooter(4);
+  drawFooter(5);
 
   // -------------------------------------------------------------
-  // SLIDE 5: COMPARATIVO DIRECTO
+  // SLIDE 6: COMPARATIVO DIRECTO
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(5, "Matriz Comparativa Directa");
+  drawHeader(6, "Matriz Comparativa Directa");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -729,14 +926,14 @@ export async function generateReportPDF(report: Report): Promise<void> {
     doc.text(row.pillText || "DESTACADO", compCols[3] + 21, rowY + 9.5, { align: "center" });
   });
 
-  drawFooter(5);
+  drawFooter(6);
 
   // -------------------------------------------------------------
-  // SLIDE 6: CALCULADORA DE AHORRO
+  // SLIDE 7: CALCULADORA DE AHORRO
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(6, "Calculadora Financiera de Ahorro Real");
+  drawHeader(7, "Calculadora Financiera de Ahorro Real");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -806,14 +1003,14 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_INDIGO_LIGHT[0], COLOR_INDIGO_LIGHT[1], COLOR_INDIGO_LIGHT[2]);
   doc.text(`35% Sustitución de Apps Terceros: ~$${Math.round(avgMonthlySavings * 0.35).toLocaleString("es-MX")} MXN/mes`, 33, segY + 53);
 
-  drawFooter(6);
+  drawFooter(7);
 
   // -------------------------------------------------------------
-  // SLIDE 7: RENTABILIDAD CON CURVA ROI VECTORIAL
+  // SLIDE 8: RENTABILIDAD CON CURVA ROI VECTORIAL
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(7, "Proyección de Rentabilidad a 3 Años & Curva ROI");
+  drawHeader(8, "Proyección de Rentabilidad a 3 Años & Curva ROI");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -917,14 +1114,14 @@ export async function generateReportPDF(report: Report): Promise<void> {
     }
   });
 
-  drawFooter(7);
+  drawFooter(8);
 
   // -------------------------------------------------------------
-  // SLIDE 8: RESUMEN DE VENTAJAS CON ÍCONOS ALINEADOS
+  // SLIDE 9: RESUMEN DE VENTAJAS CON ÍCONOS ALINEADOS
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(8, "Resumen de Ventajas Competitivas");
+  drawHeader(9, "Resumen de Ventajas Competitivas");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -982,14 +1179,14 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_DIM[0], COLOR_DIM[1], COLOR_DIM[2]);
   doc.text("Acompañamiento humano 1 a 1 de un equipo de ingenieros y especialistas en e-commerce.", 171, 116, { maxWidth: 100 });
 
-  drawFooter(8);
+  drawFooter(9);
 
   // -------------------------------------------------------------
-  // SLIDE 9: PLAN DE MIGRACIÓN CON ÍCONOS DE FASE ALINEADOS
+  // SLIDE 10: PLAN DE MIGRACIÓN CON ÍCONOS DE FASE ALINEADOS
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(9, "Plan de Migración en 4 Fases");
+  drawHeader(10, "Plan de Migración en 4 Fases");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -1096,14 +1293,14 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_TEXT[0], COLOR_TEXT[1], COLOR_TEXT[2]);
   doc.text("Garantía de Migración Limpia: Conservación del posicionamiento SEO existente e historial comercial.", 31, 138);
 
-  drawFooter(9);
+  drawFooter(10);
 
   // -------------------------------------------------------------
-  // SLIDE 10: CONTACTO CON ÍCONOS ALINEADOS SIN TRASLAPES
+  // SLIDE 11: CONTACTO CON ÍCONOS ALINEADOS SIN TRASLAPES
   // -------------------------------------------------------------
   doc.addPage([W, H], "landscape");
   drawBackground();
-  drawHeader(10, "Contacto & Inicio de Proyecto");
+  drawHeader(11, "Contacto & Inicio de Proyecto");
 
   const mainBoxW = 220;
   const mainBoxH = 105;
@@ -1155,7 +1352,7 @@ export async function generateReportPDF(report: Report): Promise<void> {
   doc.setTextColor(COLOR_EMERALD[0], COLOR_EMERALD[1], COLOR_EMERALD[2]);
   doc.text(report.contactWhatsapp || "+52 55 0000 0000", mainBoxX + 123, 102);
 
-  // Renderizado de logos de Equipo y Aliados en Diapositiva 10
+  // Renderizado de logos de Equipo y Aliados en Diapositiva 11
   const teamLogoUrl = report.team?.teamBrandLogo || report.team?.image;
   const teamLogoImg = teamLogoUrl ? await loadImage(teamLogoUrl) : null;
   const alliesList = report.team?.allies || [];
@@ -1191,9 +1388,10 @@ export async function generateReportPDF(report: Report): Promise<void> {
     }
   }
 
-  drawFooter(10);
+  drawFooter(11);
 
   // Guardar archivo PDF de forma nativa e instantánea
   const sanitizedName = (report.name || "Reporte").replace(/[^\w\s-]/g, "").replace(/\s+/g, "_");
   doc.save(`Presentacion_Diagnostico_${sanitizedName}_Horizontal.pdf`);
 }
+
