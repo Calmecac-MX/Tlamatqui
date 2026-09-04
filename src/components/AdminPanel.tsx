@@ -20,10 +20,11 @@ import {
 
 } from "lucide-react";
 import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } from "../types";
-import { scrapeShopifyStore } from "../lib/scrapper";
+import { scrapeShopifyStore, detectStoreWithChismografo, ChismografoAuditResult } from "../lib/scrapper";
 import { useAuth } from "../lib/authContext";
 import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
+import { CreateDiagnosticModal } from "./CreateDiagnosticModal";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -459,6 +460,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [editingReport, setEditingReport] = useState<Partial<Report> | null>(null);
   const [activeFormTab, setActiveFormTab] = useState<string>("metrics");
   const [isEditingComparison, setIsEditingComparison] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [scraperUrl, setScraperUrl] = useState<string>("");
   const [scraping, setScraping] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -921,8 +923,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     alert(`Plantilla "${template.name}" cargada correctamente.`);
   };
 
-  // Initiate Create
+  // Initiate Create - Open Chismógrafo Audit Modal
   const handleStartCreate = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  // Create report manually (empty template)
+  const handleCreateManual = () => {
+    setIsCreateModalOpen(false);
     setAdminTab("reports");
     setSelectedLiveMetricsReport(null);
     setEditingReport({
@@ -945,6 +953,66 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       comparisonRows: [
         { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
         { id: "row-2", variable: "Soporte", shopify: "Bot automatizado en inglés", tiendanube: "Asesor humano vía WhatsApp local", pillText: "Soporte Humano" }
+      ],
+      contactEmail: defaultContactEmail || "comercial@tiendanube.mx",
+      contactWhatsapp: defaultContactWhatsapp || "5512345678",
+      adminLogos: [
+        "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
+        "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
+        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
+      ]
+    });
+    setIsEditingComparison(false);
+    setActiveFormTab("general");
+  };
+
+  // Callback when Chismógrafo finishes auditing a store
+  const handleAuditComplete = (auditResult: ChismografoAuditResult) => {
+    setIsCreateModalOpen(false);
+    setAdminTab("reports");
+    setSelectedLiveMetricsReport(null);
+
+    const tools: Tool[] = auditResult.apps.map((app, index) => ({
+      id: `chismo-${Date.now()}-${index}`,
+      name: app.name,
+      category: app.category,
+      costType: app.costType,
+      costExact: app.costEstimate || 0,
+      costMin: app.costMin || 0,
+      costMax: app.costMax || 0,
+      currency: app.currency || "USD",
+      semaphore: app.semaphore || "yellow",
+      url: app.url,
+      description: app.description,
+      logo: app.logo || ""
+    }));
+
+    const estimatedMonthlyCost = auditResult.estimatedMonthlyAppCostUSD || tools.reduce((acc, t) => acc + t.costExact, 0);
+
+    setEditingReport({
+      name: auditResult.storeName || "",
+      businessUrl: auditResult.url || "",
+      logo: auditResult.siteLogo || "",
+      teamId: selectedTeamId,
+      tagline: `Hemos detectado ${tools.length} aplicaciones operativas y oportunidades de ahorro en ${auditResult.storeName}.`,
+      fugasCantidad: tools.length || 3,
+      fugasRangoMin: Math.max(10000, Math.round(estimatedMonthlyCost * 15)),
+      fugasRangoMax: Math.max(35000, Math.round(estimatedMonthlyCost * 35)),
+      visitasMensuales: 25000,
+      gmv: 250000,
+      shopifyFee: 6500,
+      msi: "3 y 6 meses sin intereses",
+      shopifyPlan: auditResult.shopifyPlanEstimate || "basic",
+      shopifyPlanCustomFee: 2.0,
+      shopifyPlanCustomPrice: 19,
+      shopifyAppsCostUSD: estimatedMonthlyCost,
+      shopifyAppsCostMXN: Math.round(estimatedMonthlyCost * 18.5),
+      tiendanubePlan: "tiendanube",
+      tools,
+      comparisonRows: [
+        { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
+        { id: "row-2", variable: "Soporte", shopify: "Bot automatizado en inglés", tiendanube: "Asesor humano vía WhatsApp local", pillText: "Soporte Humano" },
+        { id: "row-3", variable: "Pasarelas de Pago", shopify: auditResult.paymentGateways && auditResult.paymentGateways.length > 0 ? `Integradas: ${auditResult.paymentGateways.join(", ")} (Comisión adicional)` : "Comisión adicional por pasarela externa", tiendanube: "0% comisión por transacción con Pago Nube", pillText: "0% Comisiones" }
       ],
       contactEmail: defaultContactEmail || "comercial@tiendanube.mx",
       contactWhatsapp: defaultContactWhatsapp || "5512345678",
@@ -4431,6 +4499,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           }}
         />
       )}
+
+      {/* Modal de Creación y Auditoría Automática con Chismógrafo */}
+      <CreateDiagnosticModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onAuditComplete={handleAuditComplete}
+        onCreateManual={handleCreateManual}
+        isDarkMode={isDarkMode}
+      />
 
       </div>
     </div>

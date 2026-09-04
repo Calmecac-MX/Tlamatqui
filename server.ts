@@ -47,7 +47,7 @@ import {
 } from "./server/dbBridge.js";
 import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock } from "./server/authMiddleware.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema, SendTeamInviteEmailRequestSchema } from "./server/schemas.js";
-import { scrapeShopifyStoreNative } from "./server/scrapper.js";
+import { scrapeShopifyStoreNative, detectStoreWithChismografo } from "./server/scrapper.js";
 import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
@@ -538,8 +538,29 @@ app.post("/api/send-report-email", async (req: Request, res: Response) => {
 });
 
 /**
+ * @route POST /api/chismografo/detect
+ * @description Auditoría inteligente de tiendas conectando directamente con la API REST del Chismógrafo (https://chismografo.rifatela.lol).
+ */
+app.post("/api/chismografo/detect", async (req: Request, res: Response) => {
+  try {
+    const parseResult = ScrapeRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: "Solicitud inválida",
+        details: parseResult.error.flatten(),
+      });
+    }
+
+    const result = await detectStoreWithChismografo(parseResult.data.url);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Error al conectar con Chismógrafo" });
+  }
+});
+
+/**
  * @route POST /api/scrape
- * @description Auditoría nativa de tiendas Shopify en el backend sin dependencias externas.
+ * @description Auditoría nativa de tiendas Shopify enriquecida con Chismógrafo.
  */
 app.post("/api/scrape", async (req: Request, res: Response) => {
   try {
@@ -551,7 +572,7 @@ app.post("/api/scrape", async (req: Request, res: Response) => {
       });
     }
 
-    const result = await scrapeShopifyStoreNative(parseResult.data.url);
+    const result = await detectStoreWithChismografo(parseResult.data.url);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Error al auditar tienda" });

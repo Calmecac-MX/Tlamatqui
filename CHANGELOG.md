@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.72 (Frontend) / v2.5.59 (Backend)] - 2026-09-04
+
+### 🚀 Features & Nuevas Funcionalidades
+- **api:** resolve technology icons and favicons automatically in report and scraping responses (`9d440fb`)
+
 ## [v2.5.71 (Frontend) / v2.5.58 (Backend)] - 2026-09-03
 
 ### ♻️ Refactorización de Código

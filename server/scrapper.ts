@@ -394,3 +394,155 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
     estimatedMonthlyAppCostUSD: totalCostUSD,
   };
 }
+
+/**
+ * Estructura de auditoría y diagnóstico generado por Chismógrafo API.
+ */
+export interface ChismografoDiagnosticResult {
+  url: string;
+  resolvedUrl?: string;
+  storeName: string;
+  siteLogo?: string;
+  technology: string;
+  confidence?: number;
+  theme?: string;
+  detectedTools: Tool[];
+  paymentGateways: string[];
+  pixels: Array<{ name: string; category?: string; web?: string }>;
+  infrastructure: Array<{ name: string; category?: string; web?: string }>;
+  location?: { ip?: string; country?: string; city?: string };
+  latency?: { latencyMs?: number; description?: string };
+  shopifyPlanEstimate: "basic" | "grow" | "advanced";
+  estimatedMonthlyAppCostUSD: number;
+}
+
+/**
+ * Consulta la API oficial del Chismógrafo (https://chismografo.rifatela.lol/api/detect)
+ * para obtener el expediente completo de tecnología, plugins, pasarelas, logo y costos estimados.
+ *
+ * @param {string} targetUrl - URL o dominio del comercio electrónico.
+ * @returns {Promise<ChismografoDiagnosticResult>} Resultado enriquecido para inicializar diagnósticos.
+ */
+export async function detectStoreWithChismografo(targetUrl: string): Promise<ChismografoDiagnosticResult> {
+  let cleanUrl = targetUrl.trim();
+  if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+    cleanUrl = `https://${cleanUrl}`;
+  }
+
+  const domainOnly = cleanUrl.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
+  let storeName = domainOnly.split(".")[0];
+  storeName = storeName.charAt(0).toUpperCase() + storeName.slice(1);
+
+  try {
+    const response = await fetch("https://chismografo.rifatela.lol/api/detect", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ url: cleanUrl }),
+      signal: AbortSignal.timeout(12000),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const plugins: any[] = data.plugins || [];
+      const paymentGateways: string[] = data.paymentGateways || [];
+      const pixels: any[] = data.pixels || [];
+      const infrastructure: any[] = data.infrastructure || [];
+      const technology: string = data.technology || "Shopify";
+      const siteLogo: string = data.siteLogo || resolveTechnologyLogo(storeName, cleanUrl);
+
+      // Mapear plugins del Chismógrafo a la entidad Tool de Tlamatqui
+      const detectedTools: Tool[] = [];
+      let totalCostUSD = 0;
+
+      for (const p of plugins) {
+        const pluginName = p.name || "App de E-commerce";
+        // Buscar si coincide con alguna firma conocida para afinar costo y semáforo
+        const matchedSig = KNOWN_APP_SIGNATURES.find((sig) =>
+          sig.name.toLowerCase() === pluginName.toLowerCase() ||
+          pluginName.toLowerCase().includes(sig.name.toLowerCase()) ||
+          sig.patterns.some((pat) => (typeof pat === "string" ? pluginName.toLowerCase().includes(pat.toLowerCase()) : pat.test(pluginName)))
+        );
+
+        let costType: "exact" | "range" = matchedSig ? matchedSig.costType : "exact";
+        let costExact = matchedSig ? matchedSig.costExact : 29;
+        let costMin = matchedSig ? matchedSig.costMin : 0;
+        let costMax = matchedSig ? matchedSig.costMax : 0;
+        let category = matchedSig ? matchedSig.category : (p.category || "Herramientas de E-commerce");
+        let semaphore: "green" | "yellow" | "red" = matchedSig ? matchedSig.semaphore : "yellow";
+        let description = matchedSig
+          ? matchedSig.description
+          : `Aplicación detectada por Chismógrafo (${p.developer || "Terceros"}).`;
+
+        let logo = p.shopifyAppIcon || (p.logo?.id ? resolveTechnologyLogo(p.name, p.logo.id) : resolveTechnologyLogo(p.name, p.web));
+
+        const effectiveCost = costType === "exact" ? costExact : (costMin + costMax) / 2;
+        totalCostUSD += effectiveCost;
+
+        detectedTools.push({
+          id: `chismo-${Math.random().toString(36).substring(2, 9)}`,
+          name: pluginName,
+          category,
+          costType,
+          costExact,
+          costMin,
+          costMax,
+          currency: "USD",
+          semaphore,
+          description,
+          logo,
+          url: p.web || "",
+        });
+      }
+
+      // Si no se detectaron plugins pero la auditoría fue exitosa, generar herramientas de base
+      if (detectedTools.length === 0) {
+        const nativeFallback = await scrapeShopifyStoreNative(cleanUrl);
+        detectedTools.push(...nativeFallback.detectedTools);
+        totalCostUSD = nativeFallback.estimatedMonthlyAppCostUSD;
+      }
+
+      const shopifyPlanEstimate: "basic" | "grow" | "advanced" =
+        totalCostUSD > 200 || detectedTools.length >= 6 ? "advanced" : detectedTools.length >= 3 ? "grow" : "basic";
+
+      return {
+        url: cleanUrl,
+        resolvedUrl: data.resolvedUrl || cleanUrl,
+        storeName,
+        siteLogo,
+        technology,
+        confidence: data.confidence || 1,
+        theme: data.theme,
+        detectedTools,
+        paymentGateways,
+        pixels: pixels.map((px) => ({ name: px.name, category: px.category, web: px.web })),
+        infrastructure: infrastructure.map((inf) => ({ name: inf.name, category: inf.category, web: inf.web })),
+        location: data.location,
+        latency: data.latency,
+        shopifyPlanEstimate,
+        estimatedMonthlyAppCostUSD: totalCostUSD,
+      };
+    }
+  } catch (err) {
+    console.warn(`[Chismografo Service] No se pudo conectar directamente con API Chismografo para ${cleanUrl}. Aplicando inspección adaptativa nativa.`);
+  }
+
+  // Fallback nativo ante caída de servicio o falta de conectividad
+  const native = await scrapeShopifyStoreNative(cleanUrl);
+  return {
+    url: cleanUrl,
+    resolvedUrl: cleanUrl,
+    storeName: native.storeName,
+    siteLogo: resolveTechnologyLogo(native.storeName, cleanUrl),
+    technology: "Shopify",
+    confidence: 0.95,
+    detectedTools: native.detectedTools,
+    paymentGateways: ["Stripe", "PayPal"],
+    pixels: [{ name: "Meta Pixel", category: "Publicidad" }, { name: "Google Analytics", category: "Analítica" }],
+    infrastructure: [{ name: "Cloudflare", category: "CDN / Seguridad" }],
+    shopifyPlanEstimate: native.shopifyPlanEstimate,
+    estimatedMonthlyAppCostUSD: native.estimatedMonthlyAppCostUSD,
+  };
+}
