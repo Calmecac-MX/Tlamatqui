@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.75 (Frontend) / v2.5.61 (Backend)] - 2026-09-04
+
+### 🚀 Features & Nuevas Funcionalidades
+- **report:** add cover screenshots, web speed simulator, and interactive pricing tier selection (`09ef603`)
+
 ## [v2.5.74 (Frontend) / v2.5.61 (Backend)] - 2026-09-04
 
 ### 🚀 Features & Nuevas Funcionalidades

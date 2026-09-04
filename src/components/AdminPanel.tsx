@@ -14,7 +14,7 @@ import {
   Plus, Edit, Trash2, Eye, Copy, Save, Sparkles, AlertTriangle, 
   Settings, User, Phone, Mail, Link as LinkIcon, DollarSign, 
   Layers, Database, FileText, CheckCircle, RefreshCw, Moon, Sun, Laptop, ArrowRight,
-  TrendingUp, Menu, ChevronLeft, ChevronRight, LayoutDashboard, Undo2,
+  TrendingUp, Menu, ChevronLeft, ChevronRight, LayoutDashboard, Undo2, RotateCcw, Bookmark,
   UploadCloud, Camera, Image as ImageIcon, X, Users, ChevronDown, Crown,
   Search, Filter, SlidersHorizontal, Calendar, Table, LayoutGrid, LogOut, ShieldCheck, Lock
 
@@ -37,6 +37,18 @@ interface AdminPanelProps {
   /** Función alternadora del tema de diseño */
   toggleDarkMode: () => void;
 }
+
+/**
+ * Filas de comparación predeterminadas para la matriz comparativa de configuración.
+ */
+const DEFAULT_GLOBAL_COMPARISON_ROWS: ComparisonRow[] = [
+  { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
+  { id: "row-2", variable: "Soporte", shopify: "Ticket / Chat por bot (inglés)", tiendanube: "Soporte 1-1 en español vía WhatsApp local", pillText: "Soporte Humano" },
+  { id: "row-3", variable: "Servidor", shopify: "Estabilidad global estándar", tiendanube: "Infraestructura en la nube optimizada para LatAm", pillText: "AWS Infra" },
+  { id: "row-4", variable: "Punto de Venta", shopify: "POS Pro con cobro extra por sucursal", tiendanube: "Integraciones locales nativas sin costo extra", pillText: "Integración POS" },
+  { id: "row-5", variable: "Comisión de transacción", shopify: "Cobro de 0.5% a 2% por cada venta", tiendanube: "0% comisión por transacción en todos los planes", pillText: "0% Comisión" },
+  { id: "row-6", variable: "MSI", shopify: "Requiere apps costosas de cobro recurrente", tiendanube: "Configuración de MSI nativa sin apps terceras", pillText: "MSI Nativos" }
+];
 
 /**
  * Panel Principal de Administración (Admin Panel Modular).
@@ -76,6 +88,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [brandCard2Logo, setBrandCard2Logo] = useState<string>("");
   const [brandCard2Link, setBrandCard2Link] = useState<string>("");
   const [finalSlideMainLogo, setFinalSlideMainLogo] = useState<string>("");
+
+  // Estado de Matriz Comparativa Global en Configuración
+  const [configComparisonRows, setConfigComparisonRows] = useState<ComparisonRow[]>(DEFAULT_GLOBAL_COMPARISON_ROWS);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [saveTemplateName, setSaveTemplateName] = useState<string>("");
 
   const [domainVerificationToken, setDomainVerificationToken] = useState<string>("");
   const [domainVerified, setDomainVerified] = useState<boolean>(false);
@@ -459,14 +476,10 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   // Form states
   const [editingReport, setEditingReport] = useState<Partial<Report> | null>(null);
   const [activeFormTab, setActiveFormTab] = useState<string>("metrics");
-  const [isEditingComparison, setIsEditingComparison] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [scraperUrl, setScraperUrl] = useState<string>("");
   const [scraping, setScraping] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  // Template Form State
-  const [saveTemplateName, setSaveTemplateName] = useState<string>("");
 
   // Tool Form State
   const [newTool, setNewTool] = useState<Partial<Tool>>({
@@ -713,6 +726,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       const res = await fetch("/api/templates");
       const data = await res.json();
       setTemplates(data);
+      if (Array.isArray(data) && data.length > 0) {
+        // Cargar filas de la primera plantilla guardada si existen
+        if (data[0].rows && data[0].rows.length > 0) {
+          setConfigComparisonRows(data[0].rows);
+          setActiveTemplateId(data[0].id);
+        }
+      }
     } catch (e) {
       console.error("Error cargando plantillas comparativas", e);
     }
@@ -851,58 +871,48 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }));
   };
 
-  // Comparison row helpers
-  const handleAddComparisonRow = () => {
+  // Handlers para Matriz Comparativa en Configuración
+  const handleAddConfigComparisonRow = () => {
     const newRow: ComparisonRow = {
-      id: `row-${Date.now()}`,
-      variable: "Nueva Variable",
+      id: `row-custom-${Date.now()}`,
+      variable: "Nueva Característica",
       shopify: "Detalle Shopify",
       tiendanube: "Detalle Tiendanube",
       pillText: "Diferenciador"
     };
-    setEditingReport(prev => ({
-      ...prev,
-      comparisonRows: [...(prev?.comparisonRows || []), newRow]
-    }));
+    setConfigComparisonRows(prev => [...prev, newRow]);
   };
 
-  const handleUpdateComparisonRow = (id: string, field: keyof ComparisonRow, val: string) => {
-    setEditingReport(prev => ({
-      ...prev,
-      comparisonRows: (prev?.comparisonRows || []).map(r => r.id === id ? { ...r, [field]: val } : r)
-    }));
+  const handleUpdateConfigComparisonRow = (id: string, field: keyof ComparisonRow, val: string) => {
+    setConfigComparisonRows(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r));
   };
 
-  const handleRemoveComparisonRow = (id: string) => {
-    setEditingReport(prev => ({
-      ...prev,
-      comparisonRows: (prev?.comparisonRows || []).filter(r => r.id !== id)
-    }));
+  const handleRemoveConfigComparisonRow = (id: string) => {
+    setConfigComparisonRows(prev => prev.filter(r => r.id !== id));
   };
 
-  // Save Comparison Table as Template
-  const handleSaveAsTemplate = async () => {
+  const handleSaveConfigTemplate = async () => {
     if (!saveTemplateName.trim()) {
       alert("Por favor escribe un nombre para la plantilla.");
       return;
     }
-    const rows = editingReport?.comparisonRows || [];
-    if (rows.length === 0) {
+    if (configComparisonRows.length === 0) {
       alert("No hay filas para guardar en la plantilla.");
       return;
     }
-
     try {
       const res = await fetch("/api/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: saveTemplateName,
-          rows: rows
+          name: saveTemplateName.trim(),
+          rows: configComparisonRows
         })
       });
       if (res.ok) {
+        const saved = await res.json();
         setSaveTemplateName("");
+        setActiveTemplateId(saved.id);
         alert("¡Plantilla comparativa guardada con éxito!");
         fetchTemplates();
       }
@@ -911,16 +921,37 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
-  // Load Comparison Template
-  const handleLoadTemplate = (template: ComparisonTemplate) => {
-    setEditingReport(prev => ({
-      ...prev,
-      comparisonRows: template.rows.map((r, i) => ({
-        ...r,
-        id: `template-row-${Date.now()}-${i}`
-      }))
-    }));
-    alert(`Plantilla "${template.name}" cargada correctamente.`);
+  const handleLoadConfigTemplate = (template: ComparisonTemplate) => {
+    setConfigComparisonRows(template.rows.map((r, i) => ({
+      ...r,
+      id: `tpl-${Date.now()}-${i}`
+    })));
+    setActiveTemplateId(template.id);
+  };
+
+  const handleDeleteConfigTemplate = async (templateId: string, templateName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`¿Deseas eliminar la plantilla "${templateName}"?`)) return;
+    try {
+      const res = await fetch(`/api/templates/${templateId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        if (activeTemplateId === templateId) setActiveTemplateId(null);
+        fetchTemplates();
+      } else {
+        alert("Error al eliminar la plantilla.");
+      }
+    } catch (e) {
+      alert("Error de red al eliminar la plantilla.");
+    }
+  };
+
+  const handleResetConfigComparisonRows = () => {
+    if (confirm("¿Deseas restablecer la tabla comparativa a los valores predeterminados de fábrica?")) {
+      setConfigComparisonRows(DEFAULT_GLOBAL_COMPARISON_ROWS);
+      setActiveTemplateId(null);
+    }
   };
 
   // Initiate Create - Open Chismógrafo Audit Modal
@@ -950,10 +981,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       shopifyPlanCustomPrice: 19,
       tiendanubePlan: "tiendanube",
       tools: [],
-      comparisonRows: [
-        { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
-        { id: "row-2", variable: "Soporte", shopify: "Bot automatizado en inglés", tiendanube: "Asesor humano vía WhatsApp local", pillText: "Soporte Humano" }
-      ],
+      comparisonRows: configComparisonRows && configComparisonRows.length > 0 ? [...configComparisonRows] : [...DEFAULT_GLOBAL_COMPARISON_ROWS],
       contactEmail: defaultContactEmail || "comercial@tiendanube.mx",
       contactWhatsapp: defaultContactWhatsapp || "5512345678",
       adminLogos: [
@@ -962,8 +990,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
       ]
     });
-    setIsEditingComparison(false);
-    setActiveFormTab("general");
+    setActiveFormTab("metrics");
   };
 
   // Callback when Chismógrafo finishes auditing a store
@@ -1019,11 +1046,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       shopifyAppsCostMXN: Math.round(estimatedMonthlyCost * 18.5),
       tiendanubePlan: "tiendanube",
       tools,
-      comparisonRows: [
-        { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
-        { id: "row-2", variable: "Soporte", shopify: "Bot automatizado en inglés", tiendanube: "Asesor humano vía WhatsApp local", pillText: "Soporte Humano" },
-        { id: "row-3", variable: "Pasarelas de Pago", shopify: auditResult.paymentGateways && auditResult.paymentGateways.length > 0 ? `Integradas: ${auditResult.paymentGateways.join(", ")} (Comisión adicional)` : "Comisión adicional por pasarela externa", tiendanube: "0% comisión por transacción con Pago Nube", pillText: "0% Comisiones" }
-      ],
+      comparisonRows: configComparisonRows && configComparisonRows.length > 0 ? [...configComparisonRows] : [...DEFAULT_GLOBAL_COMPARISON_ROWS],
       contactEmail: defaultContactEmail || "comercial@tiendanube.mx",
       contactWhatsapp: defaultContactWhatsapp || "5512345678",
       adminLogos: [
@@ -1032,15 +1055,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
       ]
     });
-    setIsEditingComparison(false);
-    setActiveFormTab("general");
+    setActiveFormTab("metrics");
   };
 
   // Initiate Edit
   const handleStartEdit = (report: Report) => {
     setEditingReport({ ...report });
-    setIsEditingComparison(false);
-    setActiveFormTab("general");
+    setActiveFormTab("metrics");
   };
 
   // Save Report
@@ -3546,6 +3567,182 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       </div>
                     </div>
                   </div>
+                  {/* Comparison Matrix Settings Section */}
+                  <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 backdrop-blur-md space-y-6">
+                    <div className="flex flex-wrap items-center justify-between border-b border-border-theme/30 pb-4 gap-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center text-accent-theme">
+                          <Database className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                            Matriz Comparativa Directa (Shopify vs. Tiendanube)
+                          </h3>
+                          <p className="text-xs text-text-dim-theme">Configuración de variables, costos comparativos y plantillas estándar para todos los reportes.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleResetConfigComparisonRows}
+                          className="text-xs font-semibold px-3 py-2 rounded-lg border border-border-theme bg-bg-theme hover:bg-surface-hover-theme text-text-dim-theme hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+                          title="Restablecer a valores de fábrica"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Restablecer Fábrica</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAddConfigComparisonRow}
+                          className="bg-accent-theme hover:bg-accent-theme/90 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Agregar Fila
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Template Manager Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 rounded-xl border border-dashed border-border-theme bg-bg-theme/50">
+                      <div className="lg:col-span-5 space-y-2">
+                        <h4 className="text-xs font-bold uppercase text-accent-theme tracking-wider flex items-center gap-1.5">
+                          <Bookmark className="w-3.5 h-3.5" /> Guardar Tabla Actual como Plantilla
+                        </h4>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={saveTemplateName} 
+                            onChange={e => setSaveTemplateName(e.target.value)} 
+                            placeholder="Nombre de la plantilla (ej. Ropa & Moda)..." 
+                            className="flex-1 text-xs px-3 py-2 rounded-lg border outline-none bg-surface-theme border-border-theme focus:border-accent-theme text-white"
+                          />
+                          <button 
+                            type="button" 
+                            onClick={handleSaveConfigTemplate} 
+                            disabled={!saveTemplateName.trim()}
+                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                          >
+                            <Save className="w-3.5 h-3.5" /> Guardar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="lg:col-span-7 space-y-2">
+                        <h4 className="text-xs font-bold uppercase text-text-dim-theme tracking-wider">
+                          Plantillas Guardadas en el Sistema
+                        </h4>
+                        {templates.length === 0 ? (
+                          <p className="text-xs text-text-dim-theme italic pt-1.5">No hay plantillas personalizadas guardadas aún.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 pt-0.5">
+                            {templates.map(t => {
+                              const isActive = activeTemplateId === t.id;
+                              return (
+                                <div 
+                                  key={t.id} 
+                                  className={`group flex items-center rounded-lg border transition-all text-xs overflow-hidden ${
+                                    isActive 
+                                      ? "bg-accent-theme/20 border-accent-theme text-white shadow-sm" 
+                                      : "bg-surface-theme hover:bg-surface-hover-theme border-border-theme text-slate-300"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleLoadConfigTemplate(t)}
+                                    className="px-3 py-1.5 font-semibold text-left transition-colors cursor-pointer hover:text-white"
+                                    title={`Cargar plantilla "${t.name}" (${t.rows?.length || 0} filas)`}
+                                  >
+                                    {t.name}
+                                    <span className="ml-1.5 text-[10px] opacity-70">({t.rows?.length || 0})</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteConfigTemplate(t.id, t.name, e)}
+                                    className="px-2 py-1.5 text-text-dim-theme hover:text-red-400 hover:bg-red-500/10 border-l border-border-theme/40 transition-colors cursor-pointer"
+                                    title="Eliminar plantilla"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Comparison Rows Editor */}
+                    <div className="space-y-4">
+                      {configComparisonRows.map((row, idx) => (
+                        <div key={row.id || idx} className="p-4 sm:p-5 rounded-xl border border-border-theme bg-bg-theme/60 hover:bg-bg-theme/90 transition-all relative group shadow-sm">
+                          <div className="flex items-center justify-between pb-3 border-b border-border-theme/30 mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] bg-accent-theme/10 border border-accent-theme/30 text-accent-theme font-mono px-2 py-0.5 rounded font-bold">
+                                Fila #{idx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-slate-200 truncate max-w-xs">
+                                {row.variable || `Característica #${idx + 1}`}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveConfigComparisonRow(row.id)}
+                              className="p-1.5 rounded-lg bg-red-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
+                              title="Eliminar esta variable comparativa"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+                            <div className="md:col-span-3 space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme">Característica / Variable</label>
+                              <input 
+                                type="text"
+                                value={row.variable}
+                                onChange={e => handleUpdateConfigComparisonRow(row.id, "variable", e.target.value)}
+                                placeholder="Ej. Facturación o Pasarelas"
+                                className="w-full font-semibold px-3 py-2 text-xs border rounded-lg bg-surface-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme outline-none"
+                              />
+                            </div>
+
+                            <div className="md:col-span-3 space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">Shopify (Costo / Límite)</label>
+                              <textarea 
+                                value={row.shopify}
+                                onChange={e => handleUpdateConfigComparisonRow(row.id, "shopify", e.target.value)}
+                                placeholder="Ej. Pesificada en USD + 16% IVA"
+                                rows={2}
+                                className="w-full px-3 py-1.5 text-xs border rounded-lg bg-surface-theme border-border-theme text-slate-200 focus:ring-1 focus:ring-accent-theme outline-none resize-none"
+                              />
+                            </div>
+
+                            <div className="md:col-span-3 space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-accent-theme">Tiendanube (Beneficio / Valor)</label>
+                              <textarea 
+                                value={row.tiendanube}
+                                onChange={e => handleUpdateConfigComparisonRow(row.id, "tiendanube", e.target.value)}
+                                placeholder="Ej. 100% Pesificada en MXN Factura Local"
+                                rows={2}
+                                className="w-full px-3 py-1.5 text-xs border rounded-lg bg-surface-theme border-border-theme text-slate-200 focus:ring-1 focus:ring-accent-theme outline-none resize-none"
+                              />
+                            </div>
+
+                            <div className="md:col-span-3 space-y-1">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-400">Píldora Destacada (Badge)</label>
+                              <input 
+                                type="text"
+                                value={row.pillText || ""}
+                                onChange={e => handleUpdateConfigComparisonRow(row.id, "pillText", e.target.value)}
+                                placeholder="Ej. Ahorro Fiscal o 0% Comisión"
+                                className="w-full px-3 py-2 text-xs border rounded-lg bg-surface-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme outline-none font-medium"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
 
@@ -3626,9 +3823,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 { id: "metrics", label: "1. Datos del Comercio & Métricas", icon: TrendingUp },
                 { id: "plan", label: "2. Configuración Plataformas", icon: Settings },
                 { id: "tools", label: "3. Aplicaciones Auditadas", icon: Layers },
-                { id: "comparison", label: "4. Matriz Comparativa", icon: Database },
-                { id: "analytics", label: "5. Analítica & Clics", icon: Eye },
-                { id: "audit", label: "6. Auditoría Técnica & PageSpeed", icon: Sparkles }
+                { id: "analytics", label: "4. Analítica & Clics", icon: Eye },
+                { id: "audit", label: "5. Auditoría Técnica & PageSpeed", icon: Sparkles }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isSelected = activeFormTab === tab.id;
@@ -4225,184 +4421,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 </div>
               )}
 
-              {/* TAB 4: TABLA COMPARATIVA DIRECTA */}
-              {activeFormTab === "comparison" && (
-                <div className="space-y-6">
-                  {!isEditingComparison ? (
-                    <div className="p-8 rounded-2xl border border-border-theme bg-surface-theme/40 text-center max-w-lg mx-auto my-6 space-y-6 shadow-xl backdrop-blur-md">
-                      <div className="w-12 h-12 rounded-full bg-accent-theme/10 text-accent-theme flex items-center justify-center mx-auto border border-accent-theme/20">
-                        <Database className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className="text-base font-bold text-white">¿Deseas editar la tabla comparativa?</h3>
-                        <p className="text-xs text-text-dim-theme leading-relaxed">
-                          Por defecto, se utilizará la configuración estándar establecida. Si decides editarla, podrás añadir variables de comparación personalizadas, modificar los costos y textos que se visualizan en el reporte.
-                        </p>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsEditingComparison(true)}
-                          className="bg-accent-theme hover:bg-accent-theme/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer transition-all shadow-md active:scale-95"
-                        >
-                          Sí, editar tabla comparativa
-                        </button>
-                        <div className="text-xs text-text-dim-theme flex items-center justify-center py-2 px-4 rounded-xl border border-border-theme/60 bg-bg-theme/40">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mr-1.5 shrink-0" />
-                          <span>Usar valores por defecto (Recomendado)</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Editor Active Header */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 bg-accent-theme/5 border border-accent-theme/10 p-4 rounded-xl">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-2 h-2 rounded-full bg-accent-theme animate-ping" />
-                          <div>
-                            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Modo Edición Manual Activo</h4>
-                            <p className="text-[10px] text-text-dim-theme">Estás modificando los datos comparativos directamente para este reporte.</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsEditingComparison(false)}
-                          className="text-xs font-semibold px-3.5 py-1.5 rounded-lg border border-border-theme bg-surface-theme hover:bg-surface-hover-theme text-slate-300 transition-all cursor-pointer flex items-center gap-1.5"
-                        >
-                          <Undo2 className="w-3.5 h-3.5" />
-                          Volver al modo por defecto
-                        </button>
-                      </div>
-
-                      {/* Header with Title and Add Row Button */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                        <div>
-                          <h3 className="text-sm font-bold text-white">Configuración Tabla Comparativa Directa</h3>
-                          <p className="text-xs text-text-dim-theme">Personaliza las filas, agrega píldoras de Tiendanube y gestiona plantillas reutilizables.</p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleAddComparisonRow}
-                          className="bg-accent-theme hover:bg-accent-theme/90 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-all shadow cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Agregar Fila Personalizada
-                        </button>
-                      </div>
-
-                      {/* TEMPLATE MANAGER ROW */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-dashed border-border-theme bg-surface-theme/50">
-                        <div>
-                          <h4 className="text-xs font-bold uppercase text-text-dim-theme tracking-wider mb-2">Guardar Tabla Actual como Plantilla</h4>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text"
-                              value={saveTemplateName}
-                              onChange={e => setSaveTemplateName(e.target.value)}
-                              placeholder="Nombre de la nueva plantilla..."
-                              className="flex-1 text-xs px-3 py-1.5 rounded-lg border outline-none bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleSaveAsTemplate}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-all cursor-pointer"
-                            >
-                              Guardar
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <h4 className="text-xs font-bold uppercase text-text-dim-theme tracking-wider mb-2">Cargar Plantilla Comparativa Guardada</h4>
-                          {templates.length === 0 ? (
-                            <p className="text-[10px] text-text-dim-theme italic">No hay plantillas guardadas.</p>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {templates.map(t => (
-                                <button
-                                  key={t.id}
-                                  type="button"
-                                  onClick={() => handleLoadTemplate(t)}
-                                  className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border bg-bg-theme hover:bg-surface-hover-theme border-border-theme text-slate-300 transition-all cursor-pointer"
-                                >
-                                  {t.name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* EDITABLE COMPARISON ROWS */}
-                      <div className="space-y-4">
-                        {(editingReport.comparisonRows || []).map((row, idx) => (
-                          <div key={row.id || idx} className="p-5 rounded-xl border border-border-theme bg-surface-theme/50 hover:bg-surface-theme/80 transition-all relative group">
-                            <div className="absolute top-4 right-4 flex items-center gap-2">
-                              <span className="text-[10px] bg-accent-theme/10 text-accent-theme font-mono px-2 py-0.5 rounded font-bold">Fila #{idx + 1}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveComparisonRow(row.id)}
-                                className="p-1.5 rounded bg-red-theme/10 text-red-theme hover:bg-red-theme/20 border border-red-theme/20 transition-all cursor-pointer"
-                                title="Eliminar fila"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                              <div className="md:col-span-3 space-y-1.5">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme">Característica / Variable</label>
-                                <input 
-                                  type="text"
-                                  value={row.variable}
-                                  onChange={e => handleUpdateComparisonRow(row.id, "variable", e.target.value)}
-                                  placeholder="Ej. Hosting o Dominio"
-                                  className="w-full font-semibold px-3 py-2 text-xs border rounded-lg bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme outline-none"
-                                />
-                              </div>
-
-                              <div className="md:col-span-3 space-y-1.5">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">Shopify</label>
-                                <textarea 
-                                  value={row.shopify}
-                                  onChange={e => handleUpdateComparisonRow(row.id, "shopify", e.target.value)}
-                                  placeholder="Ej. Desde $19 USD/mes + 2%"
-                                  rows={2}
-                                  className="w-full px-3 py-1.5 text-xs border rounded-lg bg-bg-theme border-border-theme text-slate-200 focus:ring-1 focus:ring-accent-theme outline-none resize-none"
-                                />
-                              </div>
-
-                              <div className="md:col-span-3 space-y-1.5">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-accent-theme">Tiendanube</label>
-                                <textarea 
-                                  value={row.tiendanube}
-                                  onChange={e => handleUpdateComparisonRow(row.id, "tiendanube", e.target.value)}
-                                  placeholder="Ej. $149 MXN/mes sin comisión"
-                                  rows={2}
-                                  className="w-full px-3 py-1.5 text-xs border rounded-lg bg-bg-theme border-border-theme text-slate-200 focus:ring-1 focus:ring-accent-theme outline-none resize-none"
-                                />
-                              </div>
-
-                              <div className="md:col-span-3 space-y-1.5">
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme">Texto Píldora (Ej. "0% Comis.")</label>
-                                <input 
-                                  type="text"
-                                  value={row.pillText || ""}
-                                  onChange={e => handleUpdateComparisonRow(row.id, "pillText", e.target.value)}
-                                  placeholder="Ej. 0% Comisión"
-                                  className="w-full px-3 py-2 text-xs border rounded-lg bg-bg-theme border-border-theme text-white focus:ring-1 focus:ring-accent-theme outline-none"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* TAB 6: SUBTABLA DE ANALÍTICA E INTERACCIÓN (ReportAnalytics & ReportInteraction) */}
+              {/* TAB 4: SUBTABLA DE ANALÍTICA E INTERACCIÓN (ReportAnalytics & ReportInteraction) */}
               {activeFormTab === "analytics" && (
                 <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
                   <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
@@ -4459,7 +4478,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 </div>
               )}
 
-              {/* TAB 6: SUBTABLA AUDITORÍA TÉCNICA & PAGESPEED (Chismógrafo / Lighthouse) */}
+              {/* TAB 5: SUBTABLA AUDITORÍA TÉCNICA & PAGESPEED (Chismógrafo / Lighthouse) */}
               {activeFormTab === "audit" && (
                 <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
                   <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
