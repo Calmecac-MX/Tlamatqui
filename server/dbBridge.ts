@@ -1379,7 +1379,8 @@ export async function getDbReportById(id: string): Promise<Report | null> {
               calculatorInteractions: r.interactions.calculatorInteractions,
               timeSpentSeconds: r.interactions.timeSpentSeconds
             } : undefined,
-            teamId: r.teamId || undefined
+            teamId: r.teamId || undefined,
+            createdBy: r.createdBy || undefined
           };
         }
       } catch (err) {
@@ -1400,74 +1401,105 @@ export async function getDbReportById(id: string): Promise<Report | null> {
  * @returns {Promise<Report>} Reporte guardado.
  */
 export async function saveDbReport(report: Report): Promise<Report> {
+  const cleanReport: Report = {
+    ...report,
+    id: report.id || Math.random().toString(36).substring(2, 11),
+    tools: report.tools || [],
+    comparisonRows: report.comparisonRows || [],
+    adminLogos: report.adminLogos || [],
+    contactEmail: report.contactEmail || "comercial@tiendanube.mx",
+    contactWhatsapp: report.contactWhatsapp || "5512345678",
+    createdAt: report.createdAt || new Date().toISOString()
+  };
+
   const prismaReportData = {
-    name: report.name,
-    logo: report.logo || null,
-    tagline: report.tagline,
-    fugasCantidad: Math.round(report.fugasCantidad || 0),
-    fugasRangoMin: Number(report.fugasRangoMin || 0),
-    fugasRangoMax: Number(report.fugasRangoMax || 0),
-    visitasMensuales: Math.round(report.visitasMensuales || 0),
-    gmv: Number(report.gmv || 0),
-    shopifyFee: Number(report.shopifyFee || 0),
-    msi: report.msi || null,
-    businessUrl: report.businessUrl || null,
-    shopifyPlan: report.shopifyPlan as any,
-    shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
-    shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
-    shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
-    shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
-    tiendanubePlan: report.tiendanubePlan as any,
-    detectedCms: report.detectedCms || null,
-    activeTheme: report.activeTheme || null,
-    screenshotDesktop: report.screenshotDesktop || null,
-    screenshotMobile: report.screenshotMobile || null,
-    paymentGateways: report.paymentGateways as any || null,
-    pixels: report.pixels as any || null,
-    infrastructure: report.infrastructure as any || null,
-    serverLocation: report.serverLocation as any || null,
-    serverLatencyMs: report.serverLatencyMs ? Math.round(report.serverLatencyMs) : null,
-    contactEmail: report.contactEmail,
-    contactWhatsapp: report.contactWhatsapp,
-    adminLogos: report.adminLogos as any,
-    brandCard1Title: report.brandCard1Title || null,
-    brandCard1Desc: report.brandCard1Desc || null,
-    brandCard1Logo: report.brandCard1Logo || null,
-    brandCard1Link: report.brandCard1Link || null,
-    brandCard2Title: report.brandCard2Title || null,
-    brandCard2Desc: report.brandCard2Desc || null,
-    brandCard2Logo: report.brandCard2Logo || null,
-    brandCard2Link: report.brandCard2Link || null,
-    finalSlideMainLogo: report.finalSlideMainLogo || null,
-    viewCount: report.viewCount || 0,
-    openCount: report.openCount || 0,
-    uniqueVisitors: report.uniqueVisitors || 0,
-    uniqueVisitorIds: report.uniqueVisitorIds as any || [],
-    teamId: report.teamId || null
+    name: cleanReport.name,
+    logo: cleanReport.logo || null,
+    tagline: cleanReport.tagline || null,
+    fugasCantidad: Math.round(cleanReport.fugasCantidad || 0),
+    fugasRangoMin: Number(cleanReport.fugasRangoMin || 0),
+    fugasRangoMax: Number(cleanReport.fugasRangoMax || 0),
+    visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
+    gmv: Number(cleanReport.gmv || 0),
+    shopifyFee: Number(cleanReport.shopifyFee || 0),
+    msi: cleanReport.msi || null,
+    businessUrl: cleanReport.businessUrl || null,
+    shopifyPlan: cleanReport.shopifyPlan as any,
+    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
+    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
+    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
+    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
+    tiendanubePlan: cleanReport.tiendanubePlan as any,
+    detectedCms: cleanReport.detectedCms || null,
+    activeTheme: cleanReport.activeTheme || null,
+    screenshotDesktop: cleanReport.screenshotDesktop || null,
+    screenshotMobile: cleanReport.screenshotMobile || null,
+    paymentGateways: cleanReport.paymentGateways as any || null,
+    pixels: cleanReport.pixels as any || null,
+    infrastructure: cleanReport.infrastructure as any || null,
+    serverLocation: cleanReport.serverLocation as any || null,
+    serverLatencyMs: cleanReport.serverLatencyMs ? Math.round(cleanReport.serverLatencyMs) : null,
+    contactEmail: cleanReport.contactEmail,
+    contactWhatsapp: cleanReport.contactWhatsapp,
+    adminLogos: cleanReport.adminLogos as any,
+    brandCard1Title: cleanReport.brandCard1Title || null,
+    brandCard1Desc: cleanReport.brandCard1Desc || null,
+    brandCard1Logo: cleanReport.brandCard1Logo || null,
+    brandCard1Link: cleanReport.brandCard1Link || null,
+    brandCard2Title: cleanReport.brandCard2Title || null,
+    brandCard2Desc: cleanReport.brandCard2Desc || null,
+    brandCard2Logo: cleanReport.brandCard2Logo || null,
+    brandCard2Link: cleanReport.brandCard2Link || null,
+    finalSlideMainLogo: cleanReport.finalSlideMainLogo || null,
+    viewCount: cleanReport.viewCount || 0,
+    openCount: cleanReport.openCount || 0,
+    uniqueVisitors: cleanReport.uniqueVisitors || 0,
+    uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || [],
+    teamId: cleanReport.teamId || null,
+    createdBy: cleanReport.createdBy || null
   };
 
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
       try {
+        // Validar que teamId exista para evitar errores de Foreign Key en PostgreSQL
+        if (prismaReportData.teamId) {
+          const teamExists = await prisma.team.findUnique({ where: { id: prismaReportData.teamId } });
+          if (!teamExists) {
+            if (prismaReportData.teamId === "team-default") {
+              await prisma.team.create({
+                data: {
+                  id: "team-default",
+                  name: "Equipo Evolución",
+                  ownerName: "César Ayar",
+                  ownerEmail: "cesar.ayar19@gmail.com"
+                }
+              }).catch(() => null);
+            } else {
+              prismaReportData.teamId = null;
+            }
+          }
+        }
+
         await prisma.$transaction([
-          // Clear sub relations
-          prisma.reportTool.deleteMany({ where: { reportId: report.id } }),
-          prisma.reportComparisonRow.deleteMany({ where: { reportId: report.id } }),
-          // Upsert core record
+          // Limpiar relaciones hijas previas
+          prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } }),
+          prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } }),
+          // Upsert registro maestro
           prisma.report.upsert({
-            where: { id: report.id },
+            where: { id: cleanReport.id },
             update: {
               ...prismaReportData,
               tools: {
-                create: report.tools.map(t => ({
-                  id: t.id,
+                create: (cleanReport.tools || []).map((t, idx) => ({
+                  id: t.id || `tool-${Date.now()}-${idx}`,
                   name: t.name,
                   category: t.category,
                   costType: t.costType as any,
-                  costExact: t.costExact,
-                  costMin: t.costMin,
-                  costMax: t.costMax,
+                  costExact: Number(t.costExact || 0),
+                  costMin: Number(t.costMin || 0),
+                  costMax: Number(t.costMax || 0),
                   currency: t.currency as any,
                   semaphore: t.semaphore as any,
                   url: t.url || null,
@@ -1476,132 +1508,132 @@ export async function saveDbReport(report: Report): Promise<Report> {
                 }))
               },
               comparisonRows: {
-                create: report.comparisonRows.map(row => ({
-                  id: row.id,
+                create: (cleanReport.comparisonRows || []).map((row, idx) => ({
+                  id: row.id || `row-${Date.now()}-${idx}`,
                   variable: row.variable,
                   shopify: row.shopify,
                   tiendanube: row.tiendanube,
                   pillText: row.pillText
                 }))
               },
-              interactions: report.interactions ? {
+              interactions: cleanReport.interactions ? {
                 upsert: {
                   create: {
-                    slideViews: report.interactions.slideViews as any,
-                    whatsappClicks: report.interactions.whatsappClicks,
-                    toolClicks: report.interactions.toolClicks,
-                    calculatorInteractions: report.interactions.calculatorInteractions,
-                    timeSpentSeconds: report.interactions.timeSpentSeconds
+                    slideViews: cleanReport.interactions.slideViews as any,
+                    whatsappClicks: cleanReport.interactions.whatsappClicks,
+                    toolClicks: cleanReport.interactions.toolClicks,
+                    calculatorInteractions: cleanReport.interactions.calculatorInteractions,
+                    timeSpentSeconds: cleanReport.interactions.timeSpentSeconds
                   },
                   update: {
-                    slideViews: report.interactions.slideViews as any,
-                    whatsappClicks: report.interactions.whatsappClicks,
-                    toolClicks: report.interactions.toolClicks,
-                    calculatorInteractions: report.interactions.calculatorInteractions,
-                    timeSpentSeconds: report.interactions.timeSpentSeconds
+                    slideViews: cleanReport.interactions.slideViews as any,
+                    whatsappClicks: cleanReport.interactions.whatsappClicks,
+                    toolClicks: cleanReport.interactions.toolClicks,
+                    calculatorInteractions: cleanReport.interactions.calculatorInteractions,
+                    timeSpentSeconds: cleanReport.interactions.timeSpentSeconds
                   }
                 }
               } : undefined,
-              pageSpeed: report.pageSpeed ? {
+              pageSpeed: cleanReport.pageSpeed ? {
                 upsert: {
                   create: {
-                    performanceScore: report.pageSpeed.performanceScore || 0,
-                    accessibilityScore: report.pageSpeed.accessibilityScore || 0,
-                    seoScore: report.pageSpeed.seoScore || 0,
-                    fcp: report.pageSpeed.fcp || null,
-                    lcp: report.pageSpeed.lcp || null,
-                    tbt: report.pageSpeed.tbt || null,
-                    cls: report.pageSpeed.cls || null,
-                    speedIndex: report.pageSpeed.speedIndex || null,
-                    interactive: report.pageSpeed.interactive || null,
-                    isDemo: Boolean(report.pageSpeed.isDemo)
+                    performanceScore: cleanReport.pageSpeed.performanceScore || 0,
+                    accessibilityScore: cleanReport.pageSpeed.accessibilityScore || 0,
+                    seoScore: cleanReport.pageSpeed.seoScore || 0,
+                    fcp: cleanReport.pageSpeed.fcp || null,
+                    lcp: cleanReport.pageSpeed.lcp || null,
+                    tbt: cleanReport.pageSpeed.tbt || null,
+                    cls: cleanReport.pageSpeed.cls || null,
+                    speedIndex: cleanReport.pageSpeed.speedIndex || null,
+                    interactive: cleanReport.pageSpeed.interactive || null,
+                    isDemo: Boolean(cleanReport.pageSpeed.isDemo)
                   },
                   update: {
-                    performanceScore: report.pageSpeed.performanceScore || 0,
-                    accessibilityScore: report.pageSpeed.accessibilityScore || 0,
-                    seoScore: report.pageSpeed.seoScore || 0,
-                    fcp: report.pageSpeed.fcp || null,
-                    lcp: report.pageSpeed.lcp || null,
-                    tbt: report.pageSpeed.tbt || null,
-                    cls: report.pageSpeed.cls || null,
-                    speedIndex: report.pageSpeed.speedIndex || null,
-                    interactive: report.pageSpeed.interactive || null,
-                    isDemo: Boolean(report.pageSpeed.isDemo)
+                    performanceScore: cleanReport.pageSpeed.performanceScore || 0,
+                    accessibilityScore: cleanReport.pageSpeed.accessibilityScore || 0,
+                    seoScore: cleanReport.pageSpeed.seoScore || 0,
+                    fcp: cleanReport.pageSpeed.fcp || null,
+                    lcp: cleanReport.pageSpeed.lcp || null,
+                    tbt: cleanReport.pageSpeed.tbt || null,
+                    cls: cleanReport.pageSpeed.cls || null,
+                    speedIndex: cleanReport.pageSpeed.speedIndex || null,
+                    interactive: cleanReport.pageSpeed.interactive || null,
+                    isDemo: Boolean(cleanReport.pageSpeed.isDemo)
                   }
                 }
               } : undefined,
               metrics: {
                 upsert: {
                   create: {
-                    visitasMensuales: Math.round(report.visitasMensuales || 0),
-                    gmv: Number(report.gmv || 0),
-                    fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
-                    fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
-                    fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
+                    visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
+                    gmv: Number(cleanReport.gmv || 0),
+                    fugasCantidad: cleanReport.fugasCantidad ? Math.round(cleanReport.fugasCantidad) : null,
+                    fugasRangoMin: cleanReport.fugasRangoMin ? Number(cleanReport.fugasRangoMin) : null,
+                    fugasRangoMax: cleanReport.fugasRangoMax ? Number(cleanReport.fugasRangoMax) : null
                   },
                   update: {
-                    visitasMensuales: Math.round(report.visitasMensuales || 0),
-                    gmv: Number(report.gmv || 0),
-                    fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
-                    fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
-                    fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
+                    visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
+                    gmv: Number(cleanReport.gmv || 0),
+                    fugasCantidad: cleanReport.fugasCantidad ? Math.round(cleanReport.fugasCantidad) : null,
+                    fugasRangoMin: cleanReport.fugasRangoMin ? Number(cleanReport.fugasRangoMin) : null,
+                    fugasRangoMax: cleanReport.fugasRangoMax ? Number(cleanReport.fugasRangoMax) : null
                   }
                 }
               },
               platformConfig: {
                 upsert: {
                   create: {
-                    shopifyPlan: report.shopifyPlan as any,
-                    shopifyFee: report.shopifyFee ? Number(report.shopifyFee) : null,
-                    msi: report.msi || null,
-                    shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
-                    shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
-                    shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
-                    shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
-                    tiendanubePlan: report.tiendanubePlan as any
+                    shopifyPlan: cleanReport.shopifyPlan as any,
+                    shopifyFee: cleanReport.shopifyFee ? Number(cleanReport.shopifyFee) : null,
+                    msi: cleanReport.msi || null,
+                    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
+                    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
+                    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
+                    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
+                    tiendanubePlan: cleanReport.tiendanubePlan as any
                   },
                   update: {
-                    shopifyPlan: report.shopifyPlan as any,
-                    shopifyFee: report.shopifyFee ? Number(report.shopifyFee) : null,
-                    msi: report.msi || null,
-                    shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
-                    shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
-                    shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
-                    shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
-                    tiendanubePlan: report.tiendanubePlan as any
+                    shopifyPlan: cleanReport.shopifyPlan as any,
+                    shopifyFee: cleanReport.shopifyFee ? Number(cleanReport.shopifyFee) : null,
+                    msi: cleanReport.msi || null,
+                    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
+                    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
+                    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
+                    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
+                    tiendanubePlan: cleanReport.tiendanubePlan as any
                   }
                 }
               },
               analytics: {
                 upsert: {
                   create: {
-                    viewCount: report.viewCount || 0,
-                    openCount: report.openCount || 0,
-                    uniqueVisitors: report.uniqueVisitors || 0,
-                    uniqueVisitorIds: report.uniqueVisitorIds as any || []
+                    viewCount: cleanReport.viewCount || 0,
+                    openCount: cleanReport.openCount || 0,
+                    uniqueVisitors: cleanReport.uniqueVisitors || 0,
+                    uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || []
                   },
                   update: {
-                    viewCount: report.viewCount || 0,
-                    openCount: report.openCount || 0,
-                    uniqueVisitors: report.uniqueVisitors || 0,
-                    uniqueVisitorIds: report.uniqueVisitorIds as any || []
+                    viewCount: cleanReport.viewCount || 0,
+                    openCount: cleanReport.openCount || 0,
+                    uniqueVisitors: cleanReport.uniqueVisitors || 0,
+                    uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || []
                   }
                 }
               }
             },
             create: {
-              id: report.id,
+              id: cleanReport.id,
               ...prismaReportData,
-              createdAt: report.createdAt ? new Date(report.createdAt) : new Date(),
+              createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date(),
               tools: {
-                create: report.tools.map(t => ({
-                  id: t.id,
+                create: (cleanReport.tools || []).map((t, idx) => ({
+                  id: t.id || `tool-${Date.now()}-${idx}`,
                   name: t.name,
                   category: t.category,
                   costType: t.costType as any,
-                  costExact: t.costExact,
-                  costMin: t.costMin,
-                  costMax: t.costMax,
+                  costExact: Number(t.costExact || 0),
+                  costMin: Number(t.costMin || 0),
+                  costMax: Number(t.costMax || 0),
                   currency: t.currency as any,
                   semaphore: t.semaphore as any,
                   url: t.url || null,
@@ -1610,97 +1642,91 @@ export async function saveDbReport(report: Report): Promise<Report> {
                 }))
               },
               comparisonRows: {
-                create: report.comparisonRows.map(row => ({
-                  id: row.id,
+                create: (cleanReport.comparisonRows || []).map((row, idx) => ({
+                  id: row.id || `row-${Date.now()}-${idx}`,
                   variable: row.variable,
                   shopify: row.shopify,
                   tiendanube: row.tiendanube,
                   pillText: row.pillText
                 }))
               },
-              interactions: report.interactions ? {
+              interactions: cleanReport.interactions ? {
                 create: {
-                  slideViews: report.interactions.slideViews as any,
-                  whatsappClicks: report.interactions.whatsappClicks,
-                  toolClicks: report.interactions.toolClicks,
-                  calculatorInteractions: report.interactions.calculatorInteractions,
-                  timeSpentSeconds: report.interactions.timeSpentSeconds
+                  slideViews: cleanReport.interactions.slideViews as any,
+                  whatsappClicks: cleanReport.interactions.whatsappClicks,
+                  toolClicks: cleanReport.interactions.toolClicks,
+                  calculatorInteractions: cleanReport.interactions.calculatorInteractions,
+                  timeSpentSeconds: cleanReport.interactions.timeSpentSeconds
                 }
               } : undefined,
-              pageSpeed: report.pageSpeed ? {
+              pageSpeed: cleanReport.pageSpeed ? {
                 create: {
-                  performanceScore: report.pageSpeed.performanceScore || 0,
-                  accessibilityScore: report.pageSpeed.accessibilityScore || 0,
-                  seoScore: report.pageSpeed.seoScore || 0,
-                  fcp: report.pageSpeed.fcp || null,
-                  lcp: report.pageSpeed.lcp || null,
-                  tbt: report.pageSpeed.tbt || null,
-                  cls: report.pageSpeed.cls || null,
-                  speedIndex: report.pageSpeed.speedIndex || null,
-                  interactive: report.pageSpeed.interactive || null,
-                  isDemo: Boolean(report.pageSpeed.isDemo)
+                  performanceScore: cleanReport.pageSpeed.performanceScore || 0,
+                  accessibilityScore: cleanReport.pageSpeed.accessibilityScore || 0,
+                  seoScore: cleanReport.pageSpeed.seoScore || 0,
+                  fcp: cleanReport.pageSpeed.fcp || null,
+                  lcp: cleanReport.pageSpeed.lcp || null,
+                  tbt: cleanReport.pageSpeed.tbt || null,
+                  cls: cleanReport.pageSpeed.cls || null,
+                  speedIndex: cleanReport.pageSpeed.speedIndex || null,
+                  interactive: cleanReport.pageSpeed.interactive || null,
+                  isDemo: Boolean(cleanReport.pageSpeed.isDemo)
                 }
               } : undefined,
               metrics: {
                 create: {
-                  visitasMensuales: Math.round(report.visitasMensuales || 0),
-                  gmv: Number(report.gmv || 0),
-                  fugasCantidad: report.fugasCantidad ? Math.round(report.fugasCantidad) : null,
-                  fugasRangoMin: report.fugasRangoMin ? Number(report.fugasRangoMin) : null,
-                  fugasRangoMax: report.fugasRangoMax ? Number(report.fugasRangoMax) : null
+                  visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
+                  gmv: Number(cleanReport.gmv || 0),
+                  fugasCantidad: cleanReport.fugasCantidad ? Math.round(cleanReport.fugasCantidad) : null,
+                  fugasRangoMin: cleanReport.fugasRangoMin ? Number(cleanReport.fugasRangoMin) : null,
+                  fugasRangoMax: cleanReport.fugasRangoMax ? Number(cleanReport.fugasRangoMax) : null
                 }
               },
               platformConfig: {
                 create: {
-                  shopifyPlan: report.shopifyPlan as any,
-                  shopifyFee: report.shopifyFee ? Number(report.shopifyFee) : null,
-                  msi: report.msi || null,
-                  shopifyPlanCustomFee: report.shopifyPlanCustomFee || null,
-                  shopifyPlanCustomPrice: report.shopifyPlanCustomPrice || null,
-                  shopifyAppsCostUSD: (report as any).shopifyAppsCostUSD || null,
-                  shopifyAppsCostMXN: (report as any).shopifyAppsCostMXN || null,
-                  tiendanubePlan: report.tiendanubePlan as any
+                  shopifyPlan: cleanReport.shopifyPlan as any,
+                  shopifyFee: cleanReport.shopifyFee ? Number(cleanReport.shopifyFee) : null,
+                  msi: cleanReport.msi || null,
+                  shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
+                  shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
+                  shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
+                  shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
+                  tiendanubePlan: cleanReport.tiendanubePlan as any
                 }
               },
               analytics: {
                 create: {
-                  viewCount: report.viewCount || 0,
-                  openCount: report.openCount || 0,
-                  uniqueVisitors: report.uniqueVisitors || 0,
-                  uniqueVisitorIds: report.uniqueVisitorIds as any || []
+                  viewCount: cleanReport.viewCount || 0,
+                  openCount: cleanReport.openCount || 0,
+                  uniqueVisitors: cleanReport.uniqueVisitors || 0,
+                  uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || []
                 }
               }
             }
           })
         ]);
-
-        return report;
       } catch (err) {
         console.error("Error saving report to database:", err);
       }
     }
   }
 
-  // Local fallback
-  const reports = await getDbReports();
-  const index = reports.findIndex(r => r.id === report.id);
-  const cleanReport = {
-    ...report,
-    createdAt: report.createdAt || new Date().toISOString()
-  };
-
-  if (index === -1) {
-    reports.push(cleanReport);
-  } else {
-    reports[index] = cleanReport;
-  }
-
+  // Sincronización persistente en archivo local siempre para redundancia
   try {
-    fs.writeFileSync(REPORTS_FILE, JSON.stringify(reports, null, 2), "utf-8");
+    const localReports = await readJsonAsync<Report[]>(REPORTS_FILE, []);
+    const index = localReports.findIndex(r => r.id === cleanReport.id);
+    if (index === -1) {
+      localReports.push(cleanReport);
+    } else {
+      localReports[index] = cleanReport;
+    }
+    fs.writeFileSync(REPORTS_FILE, JSON.stringify(localReports, null, 2), "utf-8");
   } catch (err) {
     console.error("Error writing report to local file:", err);
   }
+
   invalidateApiQueryCache("reports");
+  invalidateApiQueryCache(`report_${cleanReport.id}`);
   return cleanReport;
 }
 

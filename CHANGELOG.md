@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.76 (Frontend) / v2.5.62 (Backend)] - 2026-09-05
+
+### ♻️ Refactorización de Código
+- **admin:** mover edición de matriz comparativa a configuración y simplificar wizard de diagnóstico (`7961149`)
+
 ## [v2.5.75 (Frontend) / v2.5.61 (Backend)] - 2026-09-04
 
 ### 🚀 Features & Nuevas Funcionalidades

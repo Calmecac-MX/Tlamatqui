@@ -1078,10 +1078,21 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     const reportToSave: Report = {
       ...editingReport,
       id: editingReport.id || `rep_${Date.now()}`,
-      createdBy: editingReport.createdBy || userEmail,
-      contactEmail: editingReport.contactEmail || userEmail
+      createdBy: editingReport.createdBy || userEmail || "cesar.ayar19@gmail.com",
+      contactEmail: editingReport.contactEmail || userEmail || "comercial@tiendanube.mx",
+      teamId: editingReport.teamId || selectedTeamId || "team-default",
+      tools: editingReport.tools || [],
+      comparisonRows: (editingReport.comparisonRows && editingReport.comparisonRows.length > 0)
+        ? editingReport.comparisonRows
+        : (configComparisonRows && configComparisonRows.length > 0 ? configComparisonRows : DEFAULT_GLOBAL_COMPARISON_ROWS),
+      adminLogos: (editingReport.adminLogos && editingReport.adminLogos.length > 0)
+        ? editingReport.adminLogos
+        : [
+          "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
+          "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
+          "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
+        ]
     } as Report;
-
 
     try {
       const res = await fetch(url, {
@@ -1090,16 +1101,26 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         body: JSON.stringify(reportToSave)
       });
 
-
       if (res.ok) {
+        const savedData: Report = await res.json();
         setEditingReport(null);
-        fetchReports();
+        setReports(prev => {
+          const idx = prev.findIndex(r => r.id === savedData.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = savedData;
+            return next;
+          }
+          return [savedData, ...prev];
+        });
+        await fetchReports();
         alert(`Reporte de diagnóstico guardado con éxito.`);
       } else {
-        alert("Ocurrió un error al guardar el diagnóstico.");
+        const errJson = await res.json().catch(() => ({}));
+        alert(`Ocurrió un error al guardar el diagnóstico: ${errJson.error || res.statusText}`);
       }
-    } catch (e) {
-      alert("Error de red al guardar el reporte.");
+    } catch (e: any) {
+      alert(`Error de red al guardar el reporte: ${e?.message || "Error de red desconocido"}`);
     }
   };
 
@@ -1109,7 +1130,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     try {
       const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
       if (res.ok) {
-        fetchReports();
+        setReports(prev => prev.filter(r => r.id !== id));
+        await fetchReports();
         alert("Reporte eliminado correctamente.");
       }
     } catch (e) {
@@ -1133,12 +1155,12 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const activeTeam = teams.find(t => t.id === selectedTeamId) || teams[0] || null;
   const filteredReports = reports.filter(r => {
     // Si el usuario es Agente, restringir los reportes exclusivamente a los creados por él
-    if (userRole === "Agente") {
+    if (userRole === "Agente" && userEmail) {
       const isCreator = (r.createdBy && r.createdBy.toLowerCase() === userEmail.toLowerCase()) || 
                         (r.contactEmail && r.contactEmail.toLowerCase() === userEmail.toLowerCase());
       if (!isCreator) return false;
     }
-    if (selectedTeamId === "team-default") {
+    if (!selectedTeamId || selectedTeamId === "team-default") {
       return !r.teamId || r.teamId === "team-default";
     }
     return r.teamId === selectedTeamId;
