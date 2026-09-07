@@ -178,16 +178,6 @@ model Report {
   comparisonRows         ReportComparisonRow[]
   contactEmail           String
   contactWhatsapp        String
-  adminLogos             Json                   // Lista de logos: string[]
-  brandCard1Title        String?
-  brandCard1Desc         String?
-  brandCard1Logo         String?
-  brandCard1Link         String?
-  brandCard2Title        String?
-  brandCard2Desc         String?
-  brandCard2Logo         String?
-  brandCard2Link         String?
-  finalSlideMainLogo     String?
   // 🌐 Metadatos del Comercio detectados por Chismógrafo
   detectedCms            String?                @default("Shopify")
   activeTheme            String?
@@ -217,7 +207,6 @@ model Report {
   analytics              ReportAnalytics?
   teamId                 String?
   team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  createdBy              String?
   creatorId              String?
   creator                User?                  @relation("ReportCreator", fields: [creatorId], references: [id], onDelete: SetNull)
 
