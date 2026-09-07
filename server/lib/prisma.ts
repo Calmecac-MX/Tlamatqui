@@ -59,11 +59,11 @@ export async function ensureDatabaseSchema(prismaClient: PrismaClient): Promise<
           
           `ALTER TABLE "TeamMember" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'approved';`,
           `ALTER TABLE "TeamMember" ADD COLUMN IF NOT EXISTS "isExternal" BOOLEAN DEFAULT false;`,
-          `ALTER TABLE "TeamMember" ADD COLUMN IF NOT EXISTS "addedByAllyEmail" TEXT;`,
+          `ALTER TABLE "TeamMember" ADD COLUMN IF NOT EXISTS "partnerEmail" TEXT;`,
           `ALTER TABLE "TeamMember" ADD COLUMN IF NOT EXISTS "requestedAt" TIMESTAMP(3);`,
 
-          `ALTER TABLE "aliados" ADD COLUMN IF NOT EXISTS "representativeEmail" TEXT;`,
-          `ALTER TABLE "aliados" ADD COLUMN IF NOT EXISTS "members" JSONB;`
+          `ALTER TABLE "Partner" ADD COLUMN IF NOT EXISTS "representativeEmail" TEXT;`,
+          `ALTER TABLE "Partner" ADD COLUMN IF NOT EXISTS "teamId" TEXT;`
         ];
 
         for (const sql of statements) {

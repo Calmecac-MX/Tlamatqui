@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.80 (Frontend) / v2.5.69 (Backend)] - 2026-09-07
+
+### 🚀 Features & Nuevas Funcionalidades
+- **schema:** remove deprecated brand card, admin logos and creator fields from Report model (v2.5.68) (`c345ada`)
+
 ## [v2.5.80 (Frontend) / v2.5.68 (Backend)] - 2026-09-07
 
 ### 🐛 Corregido & Bug Fixes

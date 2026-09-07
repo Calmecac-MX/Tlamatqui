@@ -459,27 +459,39 @@ export async function initializeDatabase() {
               name: r.name,
               logo: r.logo,
               tagline: r.tagline,
-              fugasCantidad: r.fugasCantidad,
-              fugasRangoMin: r.fugasRangoMin,
-              fugasRangoMax: r.fugasRangoMax,
-              visitasMensuales: r.visitasMensuales,
-              gmv: r.gmv,
-              shopifyFee: r.shopifyFee,
-              msi: r.msi,
-              shopifyPlan: r.shopifyPlan as any,
-              shopifyPlanCustomFee: r.shopifyPlanCustomFee,
-              shopifyPlanCustomPrice: r.shopifyPlanCustomPrice,
-              shopifyAppsCostUSD: r.shopifyAppsCostUSD,
-              shopifyAppsCostMXN: r.shopifyAppsCostMXN,
-              tiendanubePlan: r.tiendanubePlan as any,
               contactEmail: r.contactEmail,
               contactWhatsapp: r.contactWhatsapp,
-              viewCount: r.viewCount,
-              openCount: r.openCount,
-              uniqueVisitors: r.uniqueVisitors,
-              uniqueVisitorIds: r.uniqueVisitorIds as any,
               teamId: r.teamId,
               createdAt: new Date(r.createdAt),
+              metrics: {
+                create: {
+                  visitasMensuales: r.visitasMensuales || 0,
+                  gmv: r.gmv || 0,
+                  fugasCantidad: r.fugasCantidad || 0,
+                  fugasRangoMin: r.fugasRangoMin || 0,
+                  fugasRangoMax: r.fugasRangoMax || 0
+                }
+              },
+              platformConfig: {
+                create: {
+                  shopifyPlan: (r.shopifyPlan as any) || "grow",
+                  shopifyFee: r.shopifyFee || 0,
+                  msi: r.msi,
+                  shopifyPlanCustomFee: r.shopifyPlanCustomFee,
+                  shopifyPlanCustomPrice: r.shopifyPlanCustomPrice,
+                  shopifyAppsCostUSD: r.shopifyAppsCostUSD,
+                  shopifyAppsCostMXN: r.shopifyAppsCostMXN,
+                  tiendanubePlan: (r.tiendanubePlan as any) || "evolution"
+                }
+              },
+              analytics: {
+                create: {
+                  viewCount: r.viewCount || 0,
+                  openCount: r.openCount || 0,
+                  uniqueVisitors: r.uniqueVisitors || 0,
+                  uniqueVisitorIds: (r.uniqueVisitorIds as any) || []
+                }
+              },
               tools: {
                 create: r.tools.map(tool => ({
                   id: tool.id,
@@ -767,7 +779,7 @@ export async function getDbTeams(): Promise<Team[]> {
       try {
         const dbTeams = await withDbTimeout(
           prisma.team.findMany({
-            include: { members: true, allies: true }
+            include: { members: true, partners: { include: { members: true } } }
           }),
           3500
         );
@@ -787,7 +799,8 @@ export async function getDbTeams(): Promise<Team[]> {
             avatar: m.avatar || undefined,
             status: (m.status as any) || "approved",
             isExternal: Boolean(m.isExternal),
-            addedByAllyEmail: m.addedByAllyEmail || undefined,
+            addedByAllyEmail: m.partnerEmail || (m as any).addedByAllyEmail || undefined,
+            partnerEmail: m.partnerEmail || undefined,
             requestedAt: m.requestedAt ? m.requestedAt.toISOString() : undefined
           })),
           inviteToken: t.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
@@ -795,14 +808,35 @@ export async function getDbTeams(): Promise<Team[]> {
           teamBrandName: t.teamBrandName || undefined,
           teamBrandLogo: t.teamBrandLogo || undefined,
           teamBrandWebsite: t.teamBrandWebsite || undefined,
-          allies: t.allies ? t.allies.map((a: any) => ({
-            id: a.id,
-            name: a.name,
-            logo: a.logo,
-            url: a.url,
-            teamId: a.teamId,
-            representativeEmail: a.representativeEmail || undefined,
-            members: (a.members as any) || []
+          allies: t.partners ? t.partners.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            logo: p.logo,
+            url: p.link || "",
+            teamId: p.teamId || t.id,
+            representativeEmail: p.representativeEmail || undefined,
+            description: p.description || undefined,
+            members: (p.members || []).map((pm: any) => ({
+              id: pm.id,
+              name: pm.name,
+              email: pm.email,
+              role: pm.role
+            }))
+          })) : [],
+          partners: t.partners ? t.partners.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            logo: p.logo,
+            description: p.description || undefined,
+            link: p.link || undefined,
+            representativeEmail: p.representativeEmail || undefined,
+            teamId: p.teamId,
+            members: (p.members || []).map((pm: any) => ({
+              id: pm.id,
+              name: pm.name,
+              email: pm.email,
+              role: pm.role
+            }))
           })) : [],
           createdAt: t.createdAt.toISOString()
         }));
@@ -852,7 +886,7 @@ export async function saveDbTeam(team: Team): Promise<Team> {
       try {
         await prisma.$transaction([
           prisma.teamMember.deleteMany({ where: { teamId: cleanTeam.id } }),
-          prisma.ally.deleteMany({ where: { teamId: cleanTeam.id } }),
+          prisma.partner.deleteMany({ where: { teamId: cleanTeam.id } }),
           prisma.team.upsert({
             where: { id: cleanTeam.id },
             update: {
@@ -876,18 +910,26 @@ export async function saveDbTeam(team: Team): Promise<Team> {
                   avatar: m.avatar || null,
                   status: m.status || "approved",
                   isExternal: Boolean(m.isExternal),
-                  addedByAllyEmail: m.addedByAllyEmail || null,
+                  partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
                   requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
                 }))
               },
-              allies: {
-                create: (cleanTeam.allies || []).map(a => ({
-                  id: a.id,
+              partners: {
+                create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
+                  id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                   name: a.name,
                   logo: a.logo,
-                  url: a.url,
+                  link: a.url || (a as any).link || null,
+                  description: (a as any).description || null,
                   representativeEmail: a.representativeEmail || null,
-                  members: (a.members as any) || null
+                  members: {
+                    create: (a.members || []).map((pm: any) => ({
+                      id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                      name: pm.name,
+                      email: pm.email,
+                      role: pm.role || "Lector"
+                    }))
+                  }
                 }))
               }
             },
@@ -914,18 +956,26 @@ export async function saveDbTeam(team: Team): Promise<Team> {
                   avatar: m.avatar || null,
                   status: m.status || "approved",
                   isExternal: Boolean(m.isExternal),
-                  addedByAllyEmail: m.addedByAllyEmail || null,
+                  partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
                   requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
                 }))
               },
-              allies: {
-                create: (cleanTeam.allies || []).map(a => ({
-                  id: a.id,
+              partners: {
+                create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
+                  id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                   name: a.name,
                   logo: a.logo,
-                  url: a.url,
+                  link: a.url || (a as any).link || null,
+                  description: (a as any).description || null,
                   representativeEmail: a.representativeEmail || null,
-                  members: (a.members as any) || null
+                  members: {
+                    create: (a.members || []).map((pm: any) => ({
+                      id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                      name: pm.name,
+                      email: pm.email,
+                      role: pm.role || "Lector"
+                    }))
+                  }
                 }))
               }
             }
@@ -1236,24 +1286,29 @@ export async function addExternalAllyMember(
  * Transforma un registro de Prisma Report y sus relaciones en el objeto de dominio Report.
  */
 function mapPrismaReportToDomain(r: any): Report {
+  const m = r.metrics || {};
+  const pc = r.platformConfig || {};
+  const a = r.analytics || {};
+
   return {
     id: r.id,
     name: r.name,
     logo: r.logo || undefined,
     tagline: r.tagline || undefined,
-    fugasCantidad: r.fugasCantidad || 0,
-    fugasRangoMin: r.fugasRangoMin || 0,
-    fugasRangoMax: r.fugasRangoMax || 0,
-    visitasMensuales: r.visitasMensuales || 0,
-    gmv: r.gmv || 0,
-    shopifyFee: r.shopifyFee || 0,
-    msi: r.msi || undefined,
-    shopifyPlan: r.shopifyPlan as any,
-    shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
-    shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
-    shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
-    shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
-    tiendanubePlan: r.tiendanubePlan as any,
+    businessUrl: r.businessUrl || undefined,
+    fugasCantidad: m.fugasCantidad ?? r.fugasCantidad ?? 0,
+    fugasRangoMin: m.fugasRangoMin ?? r.fugasRangoMin ?? 0,
+    fugasRangoMax: m.fugasRangoMax ?? r.fugasRangoMax ?? 0,
+    visitasMensuales: m.visitasMensuales ?? r.visitasMensuales ?? 0,
+    gmv: m.gmv ?? r.gmv ?? 0,
+    shopifyFee: pc.shopifyFee ?? r.shopifyFee ?? 0,
+    msi: pc.msi || r.msi || undefined,
+    shopifyPlan: (pc.shopifyPlan || r.shopifyPlan || "grow") as any,
+    shopifyPlanCustomFee: pc.shopifyPlanCustomFee ?? r.shopifyPlanCustomFee ?? undefined,
+    shopifyPlanCustomPrice: pc.shopifyPlanCustomPrice ?? r.shopifyPlanCustomPrice ?? undefined,
+    shopifyAppsCostUSD: pc.shopifyAppsCostUSD ?? r.shopifyAppsCostUSD ?? undefined,
+    shopifyAppsCostMXN: pc.shopifyAppsCostMXN ?? r.shopifyAppsCostMXN ?? undefined,
+    tiendanubePlan: (pc.tiendanubePlan || r.tiendanubePlan || "evolution") as any,
     detectedCms: r.detectedCms || undefined,
     activeTheme: r.activeTheme || undefined,
     screenshotDesktop: r.screenshotDesktop || undefined,
@@ -1311,10 +1366,10 @@ function mapPrismaReportToDomain(r: any): Report {
     finalSlideMainLogo: undefined,
     createdBy: r.creatorId || undefined,
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString()),
-    viewCount: r.viewCount || 0,
-    openCount: r.openCount || 0,
-    uniqueVisitors: r.uniqueVisitors || 0,
-    uniqueVisitorIds: (r.uniqueVisitorIds as any as string[]) || [],
+    viewCount: a.viewCount ?? r.viewCount ?? 0,
+    openCount: a.openCount ?? r.openCount ?? 0,
+    uniqueVisitors: a.uniqueVisitors ?? r.uniqueVisitors ?? 0,
+    uniqueVisitorIds: (a.uniqueVisitorIds as any as string[]) || (r.uniqueVisitorIds as any as string[]) || [],
     interactions: r.interactions ? {
       slideViews: r.interactions.slideViews as any,
       whatsappClicks: r.interactions.whatsappClicks,
@@ -1322,7 +1377,28 @@ function mapPrismaReportToDomain(r: any): Report {
       calculatorInteractions: r.interactions.calculatorInteractions,
       timeSpentSeconds: r.interactions.timeSpentSeconds
     } : undefined,
-    teamId: r.teamId || undefined
+    teamId: r.teamId || undefined,
+    team: r.team ? {
+      id: r.team.id,
+      name: r.team.name,
+      image: r.team.image || undefined,
+      ownerName: r.team.ownerName,
+      ownerEmail: r.team.ownerEmail,
+      members: [],
+      inviteToken: r.team.inviteToken || undefined,
+      inviteRole: (r.team.inviteRole as any) || "Visor",
+      teamBrandName: r.team.teamBrandName || undefined,
+      teamBrandLogo: r.team.teamBrandLogo || undefined,
+      teamBrandWebsite: r.team.teamBrandWebsite || undefined,
+      allies: (r.team.partners || r.team.allies || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        logo: p.logo,
+        url: p.link || p.url || "",
+        teamId: p.teamId
+      })),
+      createdAt: r.team.createdAt.toISOString()
+    } : undefined
   };
 }
 
@@ -1351,7 +1427,7 @@ export async function getDbReports(): Promise<Report[]> {
               analytics: true,
               pageSpeed: true,
               team: {
-                include: { allies: true }
+                include: { partners: true }
               }
             }
           }),
@@ -1377,7 +1453,7 @@ export async function getDbReports(): Promise<Report[]> {
                 analytics: true,
                 pageSpeed: true,
                 team: {
-                  include: { allies: true }
+                  include: { partners: true }
                 }
               }
             });
@@ -1445,7 +1521,7 @@ export async function getDbReportById(id: string): Promise<Report | null> {
             analytics: true,
             pageSpeed: true,
             team: {
-              include: { allies: true }
+              include: { partners: true }
             }
           }
         });
@@ -1475,7 +1551,7 @@ export async function getDbReportById(id: string): Promise<Report | null> {
                 analytics: true,
                 pageSpeed: true,
                 team: {
-                  include: { allies: true }
+                  include: { partners: true }
                 }
               }
             });
@@ -1655,20 +1731,7 @@ export async function saveDbReport(report: Report): Promise<Report> {
     name: String(cleanReport.name || "").trim(),
     logo: cleanReport.logo ? String(cleanReport.logo).trim() : null,
     tagline: cleanReport.tagline ? String(cleanReport.tagline).trim() : null,
-    fugasCantidad: sanitizeInt(cleanReport.fugasCantidad, 0),
-    fugasRangoMin: sanitizeFloat(cleanReport.fugasRangoMin, 0),
-    fugasRangoMax: sanitizeFloat(cleanReport.fugasRangoMax, 0),
-    visitasMensuales: sanitizeInt(cleanReport.visitasMensuales, 0),
-    gmv: sanitizeFloat(cleanReport.gmv, 0),
-    shopifyFee: sanitizeFloat(cleanReport.shopifyFee, 0),
-    msi: cleanReport.msi ? String(cleanReport.msi).trim() : null,
     businessUrl: cleanReport.businessUrl ? String(cleanReport.businessUrl).trim() : null,
-    shopifyPlan: sanitizeShopifyPlan(cleanReport.shopifyPlan),
-    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee != null ? sanitizeFloat(cleanReport.shopifyPlanCustomFee, 0) : null,
-    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice != null ? sanitizeFloat(cleanReport.shopifyPlanCustomPrice, 0) : null,
-    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD != null ? sanitizeFloat((cleanReport as any).shopifyAppsCostUSD, 0) : null,
-    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN != null ? sanitizeFloat((cleanReport as any).shopifyAppsCostMXN, 0) : null,
-    tiendanubePlan: sanitizeTiendanubePlan(cleanReport.tiendanubePlan),
     detectedCms: cleanReport.detectedCms ? String(cleanReport.detectedCms).trim() : "Shopify",
     activeTheme: cleanReport.activeTheme ? String(cleanReport.activeTheme).trim() : null,
     screenshotDesktop: cleanReport.screenshotDesktop ? String(cleanReport.screenshotDesktop).trim() : null,
@@ -1679,7 +1742,29 @@ export async function saveDbReport(report: Report): Promise<Report> {
     serverLocation: sanitizedServerLocation as any,
     serverLatencyMs: sanitizedServerLatencyMs,
     contactEmail: String(cleanReport.contactEmail || "comercial@tiendanube.mx").trim(),
-    contactWhatsapp: String(cleanReport.contactWhatsapp || "5512345678").trim(),
+    contactWhatsapp: String(cleanReport.contactWhatsapp || "5512345678").trim()
+  };
+
+  const metricsData = {
+    visitasMensuales: sanitizeInt(cleanReport.visitasMensuales, 0),
+    gmv: sanitizeFloat(cleanReport.gmv, 0),
+    fugasCantidad: sanitizeInt(cleanReport.fugasCantidad, 0),
+    fugasRangoMin: sanitizeFloat(cleanReport.fugasRangoMin, 0),
+    fugasRangoMax: sanitizeFloat(cleanReport.fugasRangoMax, 0)
+  };
+
+  const platformConfigData = {
+    shopifyPlan: sanitizeShopifyPlan(cleanReport.shopifyPlan),
+    shopifyFee: sanitizeFloat(cleanReport.shopifyFee, 0),
+    msi: cleanReport.msi ? String(cleanReport.msi).trim() : null,
+    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee != null ? sanitizeFloat(cleanReport.shopifyPlanCustomFee, 0) : null,
+    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice != null ? sanitizeFloat(cleanReport.shopifyPlanCustomPrice, 0) : null,
+    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD != null ? sanitizeFloat((cleanReport as any).shopifyAppsCostUSD, 0) : null,
+    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN != null ? sanitizeFloat((cleanReport as any).shopifyAppsCostMXN, 0) : null,
+    tiendanubePlan: sanitizeTiendanubePlan(cleanReport.tiendanubePlan)
+  };
+
+  const analyticsData = {
     viewCount: sanitizeInt(cleanReport.viewCount, 0),
     openCount: sanitizeInt(cleanReport.openCount, 0),
     uniqueVisitors: sanitizeInt(cleanReport.uniqueVisitors, 0),
@@ -1776,19 +1861,9 @@ export async function saveDbReport(report: Report): Promise<Report> {
           where: { reportId: cleanReport.id },
           create: {
             reportId: cleanReport.id,
-            visitasMensuales: prismaReportData.visitasMensuales,
-            gmv: prismaReportData.gmv,
-            fugasCantidad: prismaReportData.fugasCantidad,
-            fugasRangoMin: prismaReportData.fugasRangoMin,
-            fugasRangoMax: prismaReportData.fugasRangoMax
+            ...metricsData
           },
-          update: {
-            visitasMensuales: prismaReportData.visitasMensuales,
-            gmv: prismaReportData.gmv,
-            fugasCantidad: prismaReportData.fugasCantidad,
-            fugasRangoMin: prismaReportData.fugasRangoMin,
-            fugasRangoMax: prismaReportData.fugasRangoMax
-          }
+          update: metricsData
         });
 
         // 5. Upsert subtabla de Configuración de Plataforma
@@ -1796,25 +1871,9 @@ export async function saveDbReport(report: Report): Promise<Report> {
           where: { reportId: cleanReport.id },
           create: {
             reportId: cleanReport.id,
-            shopifyPlan: prismaReportData.shopifyPlan,
-            shopifyFee: prismaReportData.shopifyFee,
-            msi: prismaReportData.msi,
-            shopifyPlanCustomFee: prismaReportData.shopifyPlanCustomFee,
-            shopifyPlanCustomPrice: prismaReportData.shopifyPlanCustomPrice,
-            shopifyAppsCostUSD: prismaReportData.shopifyAppsCostUSD,
-            shopifyAppsCostMXN: prismaReportData.shopifyAppsCostMXN,
-            tiendanubePlan: prismaReportData.tiendanubePlan
+            ...platformConfigData
           },
-          update: {
-            shopifyPlan: prismaReportData.shopifyPlan,
-            shopifyFee: prismaReportData.shopifyFee,
-            msi: prismaReportData.msi,
-            shopifyPlanCustomFee: prismaReportData.shopifyPlanCustomFee,
-            shopifyPlanCustomPrice: prismaReportData.shopifyPlanCustomPrice,
-            shopifyAppsCostUSD: prismaReportData.shopifyAppsCostUSD,
-            shopifyAppsCostMXN: prismaReportData.shopifyAppsCostMXN,
-            tiendanubePlan: prismaReportData.tiendanubePlan
-          }
+          update: platformConfigData
         });
 
         // 6. Upsert subtabla de Analítica
@@ -1822,17 +1881,9 @@ export async function saveDbReport(report: Report): Promise<Report> {
           where: { reportId: cleanReport.id },
           create: {
             reportId: cleanReport.id,
-            viewCount: prismaReportData.viewCount,
-            openCount: prismaReportData.openCount,
-            uniqueVisitors: prismaReportData.uniqueVisitors,
-            uniqueVisitorIds: prismaReportData.uniqueVisitorIds as any
+            ...analyticsData
           },
-          update: {
-            viewCount: prismaReportData.viewCount,
-            openCount: prismaReportData.openCount,
-            uniqueVisitors: prismaReportData.uniqueVisitors,
-            uniqueVisitorIds: prismaReportData.uniqueVisitorIds as any
-          }
+          update: analyticsData
         });
 
         // 7. Upsert subtabla de Rendimiento PageSpeed

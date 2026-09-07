@@ -104,30 +104,12 @@ model Team {
   teamBrandName    String?
   teamBrandLogo    String?
   teamBrandWebsite String?
-  allies           Ally[]
+  partners         Partner[]
   createdAt        DateTime     @default(now())
 
   @@index([ownerEmail])
   @@index([ownerId])
 }
-
-/// Alianzas estratégicas o aliados asociados a un equipo.
-model Ally {
-  id                  String   @id @default(uuid())
-  name                String
-  logo                String
-  url                 String
-  representativeEmail String?
-  members             Json?    // Lista de miembros externos: { id, name, email, role }[]
-  teamId              String
-  team                Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  @@map("aliados")
-  @@index([teamId])
-}
-
 
 /// Integrantes y roles dentro de un equipo o workspace.
 model TeamMember {
@@ -138,7 +120,7 @@ model TeamMember {
   avatar           String?
   status           String    @default("approved") // 'approved' o 'pending'
   isExternal       Boolean   @default(false)
-  addedByAllyEmail String?
+  partnerEmail     String?
   requestedAt      DateTime?
   teamId           String
   team             Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -160,24 +142,12 @@ model Report {
   name                   String
   logo                   String?
   tagline                String?
-  fugasCantidad          Int?
-  fugasRangoMin          Float?
-  fugasRangoMax          Float?
-  visitasMensuales       Int
-  gmv                    Float
-  shopifyFee             Float?
-  msi                    String?
   businessUrl            String?
-  shopifyPlan            ShopifyPlan            @default(grow)
-  shopifyPlanCustomFee   Float?
-  shopifyPlanCustomPrice Float?
-  shopifyAppsCostUSD     Float?
-  shopifyAppsCostMXN     Float?
-  tiendanubePlan         TiendanubePlan         @default(evolution)
   tools                  ReportTool[]
   comparisonRows         ReportComparisonRow[]
   contactEmail           String
   contactWhatsapp        String
+  
   // 🌐 Metadatos del Comercio detectados por Chismógrafo
   detectedCms            String?                @default("Shopify")
   activeTheme            String?
@@ -194,17 +164,15 @@ model Report {
   // 📍 Servidor y Rendimiento
   serverLocation         Json?                  // { ip?: string, country?: string, city?: string, ll?: number[] }
   serverLatencyMs        Int?
+  
+  // 🔗 Subtablas Relacionales 1:1
   pageSpeed              ReportPageSpeed?
-
-  createdAt              DateTime               @default(now())
-  viewCount              Int                    @default(0)
-  openCount              Int                    @default(0)
-  uniqueVisitors         Int                    @default(0)
-  uniqueVisitorIds       Json?                  // Lista de visitor IDs: string[]
   interactions           ReportInteraction?
   metrics                ReportMetrics?
   platformConfig         ReportPlatformConfig?
   analytics              ReportAnalytics?
+
+  createdAt              DateTime               @default(now())
   teamId                 String?
   team                   Team?                  @relation(fields: [teamId], references: [id], onDelete: SetNull)
   creatorId              String?
@@ -260,8 +228,6 @@ model ReportPlatformConfig {
   shopifyAppsCostMXN     Float?
   tiendanubePlan         TiendanubePlan @default(evolution)
 }
-
-
 
 /// Métricas de interacción y analítica perteneciente a la subtabla ReportAnalytics.
 model ReportAnalytics {
@@ -345,26 +311,35 @@ model ComparisonTemplateRow {
   @@index([templateId])
 }
 
-/// Configuración de marca de socio estratégico.
+/// Configuración de marca de socio estratégico / alianza de equipo.
 model Partner {
-  id          String          @id @default("default")
-  name        String          @default("Socio Principal")
-  logo        String          @default("https://logo.clearbit.com/tiendanube.com")
-  description String          @default("Socio Estratégico en Migraciones y Optimización")
-  link        String?         @default("https://www.tiendanube.com.mx")
-  members     PartnerMember[]
+  id                  String          @id @default(uuid())
+  name                String          @default("Socio Principal")
+  logo                String          @default("https://logo.clearbit.com/tiendanube.com")
+  description         String?         @default("Socio Estratégico en Migraciones y Optimización")
+  link                String?         @default("https://www.tiendanube.com.mx")
+  representativeEmail String?
+  teamId              String?
+  team                Team?           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  members             PartnerMember[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @default(now()) @updatedAt
+
+  @@index([teamId])
 }
 
-/// Integrantes asociados a la marca del socio estratégico.
+/// Integrantes asociados a la marca del socio estratégico / alianza.
 model PartnerMember {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   email     String
-  role      String  @default("Lector")
+  role      String   @default("Lector")
   partnerId String
-  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
   @@index([partnerId])
+  @@index([email])
 }
 
 // ==============================================================================
