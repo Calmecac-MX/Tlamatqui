@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.80 (Frontend) / v2.5.66 (Backend)] - 2026-09-07
+
+### 🚀 Features & Nuevas Funcionalidades
+- **teams:** wizard de onboarding de 4 pasos, aprobación de miembros y aliados (`10e3717`)
+
 ## [v2.5.79 (Frontend) / v2.5.66 (Backend)] - 2026-09-07
 
 ### 🚀 Features & Nuevas Funcionalidades

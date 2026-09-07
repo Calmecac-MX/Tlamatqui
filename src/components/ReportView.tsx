@@ -22,6 +22,8 @@ import { getVisitorId, sendReportInteraction } from "../utils/telemetryHelpers";
 import { ReportPrintPresentation } from "./report/ReportPrintPresentation";
 import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
+import AdaptiveLogo from "./AdaptiveLogo";
+import ReportNavigationDock from "./ReportNavigationDock";
 
 /**
  * Propiedades del componente ReportView.
@@ -693,16 +695,27 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         return;
       }
 
-      if (e.key === "ArrowUp") {
+      if (e.key === "ArrowUp" || e.key === "PageUp") {
         e.preventDefault();
         if (activeSlide > 0) {
           handleSlideChange(activeSlide - 1);
         }
-      } else if (e.key === "ArrowDown") {
+      } else if (e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey)) {
         e.preventDefault();
         if (activeSlide < slides.length - 1) {
           handleSlideChange(activeSlide + 1);
         }
+      } else if (e.key === " " && e.shiftKey) {
+        e.preventDefault();
+        if (activeSlide > 0) {
+          handleSlideChange(activeSlide - 1);
+        }
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        handleSlideChange(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        handleSlideChange(slides.length - 1);
       } else if (e.key === "ArrowLeft") {
         // Left slider
         if (activeSlide === 2) {
@@ -1249,14 +1262,12 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           <div className="flex items-center gap-3">
             <div className="w-10 h-1 shrink-0" /> {/* Spacer to avoid overlap with floating button */}
             <div className="flex items-center gap-2">
-              {report.logo && (
-                <img 
-                  src={report.logo} 
-                  alt={report.name} 
-                  className="w-6 h-6 rounded-md object-cover border border-border-theme bg-bg-theme" 
-                  onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                />
-              )}
+              <AdaptiveLogo
+                src={report.logo}
+                alt={report.name}
+                fallbackText={report.name}
+                size="sm"
+              />
               <span className="text-xs font-bold tracking-tight text-white uppercase truncate max-w-[120px]">{report.name}</span>
             </div>
           </div>
@@ -1321,18 +1332,12 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
             {/* Sidebar Title / Logo */}
             <div className="flex items-center justify-between border-b border-border-theme pb-4">
               <div className="flex items-center gap-3">
-                {report.logo ? (
-                  <img 
-                    src={report.logo} 
-                    alt={report.name} 
-                    className="w-8 h-8 rounded-lg object-cover border border-border-theme bg-bg-theme" 
-                    onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-accent-theme/10 border border-accent-theme/20 flex items-center justify-center font-bold text-xs text-accent-theme">
-                    {report.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AdaptiveLogo
+                  src={report.logo}
+                  alt={report.name}
+                  fallbackText={report.name}
+                  size="sm"
+                />
                 <div className="truncate">
                   <span className="text-[10px] text-text-dim-theme block font-semibold uppercase tracking-wider">Reporte</span>
                   <h1 className="text-sm font-black tracking-tight text-white truncate max-w-[140px]">{report.name}</h1>
@@ -1508,23 +1513,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
             {/* SLIDE 0: PORTADA (COVER) */}
             {activeSlide === 0 && (
               <div data-slide-index="0" className="w-full max-w-5xl mx-auto text-center space-y-4 md:space-y-6 py-4 flex flex-col justify-center items-center my-auto">
-            {/* Merchant Logo Center */}
+            {/* Merchant Logo Center with Full Containment & Real-time Contrast Verifier */}
             <div className="flex justify-center">
-              {report.logo ? (
-                <div className="relative group">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-accent-theme to-indigo-500 opacity-30 blur group-hover:opacity-40 transition-all"></div>
-                  <img 
-                    src={report.logo} 
-                    alt={report.name} 
-                    className="relative w-20 h-20 md:w-28 md:h-28 rounded-full object-cover border-2 border-border-theme shadow-xl bg-surface-theme" 
-                    onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                  />
-                </div>
-              ) : (
-                <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-accent-theme/10 to-indigo-500/10 border border-accent-theme/20 flex items-center justify-center font-bold text-3xl md:text-5xl text-accent-theme shadow-lg">
-                  {report.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AdaptiveLogo
+                src={report.logo}
+                alt={report.name}
+                fallbackText={report.name}
+                size="hero"
+                showContrastBadge={true}
+              />
             </div>
 
             {/* Header Block */}
@@ -1636,22 +1633,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         {/* SLIDE 1: INTRODUCCIÓN */}
         {activeSlide === 1 && (
           <div data-slide-index="1" className="w-full max-w-5xl mx-auto text-center space-y-3 md:space-y-4 py-2 my-auto">
-            {/* Merchant Logo */}
+            {/* Merchant Logo with Adaptive Fit */}
             <div className="flex justify-center mb-1">
-              {report.logo ? (
-                <div className="relative group">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-accent-theme to-indigo-500 opacity-25 blur group-hover:opacity-45 transition-all duration-300"></div>
-                  <img 
-                    src={report.logo} 
-                    alt={report.name} 
-                    className="relative w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border border-border-theme shadow-md bg-surface-theme" 
-                  />
-                </div>
-              ) : (
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-accent-theme/10 to-indigo-500/10 border border-accent-theme/20 flex items-center justify-center font-bold text-xl md:text-2xl text-accent-theme shadow-md">
-                  {report.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AdaptiveLogo
+                src={report.logo}
+                alt={report.name}
+                fallbackText={report.name}
+                size="md"
+                showContrastBadge={false}
+              />
             </div>
 
             <div className="space-y-1.5 md:space-y-2.5 max-w-3xl mx-auto">
@@ -4052,6 +4042,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           </button>
         </footer>
       )}
+
+      {/* Floating Vertical Navigation Dock & Keyboard Shortcuts Indicator */}
+      <ReportNavigationDock
+        activeSlide={activeSlide}
+        totalSlides={slides.length}
+        slides={slides}
+        onSlideChange={handleSlideChange}
+        isShared={isShared}
+      />
 
       </div>
     </div>
