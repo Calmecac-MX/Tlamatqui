@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.80 (Frontend) / v2.5.67 (Backend)] - 2026-09-07
+
+### 🚀 Features & Nuevas Funcionalidades
+- **report:** ajuste de contención de logo con verificador de contraste y dock de navegación con flechas (`90486cd`)
+
 ## [v2.5.80 (Frontend) / v2.5.66 (Backend)] - 2026-09-07
 
 ### 🚀 Features & Nuevas Funcionalidades

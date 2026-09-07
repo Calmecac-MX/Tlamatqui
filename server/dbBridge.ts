@@ -2,7 +2,7 @@ import fs, { promises as fsPromises } from "fs";
 import path from "path";
 import dns from "node:dns/promises";
 import crypto from "node:crypto";
-import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
+import { getPrisma, isPrismaEnabled, ensureDatabaseSchema } from "./lib/prisma.js";
 import { Team, TeamMember, Ally, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, UserRole, ApiKeyItem, SystemHealthData } from "./types.js";
 import { resolveTechnologyLogo } from "./scrapper.js";
 
@@ -1243,6 +1243,100 @@ export async function addExternalAllyMember(
 // ==========================================
 
 /**
+ * Transforma un registro de Prisma Report y sus relaciones en el objeto de dominio Report.
+ */
+function mapPrismaReportToDomain(r: any): Report {
+  return {
+    id: r.id,
+    name: r.name,
+    logo: r.logo || undefined,
+    tagline: r.tagline || undefined,
+    fugasCantidad: r.fugasCantidad || 0,
+    fugasRangoMin: r.fugasRangoMin || 0,
+    fugasRangoMax: r.fugasRangoMax || 0,
+    visitasMensuales: r.visitasMensuales || 0,
+    gmv: r.gmv || 0,
+    shopifyFee: r.shopifyFee || 0,
+    msi: r.msi || undefined,
+    shopifyPlan: r.shopifyPlan as any,
+    shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
+    shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
+    shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
+    shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
+    tiendanubePlan: r.tiendanubePlan as any,
+    detectedCms: r.detectedCms || undefined,
+    activeTheme: r.activeTheme || undefined,
+    screenshotDesktop: r.screenshotDesktop || undefined,
+    screenshotMobile: r.screenshotMobile || undefined,
+    paymentGateways: (r.paymentGateways as any as string[]) || undefined,
+    pixels: (r.pixels as any) || undefined,
+    infrastructure: (r.infrastructure as any) || undefined,
+    serverLocation: (r.serverLocation as any) || undefined,
+    serverLatencyMs: r.serverLatencyMs || undefined,
+    pageSpeed: r.pageSpeed ? {
+      id: r.pageSpeed.id,
+      performanceScore: r.pageSpeed.performanceScore,
+      accessibilityScore: r.pageSpeed.accessibilityScore,
+      seoScore: r.pageSpeed.seoScore,
+      fcp: r.pageSpeed.fcp || undefined,
+      lcp: r.pageSpeed.lcp || undefined,
+      tbt: r.pageSpeed.tbt || undefined,
+      cls: r.pageSpeed.cls || undefined,
+      speedIndex: r.pageSpeed.speedIndex || undefined,
+      interactive: r.pageSpeed.interactive || undefined,
+      isDemo: r.pageSpeed.isDemo
+    } : undefined,
+    tools: (r.tools || []).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      category: t.category,
+      costType: t.costType as any,
+      costExact: t.costExact,
+      costMin: t.costMin,
+      costMax: t.costMax,
+      currency: t.currency as any,
+      semaphore: t.semaphore as any,
+      url: t.url || undefined,
+      description: t.description || undefined,
+      logo: resolveTechnologyLogo(t.name, t.url, t.logo)
+    })),
+    comparisonRows: (r.comparisonRows || []).map((row: any) => ({
+      id: row.id,
+      variable: row.variable,
+      shopify: row.shopify,
+      tiendanube: row.tiendanube,
+      pillText: row.pillText
+    })),
+    contactEmail: r.contactEmail || "comercial@tiendanube.mx",
+    contactWhatsapp: r.contactWhatsapp || "5512345678",
+    adminLogos: (r.adminLogos as any as string[]) || [],
+    brandCard1Title: r.brandCard1Title || undefined,
+    brandCard1Desc: r.brandCard1Desc || undefined,
+    brandCard1Logo: r.brandCard1Logo || undefined,
+    brandCard1Link: r.brandCard1Link || undefined,
+    brandCard2Title: r.brandCard2Title || undefined,
+    brandCard2Desc: r.brandCard2Desc || undefined,
+    brandCard2Logo: r.brandCard2Logo || undefined,
+    brandCard2Link: r.brandCard2Link || undefined,
+    finalSlideMainLogo: r.finalSlideMainLogo || undefined,
+    createdBy: r.createdBy || undefined,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString()),
+    viewCount: r.viewCount || 0,
+    openCount: r.openCount || 0,
+    uniqueVisitors: r.uniqueVisitors || 0,
+    uniqueVisitorIds: (r.uniqueVisitorIds as any as string[]) || [],
+    interactions: r.interactions ? {
+      slideViews: r.interactions.slideViews as any,
+      whatsappClicks: r.interactions.whatsappClicks,
+      toolClicks: r.interactions.toolClicks,
+      calculatorInteractions: r.interactions.calculatorInteractions,
+      timeSpentSeconds: r.interactions.timeSpentSeconds
+    } : undefined,
+    teamId: r.teamId || undefined
+  };
+}
+
+/**
  * Obtiene el listado completo de reportes de diagnóstico.
  * 
  * @returns {Promise<Report[]>} Arreglo de reportes con herramientas, comparativas e interacciones.
@@ -1273,163 +1367,41 @@ export async function getDbReports(): Promise<Report[]> {
           }),
           3500
         );
-        result = dbReports.map(r => ({
-          id: r.id,
-          name: r.name,
-          logo: r.logo || undefined,
-          tagline: r.tagline,
-          fugasCantidad: r.fugasCantidad,
-          fugasRangoMin: r.fugasRangoMin,
-          fugasRangoMax: r.fugasRangoMax,
-          visitasMensuales: r.visitasMensuales,
-          gmv: r.gmv,
-          shopifyFee: r.shopifyFee,
-          msi: r.msi,
-          shopifyPlan: r.shopifyPlan as any,
-          shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
-          shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
-          shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
-          shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
-          tiendanubePlan: r.tiendanubePlan as any,
-          detectedCms: r.detectedCms || undefined,
-          activeTheme: r.activeTheme || undefined,
-          screenshotDesktop: r.screenshotDesktop || undefined,
-          screenshotMobile: r.screenshotMobile || undefined,
-          paymentGateways: (r.paymentGateways as any as string[]) || undefined,
-          pixels: (r.pixels as any) || undefined,
-          infrastructure: (r.infrastructure as any) || undefined,
-          serverLocation: (r.serverLocation as any) || undefined,
-          serverLatencyMs: r.serverLatencyMs || undefined,
-          pageSpeed: r.pageSpeed ? {
-            id: r.pageSpeed.id,
-            performanceScore: r.pageSpeed.performanceScore,
-            accessibilityScore: r.pageSpeed.accessibilityScore,
-            seoScore: r.pageSpeed.seoScore,
-            fcp: r.pageSpeed.fcp || undefined,
-            lcp: r.pageSpeed.lcp || undefined,
-            tbt: r.pageSpeed.tbt || undefined,
-            cls: r.pageSpeed.cls || undefined,
-            speedIndex: r.pageSpeed.speedIndex || undefined,
-            interactive: r.pageSpeed.interactive || undefined,
-            isDemo: r.pageSpeed.isDemo
-          } : undefined,
-          tools: r.tools.map(t => ({
-            id: t.id,
-            name: t.name,
-            category: t.category,
-            costType: t.costType as any,
-            costExact: t.costExact,
-            costMin: t.costMin,
-            costMax: t.costMax,
-            currency: t.currency as any,
-            semaphore: t.semaphore as any,
-            url: t.url || undefined,
-            description: t.description || undefined,
-            logo: resolveTechnologyLogo(t.name, t.url, t.logo)
-          })),
-          comparisonRows: r.comparisonRows.map(row => ({
-            id: row.id,
-            variable: row.variable,
-            shopify: row.shopify,
-            tiendanube: row.tiendanube,
-            pillText: row.pillText
-          })),
-          contactEmail: r.contactEmail,
-          contactWhatsapp: r.contactWhatsapp,
-          adminLogos: r.adminLogos as any as string[],
-          brandCard1Title: r.brandCard1Title || undefined,
-          brandCard1Desc: r.brandCard1Desc || undefined,
-          brandCard1Logo: r.brandCard1Logo || undefined,
-          brandCard1Link: r.brandCard1Link || undefined,
-          brandCard2Title: r.brandCard2Title || undefined,
-          brandCard2Desc: r.brandCard2Desc || undefined,
-          brandCard2Logo: r.brandCard2Logo || undefined,
-          brandCard2Link: r.brandCard2Link || undefined,
-          finalSlideMainLogo: r.finalSlideMainLogo || undefined,
-          createdBy: r.createdBy || undefined,
-          createdAt: r.createdAt.toISOString(),
-          viewCount: r.viewCount,
-          openCount: r.openCount,
-          uniqueVisitors: r.uniqueVisitors,
-          uniqueVisitorIds: (r.uniqueVisitorIds as any as string[]) || [],
-          interactions: r.interactions ? {
-            slideViews: r.interactions.slideViews as any,
-            whatsappClicks: r.interactions.whatsappClicks,
-            toolClicks: r.interactions.toolClicks,
-            calculatorInteractions: r.interactions.calculatorInteractions,
-            timeSpentSeconds: r.interactions.timeSpentSeconds
-          } : undefined,
-          metrics: r.metrics ? {
-            id: r.metrics.id,
-            visitasMensuales: r.metrics.visitasMensuales,
-            gmv: r.metrics.gmv,
-            fugasCantidad: r.metrics.fugasCantidad || undefined,
-            fugasRangoMin: r.metrics.fugasRangoMin || undefined,
-            fugasRangoMax: r.metrics.fugasRangoMax || undefined
-          } : {
-            visitasMensuales: r.visitasMensuales,
-            gmv: r.gmv,
-            fugasCantidad: r.fugasCantidad || undefined,
-            fugasRangoMin: r.fugasRangoMin || undefined,
-            fugasRangoMax: r.fugasRangoMax || undefined
-          },
-          platformConfig: r.platformConfig ? {
-            id: r.platformConfig.id,
-            shopifyPlan: r.platformConfig.shopifyPlan as any,
-            shopifyFee: r.platformConfig.shopifyFee || undefined,
-            msi: r.platformConfig.msi || undefined,
-            shopifyPlanCustomFee: r.platformConfig.shopifyPlanCustomFee || undefined,
-            shopifyPlanCustomPrice: r.platformConfig.shopifyPlanCustomPrice || undefined,
-            shopifyAppsCostUSD: r.platformConfig.shopifyAppsCostUSD || undefined,
-            shopifyAppsCostMXN: r.platformConfig.shopifyAppsCostMXN || undefined,
-            tiendanubePlan: r.platformConfig.tiendanubePlan as any
-          } : {
-            shopifyPlan: r.shopifyPlan as any,
-            shopifyFee: r.shopifyFee || undefined,
-            msi: r.msi || undefined,
-            shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
-            shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
-            shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
-            shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
-            tiendanubePlan: r.tiendanubePlan as any
-          },
-          analytics: r.analytics ? {
-            id: r.analytics.id,
-            viewCount: r.analytics.viewCount,
-            openCount: r.analytics.openCount,
-            uniqueVisitors: r.analytics.uniqueVisitors,
-            uniqueVisitorIds: (r.analytics.uniqueVisitorIds as any as string[]) || []
-          } : {
-            viewCount: r.viewCount,
-            openCount: r.openCount,
-            uniqueVisitors: r.uniqueVisitors,
-            uniqueVisitorIds: (r.uniqueVisitorIds as any as string[]) || []
-          },
-          teamId: r.teamId || undefined,
-          team: r.team ? {
-            id: r.team.id,
-            name: r.team.name,
-            image: r.team.image || undefined,
-            ownerName: r.team.ownerName,
-            ownerEmail: r.team.ownerEmail,
-            members: [],
-            inviteToken: r.team.inviteToken || undefined,
-            inviteRole: (r.team.inviteRole as any) || "Visor",
-            teamBrandName: r.team.teamBrandName || undefined,
-            teamBrandLogo: r.team.teamBrandLogo || undefined,
-            teamBrandWebsite: r.team.teamBrandWebsite || undefined,
-            allies: (r.team as any).allies ? (r.team as any).allies.map((a: any) => ({
-              id: a.id,
-              name: a.name,
-              logo: a.logo,
-              url: a.url,
-              teamId: a.teamId
-            })) : [],
-            createdAt: r.team.createdAt.toISOString()
-          } : undefined
-        }));
-      } catch (err) {
-        console.error("Error fetching reports from database:", err);
+        result = dbReports.map(r => mapPrismaReportToDomain(r));
+        if (result.length > 0) {
+          setCachedQueryResult("reports", result, 3000);
+          return result;
+        }
+      } catch (err: any) {
+        if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+          console.warn("[Prisma Auto-Repair] Column mismatch in getDbReports, reparando columnas automáticamente...", err.message);
+          try {
+            await ensureDatabaseSchema(prisma);
+            const retryReports = await prisma.report.findMany({
+              include: {
+                tools: true,
+                comparisonRows: true,
+                interactions: true,
+                metrics: true,
+                platformConfig: true,
+                analytics: true,
+                pageSpeed: true,
+                team: {
+                  include: { allies: true }
+                }
+              }
+            });
+            result = retryReports.map(r => mapPrismaReportToDomain(r));
+            if (result.length > 0) {
+              setCachedQueryResult("reports", result, 3000);
+              return result;
+            }
+          } catch (retryErr) {
+            console.error("[Prisma Auto-Repair Error in getDbReports]:", retryErr);
+          }
+        } else {
+          console.error("Error fetching reports from database:", err);
+        }
       }
     }
   }
@@ -1449,7 +1421,6 @@ export async function getDbReports(): Promise<Report[]> {
   setCachedQueryResult("reports", result, 3000);
   return result;
 }
-
 
 /**
  * Obtiene un reporte de diagnóstico por su identificador único.
@@ -1479,103 +1450,56 @@ export async function getDbReportById(id: string): Promise<Report | null> {
             tools: true,
             comparisonRows: true,
             interactions: true,
-            pageSpeed: true
+            metrics: true,
+            platformConfig: true,
+            analytics: true,
+            pageSpeed: true,
+            team: {
+              include: { allies: true }
+            }
           }
         });
         if (r) {
-          const mappedReport: Report = {
-            id: r.id,
-            name: r.name,
-            logo: r.logo || undefined,
-            tagline: r.tagline || undefined,
-            fugasCantidad: r.fugasCantidad || 0,
-            fugasRangoMin: r.fugasRangoMin || 0,
-            fugasRangoMax: r.fugasRangoMax || 0,
-            visitasMensuales: r.visitasMensuales || 0,
-            gmv: r.gmv || 0,
-            shopifyFee: r.shopifyFee || 0,
-            msi: r.msi || undefined,
-            shopifyPlan: r.shopifyPlan as any,
-            shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
-            shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
-            shopifyAppsCostUSD: r.shopifyAppsCostUSD || undefined,
-            shopifyAppsCostMXN: r.shopifyAppsCostMXN || undefined,
-            tiendanubePlan: r.tiendanubePlan as any,
-            detectedCms: r.detectedCms || undefined,
-            activeTheme: r.activeTheme || undefined,
-            screenshotDesktop: r.screenshotDesktop || undefined,
-            screenshotMobile: r.screenshotMobile || undefined,
-            paymentGateways: (r.paymentGateways as any as string[]) || undefined,
-            pixels: (r.pixels as any) || undefined,
-            infrastructure: (r.infrastructure as any) || undefined,
-            serverLocation: (r.serverLocation as any) || undefined,
-            serverLatencyMs: r.serverLatencyMs || undefined,
-            pageSpeed: r.pageSpeed ? {
-              id: r.pageSpeed.id,
-              performanceScore: r.pageSpeed.performanceScore,
-              accessibilityScore: r.pageSpeed.accessibilityScore,
-              seoScore: r.pageSpeed.seoScore,
-              fcp: r.pageSpeed.fcp || undefined,
-              lcp: r.pageSpeed.lcp || undefined,
-              tbt: r.pageSpeed.tbt || undefined,
-              cls: r.pageSpeed.cls || undefined,
-              speedIndex: r.pageSpeed.speedIndex || undefined,
-              interactive: r.pageSpeed.interactive || undefined,
-              isDemo: r.pageSpeed.isDemo
-            } : undefined,
-            tools: (r.tools || []).map(t => ({
-              id: t.id,
-              name: t.name,
-              category: t.category,
-              costType: t.costType as any,
-              costExact: t.costExact,
-              costMin: t.costMin,
-              costMax: t.costMax,
-              currency: t.currency as any,
-              semaphore: t.semaphore as any,
-              url: t.url || undefined,
-              description: t.description || undefined,
-              logo: resolveTechnologyLogo(t.name, t.url, t.logo)
-            })),
-            comparisonRows: (r.comparisonRows || []).map(row => ({
-              id: row.id,
-              variable: row.variable,
-              shopify: row.shopify,
-              tiendanube: row.tiendanube,
-              pillText: row.pillText
-            })),
-            contactEmail: r.contactEmail || "comercial@tiendanube.mx",
-            contactWhatsapp: r.contactWhatsapp || "5512345678",
-            adminLogos: (r.adminLogos as any as string[]) || [],
-            brandCard1Title: r.brandCard1Title || undefined,
-            brandCard1Desc: r.brandCard1Desc || undefined,
-            brandCard1Logo: r.brandCard1Logo || undefined,
-            brandCard1Link: r.brandCard1Link || undefined,
-            brandCard2Title: r.brandCard2Title || undefined,
-            brandCard2Desc: r.brandCard2Desc || undefined,
-            brandCard2Logo: r.brandCard2Logo || undefined,
-            brandCard2Link: r.brandCard2Link || undefined,
-            finalSlideMainLogo: r.finalSlideMainLogo || undefined,
-            createdAt: r.createdAt.toISOString(),
-            viewCount: r.viewCount,
-            openCount: r.openCount,
-            uniqueVisitors: r.uniqueVisitors,
-            uniqueVisitorIds: (r.uniqueVisitorIds as any as string[]) || [],
-            interactions: r.interactions ? {
-              slideViews: r.interactions.slideViews as any,
-              whatsappClicks: r.interactions.whatsappClicks,
-              toolClicks: r.interactions.toolClicks,
-              calculatorInteractions: r.interactions.calculatorInteractions,
-              timeSpentSeconds: r.interactions.timeSpentSeconds
-            } : undefined,
-            teamId: r.teamId || undefined,
-            createdBy: r.createdBy || undefined
-          };
+          const mappedReport = mapPrismaReportToDomain(r);
           setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
           return mappedReport;
         }
-      } catch (err) {
-        console.error("Error fetching report by ID from database:", err);
+      } catch (err: any) {
+        if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+          console.warn(`[Prisma Auto-Repair] Column mismatch in getDbReportById(${cleanId}), reparando columnas automáticamente...`, err.message);
+          try {
+            await ensureDatabaseSchema(prisma);
+            const retryReport = await prisma.report.findFirst({
+              where: {
+                OR: [
+                  { id: cleanId },
+                  { id: { equals: cleanId, mode: "insensitive" } }
+                ]
+              },
+              include: {
+                tools: true,
+                comparisonRows: true,
+                interactions: true,
+                metrics: true,
+                platformConfig: true,
+                analytics: true,
+                pageSpeed: true,
+                team: {
+                  include: { allies: true }
+                }
+              }
+            });
+            if (retryReport) {
+              const mappedReport = mapPrismaReportToDomain(retryReport);
+              setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
+              return mappedReport;
+            }
+          } catch (retryErr) {
+            console.error(`[Prisma Auto-Repair Error in getDbReportById for ${cleanId}]:`, retryErr);
+          }
+        } else {
+          console.error("Error fetching report by ID from database:", err);
+        }
       }
     }
   }
@@ -1965,8 +1889,41 @@ export async function saveDbReport(report: Report): Promise<Report> {
             }
           });
         }
-      } catch (err) {
-        console.error("Error saving report to database:", err);
+      } catch (err: any) {
+        if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+          console.warn(`[Prisma Auto-Repair] Column mismatch in saveDbReport(${cleanReport.id}), reparando columnas automáticamente...`, err.message);
+          try {
+            await ensureDatabaseSchema(prisma);
+            // Reintentar upsert de reporte tras reparación
+            let retrySafeTeamId: string | null = cleanReport.teamId || null;
+            if (retrySafeTeamId) {
+              const teamExists = await prisma.team.findUnique({ where: { id: retrySafeTeamId } }).catch(() => null);
+              if (!teamExists) retrySafeTeamId = null;
+            }
+            await prisma.report.upsert({
+              where: { id: cleanReport.id },
+              update: { ...prismaReportData, teamId: retrySafeTeamId },
+              create: {
+                id: cleanReport.id,
+                ...prismaReportData,
+                teamId: retrySafeTeamId,
+                createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
+              }
+            });
+            await prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
+            if (sanitizedTools.length > 0) {
+              await prisma.reportTool.createMany({ data: sanitizedTools });
+            }
+            await prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
+            if (sanitizedComparisonRows.length > 0) {
+              await prisma.reportComparisonRow.createMany({ data: sanitizedComparisonRows });
+            }
+          } catch (retryErr) {
+            console.error(`[Prisma Auto-Repair Error in saveDbReport for ${cleanReport.id}]:`, retryErr);
+          }
+        } else {
+          console.error("Error saving report to database:", err);
+        }
       }
     }
   }
