@@ -1,0 +1,32 @@
+name: "Setup Tlamatqui CI Environment"
+description: "Configuración centralizada y segura de dependencias, Node.js 24 y Prisma ORM para Tlamatqui"
+
+inputs:
+  node-version:
+    description: "Versión de Node.js a utilizar"
+    required: false
+    default: "24"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout del Repositorio
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - name: Configurar Node.js
+      uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Instalar Dependencias Limpias (npm ci)
+      shell: bash
+      run: npm ci
+
+    - name: Validar Esquema de Prisma ORM
+      shell: bash
+      run: npx prisma validate
+
+    - name: Generar Cliente de Prisma ORM
+      shell: bash
+      run: npx prisma generate

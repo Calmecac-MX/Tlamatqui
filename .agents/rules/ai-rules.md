@@ -14,5 +14,5 @@ Todo agente de IA (Antigravity, Gemini, Claude, etc.) DEBE realizar un `git comm
 Cada cambio, modificación de código, adición de característica o actualización de arquitectura DEBE existir y quedar reflejado explícitamente en los cerebros del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). Queda strictly prohibido finalizar una interacción sin actualizar la documentación e inteligencia IA del proyecto.
 
 ## Directiva Obligatoria de Pull Requests y Aprobaciones
-Queda estrictamente prohibido realizar push directos a la rama `main`. Todo cambio o funcionalidad debe enviarse mediante una Pull Request (PR) y requiere aprobación explícita antes de integrarse al flujo de despliegue.
+Queda estrictamente prohibido realizar push directos a la rama principal `omeyocan`. Todo cambio o funcionalidad debe promoverse mediante una Pull Request (PR) y requiere aprobación explícita antes de integrarse al flujo de despliegue en producción.
 

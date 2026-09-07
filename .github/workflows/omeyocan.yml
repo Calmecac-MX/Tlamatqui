@@ -1,12 +1,12 @@
-name: "CI/CD Pipeline: Lint, Build & Release Please"
+name: "CI/CD Pipeline: Omeyocan (Producción & Release Please)"
 
 on:
   push:
     branches:
-      - main
+      - omeyocan
   pull_request:
     branches:
-      - main
+      - omeyocan
   workflow_dispatch:
 
 permissions:
@@ -15,40 +15,31 @@ permissions:
 
 jobs:
   # ============================================================================
-  # 1. ETAPA DE VERIFICACIÓN CI (Lint & Build con Node.js 24)
+  # 1. ETAPA DE VERIFICACIÓN CI PRODUCCIÓN (Lint, Tipos & Compilación)
   # ============================================================================
-  ci-build:
-    name: 🧪 CI Verification (Node 24)
+  omeyocan-verify:
+    name: 🛡️ Omeyocan Production CI (Node 24)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del Repositorio
+      - name: Checkout del Repositorio (Bootstrap para Acción Local)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Configurar Node.js 24
-        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Instalar Dependencias
-        run: npm ci
-
-      - name: Generar Cliente Prisma
-        run: npx prisma generate
+      - name: Configurar Entorno Tlamatqui (Node 24 + Prisma)
+        uses: ./.github/actions/setup-tlamatqui
 
       - name: Verificación de Tipos TypeScript (Lint)
         run: npm run lint
 
-      - name: Compilación Completa (Frontend + Backend)
+      - name: Compilación Completa para Producción (Frontend + Backend)
         run: npm run build
 
   # ============================================================================
-  # 2. ETAPA RELEASE-PLEASE: Autogestión de Versión, Changelog y Release
+  # 2. ETAPA RELEASE-PLEASE: Autogestión de Versión, Changelog y Release en Omeyocan
   # ============================================================================
   release-please:
-    name: 📦 Release Please & Versionado
-    needs: ci-build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: 📦 Release Please (Omeyocan)
+    needs: omeyocan-verify
+    if: github.ref == 'refs/heads/omeyocan' && github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -61,3 +52,4 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          target-branch: omeyocan

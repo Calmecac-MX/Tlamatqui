@@ -4,6 +4,7 @@
   "packages": {
     ".": {
       "changelog-path": "CHANGELOG.md",
+      "target-branch": "omeyocan",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "draft": false,

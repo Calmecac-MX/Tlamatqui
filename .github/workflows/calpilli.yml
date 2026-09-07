@@ -1,0 +1,33 @@
+name: "CI Pipeline: Calpilli (Desarrollo)"
+
+on:
+  push:
+    branches:
+      - calpilli
+  pull_request:
+    branches:
+      - calpilli
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ============================================================================
+  # ETAPA 1: Verificación de Calidad y Compilación en Desarrollo (Calpilli)
+  # ============================================================================
+  calpilli-verify:
+    name: 🛠️ Calpilli CI (Lint & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del Repositorio (Bootstrap para Acción Local)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Entorno Tlamatqui (Node 24 + Prisma)
+        uses: ./.github/actions/setup-tlamatqui
+
+      - name: Verificación de Tipos TypeScript (Lint)
+        run: npm run lint
+
+      - name: Compilación Dual (Frontend Vite + Backend esbuild)
+        run: npm run build

@@ -1,0 +1,50 @@
+name: "CI/CD Pipeline: Tlamatini (Preview / Staging)"
+
+on:
+  push:
+    branches:
+      - tlamatini
+  pull_request:
+    branches:
+      - tlamatini
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ============================================================================
+  # ETAPA 1: Verificación de Pre-Producción y Tipado en Preview (Tlamatini)
+  # ============================================================================
+  tlamatini-verify:
+    name: 🧪 Tlamatini Verification (Lint, Types & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del Repositorio (Bootstrap para Acción Local)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Entorno Tlamatqui (Node 24 + Prisma)
+        uses: ./.github/actions/setup-tlamatqui
+
+      - name: Verificación de Tipos TypeScript (Lint)
+        run: npm run lint
+
+      - name: Compilación Completa para Staging
+        run: npm run build
+
+  # ============================================================================
+  # ETAPA 2: Smoke Test & Verificación de Salud de Staging
+  # ============================================================================
+  tlamatini-stage-check:
+    name: 🟡 Tlamatini Staging Readiness
+    needs: tlamatini-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del Repositorio
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Entorno Tlamatqui
+        uses: ./.github/actions/setup-tlamatqui
+
+      - name: Simular Comprobación de Esquema de Base de Datos
+        run: npx prisma validate
