@@ -383,6 +383,14 @@ export interface TeamMember {
   email: string;
   role: "Superusuario" | "Administrador" | "Agente" | "Visor";
   avatar?: string;
+  /** Estado de aprobación de ingreso al equipo ('approved' o 'pending') */
+  status?: "approved" | "pending";
+  /** Indica si fue añadido por un representante de alianza externa */
+  isExternal?: boolean;
+  /** Correo del representante de alianza que invitó a este miembro */
+  addedByAllyEmail?: string;
+  /** Fecha de solicitud de ingreso */
+  requestedAt?: string;
 }
 
 /**
@@ -391,9 +399,14 @@ export interface TeamMember {
 export interface Ally {
   id: string;
   name: string;
-  logo: string;
-  url: string;
+  logo?: string;
+  url?: string;
+  website?: string;
   teamId?: string;
+  /** Correo del representante oficial de la alianza con permisos para invitar visores */
+  representativeEmail?: string;
+  /** Miembros externos vinculados a esta alianza */
+  members?: Array<{ id: string; name?: string; email: string; role?: string }>;
 }
 
 /**
@@ -405,6 +418,18 @@ export interface Team {
   image?: string;
   ownerName: string;
   ownerEmail: string;
+  /** Correo electrónico de contacto comercial del equipo */
+  contactEmail?: string;
+  /** Teléfono o WhatsApp de contacto comercial del equipo */
+  contactPhone?: string;
+  /** Sitio web oficial del equipo */
+  website?: string;
+  /** Nombre comercial de la marca del equipo */
+  brandName?: string;
+  /** Logotipo comercial de la marca del equipo */
+  brandLogo?: string;
+  /** Color de acento de marca del equipo */
+  brandColor?: string;
   members: TeamMember[];
   /** Token secreto único para el enlace de invitación al equipo */
   inviteToken?: string;

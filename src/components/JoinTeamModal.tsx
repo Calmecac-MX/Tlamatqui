@@ -119,7 +119,7 @@ export const JoinTeamModal: React.FC<JoinTeamModalProps> = ({
             onJoined(data.team);
           }
           onClose();
-        }, 1200);
+        }, data.pendingApproval ? 3000 : 1200);
       } else {
         setFeedback({ type: "error", msg: data.message || "No se pudo completar la unión al equipo." });
       }

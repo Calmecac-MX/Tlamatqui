@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.79 (Frontend) / v2.5.66 (Backend)] - 2026-09-07
+
+### 🚀 Features & Nuevas Funcionalidades
+- **formatters:** add compact notation and full decimal support across metrics and reports (`694a9f8`)
+
 ## [v2.5.78 (Frontend) / v2.5.65 (Backend)] - 2026-09-07
 
 ### 🐛 Corregido & Bug Fixes

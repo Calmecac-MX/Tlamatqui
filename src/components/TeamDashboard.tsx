@@ -482,6 +482,47 @@ export default function TeamDashboard({
     }
   };
 
+  // Handle Approve Pending Member
+  const handleApproveMember = async (memberId: string) => {
+    try {
+      const res = await fetch(`/api/teams/${activeTeam.id}/members/${memberId}/approve`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (data.success && data.team) {
+        await onUpdateTeam(data.team);
+      } else {
+        const updatedMembers = activeTeam.members.map(m => m.id === memberId ? { ...m, status: "approved" as const } : m);
+        await onUpdateTeam({ ...activeTeam, members: updatedMembers });
+      }
+    } catch (err) {
+      console.error("Error al aprobar miembro:", err);
+      const updatedMembers = activeTeam.members.map(m => m.id === memberId ? { ...m, status: "approved" as const } : m);
+      await onUpdateTeam({ ...activeTeam, members: updatedMembers });
+    }
+  };
+
+  // Handle Reject Pending Member
+  const handleRejectMember = async (memberId: string) => {
+    if (!confirm("¿Deseas rechazar la solicitud de ingreso de este usuario?")) return;
+    try {
+      const res = await fetch(`/api/teams/${activeTeam.id}/members/${memberId}/reject`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (data.success && data.team) {
+        await onUpdateTeam(data.team);
+      } else {
+        const updatedMembers = activeTeam.members.filter(m => m.id !== memberId);
+        await onUpdateTeam({ ...activeTeam, members: updatedMembers });
+      }
+    } catch (err) {
+      console.error("Error al rechazar miembro:", err);
+      const updatedMembers = activeTeam.members.filter(m => m.id !== memberId);
+      await onUpdateTeam({ ...activeTeam, members: updatedMembers });
+    }
+  };
+
   // File Upload Helper for Team Image
   const handleTeamImageFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -890,9 +931,75 @@ export default function TeamDashboard({
             )}
 
 
+            {/* Pending Approvals Section */}
+            {activeTeam.members.filter(m => m.status === "pending").length > 0 && (
+              <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-amber-300 uppercase tracking-wider">
+                        Solicitudes de Ingreso Pendientes de Aprobación ({activeTeam.members.filter(m => m.status === "pending").length})
+                      </h4>
+                      <p className="text-[11px] text-text-dim-theme">
+                        Usuarios que solicitaron unirse mediante enlace de invitación y esperan confirmación del administrador.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  {activeTeam.members.filter(m => m.status === "pending").map(member => (
+                    <div 
+                      key={member.id} 
+                      className="p-3 rounded-xl border border-border-theme bg-surface-theme/80 flex items-center justify-between gap-3 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <img 
+                          src={member.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"} 
+                          alt={member.name} 
+                          className="w-9 h-9 rounded-full border border-border-theme object-cover shrink-0" 
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-xs text-white truncate">{member.name}</p>
+                            <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">
+                              Pendiente
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-text-dim-theme truncate">{member.email}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleApproveMember(member.id)}
+                          className="p-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer shadow-xs"
+                          title="Aprobar ingreso al equipo"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectMember(member.id)}
+                          className="p-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 transition-all cursor-pointer shadow-xs"
+                          title="Rechazar solicitud"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Members List Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeTeam.members.map(member => (
+              {activeTeam.members.filter(m => m.status !== "pending").map(member => (
                 <div key={member.id} className="p-5 rounded-2xl border border-border-theme bg-surface-theme/40 relative flex flex-col justify-between gap-4">
                   
                   {/* Top card metadata */}
@@ -902,12 +1009,24 @@ export default function TeamDashboard({
                       alt={member.name} 
                       className="w-11 h-11 rounded-full border border-border-theme object-cover shrink-0" 
                     />
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-sm text-white truncate">{member.name}</h4>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="font-bold text-sm text-white truncate">{member.name}</h4>
+                        {member.isExternal && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400 shrink-0">
+                            Externo
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-text-dim-theme truncate flex items-center gap-1">
                         <Mail className="w-3 h-3 text-text-dim-theme" />
                         {member.email}
                       </p>
+                      {member.addedByAllyEmail && (
+                        <p className="text-[9px] text-text-dim-theme/70 truncate mt-0.5">
+                          Aliado: {member.addedByAllyEmail}
+                        </p>
+                      )}
                     </div>
                   </div>
 

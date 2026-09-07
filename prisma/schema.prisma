@@ -93,6 +93,8 @@ model Team {
   image            String?
   ownerName        String
   ownerEmail       String
+  contactEmail     String?
+  contactPhone     String?
   ownerId          String?
   owner            User?        @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   members          TeamMember[]
@@ -111,14 +113,16 @@ model Team {
 
 /// Alianzas estratégicas o aliados asociados a un equipo.
 model Ally {
-  id        String   @id @default(uuid())
-  name      String
-  logo      String
-  url       String
-  teamId    String
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  name                String
+  logo                String
+  url                 String
+  representativeEmail String?
+  members             Json?    // Lista de miembros externos: { id, name, email, role }[]
+  teamId              String
+  team                Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@map("aliados")
   @@index([teamId])
@@ -127,15 +131,19 @@ model Ally {
 
 /// Integrantes y roles dentro de un equipo o workspace.
 model TeamMember {
-  id      String  @id @default(uuid())
-  name    String
-  email   String
-  role    Role    @default(Visor)
-  avatar  String?
-  teamId  String
-  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  userId  String?
-  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id               String    @id @default(uuid())
+  name             String
+  email            String
+  role             Role      @default(Visor)
+  avatar           String?
+  status           String    @default("approved") // 'approved' o 'pending'
+  isExternal       Boolean   @default(false)
+  addedByAllyEmail String?
+  requestedAt      DateTime?
+  teamId           String
+  team             Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([teamId])
   @@index([userId])

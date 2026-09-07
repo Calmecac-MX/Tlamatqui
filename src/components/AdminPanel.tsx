@@ -25,6 +25,7 @@ import { useAuth } from "../lib/authContext";
 import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
 import { CreateDiagnosticModal } from "./CreateDiagnosticModal";
+import TeamOnboardingModal from "./TeamOnboardingModal";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -114,8 +115,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("team-default");
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState<boolean>(false);
-  const [isCreatingNewTeam, setIsCreatingNewTeam] = useState<boolean>(false);
-  const [newTeamName, setNewTeamName] = useState<string>("");
+  const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState<boolean>(false);
 
   // Search, Filter, Sort and View States
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -147,6 +147,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         setTeams(data);
         if (data.length > 0 && !data.some((t: any) => t.id === selectedTeamId)) {
           setSelectedTeamId(data[0].id);
+        } else if (data.length === 0) {
+          setIsOnboardingModalOpen(true);
         }
       }
     } catch (e) {
@@ -189,29 +191,26 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     }
   };
 
-  const handleCreateTeam = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTeamName.trim()) return;
-
+  const handleSaveOnboardingTeam = async (teamData: Partial<Team>) => {
     try {
       const res = await fetch("/api/teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newTeamName })
+        body: JSON.stringify(teamData)
       });
       if (res.ok) {
         const created = await res.json();
-        setTeams(prev => [...prev, created]);
+        setTeams(prev => [...prev.filter(t => t.id !== created.id), created]);
         setSelectedTeamId(created.id);
-        setNewTeamName("");
-        setIsCreatingNewTeam(false);
+        setIsOnboardingModalOpen(false);
         setIsTeamSelectorOpen(false);
-        alert(`Equipo "${created.name}" creado con éxito.`);
       } else {
-        alert("Error al crear el equipo");
+        const err = await res.json();
+        throw new Error(err.error || "Error al crear el equipo");
       }
-    } catch (e) {
-      alert("Error de red al crear el equipo");
+    } catch (e: any) {
+      console.error("Error al crear el equipo:", e);
+      throw e;
     }
   };
 
@@ -1371,42 +1370,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
                   {/* Create team container inside selector */}
                   <div className="border-t border-border-theme/40 pt-1.5 px-1 pb-1">
-                    {isCreatingNewTeam ? (
-                      <form onSubmit={handleCreateTeam} className="space-y-1.5">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Nombre del nuevo equipo"
-                          value={newTeamName}
-                          onChange={e => setNewTeamName(e.target.value)}
-                          className="w-full text-[11px] px-2 py-1.5 rounded bg-bg-theme border border-border-theme text-white outline-none focus:ring-1 focus:ring-accent-theme"
-                          autoFocus
-                        />
-                        <div className="flex gap-1">
-                          <button
-                            type="submit"
-                            className="flex-1 text-[10px] font-bold py-1 bg-accent-theme hover:bg-accent-theme/90 text-white rounded cursor-pointer"
-                          >
-                            Crear
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsCreatingNewTeam(false)}
-                            className="flex-1 text-[10px] font-bold py-1 bg-bg-theme border border-border-theme text-text-dim-theme hover:text-white rounded cursor-pointer"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      <button
-                        onClick={() => setIsCreatingNewTeam(true)}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-dashed border-border-theme hover:border-accent-theme bg-bg-theme/40 text-text-dim-theme hover:text-accent-theme text-[10px] font-bold transition-all cursor-pointer"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Crear equipo</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        setIsTeamSelectorOpen(false);
+                        setIsOnboardingModalOpen(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border-theme hover:border-accent-theme bg-bg-theme/40 hover:bg-accent-theme/10 text-text-dim-theme hover:text-accent-theme text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Crear nuevo equipo</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -4780,6 +4753,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         onAuditComplete={handleAuditComplete}
         onCreateManual={handleCreateManual}
         isDarkMode={isDarkMode}
+      />
+
+      {/* Modal de Onboarding y Creación Guiada de Espacio de Trabajo */}
+      <TeamOnboardingModal
+        isOpen={isOnboardingModalOpen || (!loading && teams.length === 0)}
+        isFirstTeam={!loading && teams.length === 0}
+        onClose={() => setIsOnboardingModalOpen(false)}
+        onSaveTeam={handleSaveOnboardingTeam}
+        currentUserEmail={userEmail || authUser?.email || "cesar.ayar19@gmail.com"}
+        currentUserName={userName || authUser?.name || "César Ayar"}
       />
 
       </div>

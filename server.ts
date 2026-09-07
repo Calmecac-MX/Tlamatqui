@@ -42,6 +42,9 @@ import {
   createDbApiKey,
   deleteDbApiKey,
   getApiLockStatus,
+  approveTeamMember,
+  rejectTeamMember,
+  addExternalAllyMember,
   toggleApiLock,
   resetInstanceToFactorySettings
 } from "./server/dbBridge.js";
@@ -602,27 +605,105 @@ app.get("/api/teams", async (req: Request, res: Response) => {
  */
 app.post("/api/teams", async (req: Request, res: Response) => {
   try {
-    const newTeam = {
-      id: "team-" + Math.random().toString(36).substring(2, 11),
-      name: req.body.name || "Nuevo Equipo",
-      image: req.body.image || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
-      ownerName: req.body.ownerName || "César Ayar",
-      ownerEmail: req.body.ownerEmail || "cesar.ayar19@gmail.com",
-      members: req.body.members || [
+    const ownerName = req.body.ownerName || "César Ayar";
+    const ownerEmail = req.body.ownerEmail || "cesar.ayar19@gmail.com";
+    const initialMembers = Array.isArray(req.body.members) && req.body.members.length > 0
+      ? req.body.members.map((m: any) => ({
+          id: m.id || "member-" + Math.random().toString(36).substring(2, 11),
+          name: m.name || "Miembro",
+          email: m.email,
+          role: m.role || "Visor",
+          avatar: m.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80",
+          status: m.status || "approved",
+          isExternal: m.isExternal ?? false,
+          addedByAllyEmail: m.addedByAllyEmail
+        }))
+      : [
         {
           id: "member-" + Math.random().toString(36).substring(2, 11),
-          name: req.body.ownerName || "César Ayar",
-          email: req.body.ownerEmail || "cesar.ayar19@gmail.com",
+          name: ownerName,
+          email: ownerEmail,
           role: "Administrador" as const,
-          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
+          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80",
+          status: "approved" as const,
+          isExternal: false
         }
-      ],
+      ];
+
+    const newTeam = {
+      id: req.body.id || "team-" + Math.random().toString(36).substring(2, 11),
+      name: req.body.name || "Nuevo Equipo",
+      brandName: req.body.brandName || req.body.name || "Mi Marca",
+      image: req.body.image || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
+      brandLogo: req.body.brandLogo || req.body.image || "",
+      brandColor: req.body.brandColor || "#6366f1",
+      contactEmail: req.body.contactEmail || ownerEmail,
+      contactPhone: req.body.contactPhone || "",
+      website: req.body.website || "",
+      ownerName: ownerName,
+      ownerEmail: ownerEmail,
+      members: initialMembers,
+      allies: Array.isArray(req.body.allies) ? req.body.allies : [],
+      inviteToken: req.body.inviteToken || `team-inv-sec_${Math.random().toString(36).substring(2, 10)}`,
+      inviteRole: req.body.inviteRole || "Visor",
       createdAt: new Date().toISOString()
     };
     const saved = await saveDbTeam(newTeam);
     res.status(201).json(saved);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/teams/:id/members/:memberId/approve
+ * @description Aprueba el ingreso de un miembro que solicitó unirse vía enlace de invitación.
+ */
+app.post("/api/teams/:id/members/:memberId/approve", async (req: Request, res: Response) => {
+  try {
+    const result = await approveTeamMember(req.params.id, req.params.memberId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * @route POST /api/teams/:id/members/:memberId/reject
+ * @description Rechaza y elimina la solicitud de ingreso de un miembro pendiente.
+ */
+app.post("/api/teams/:id/members/:memberId/reject", async (req: Request, res: Response) => {
+  try {
+    const result = await rejectTeamMember(req.params.id, req.params.memberId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * @route POST /api/teams/:id/allies/:allyId/members
+ * @description Permite al representante de un aliado registrar colaboradores externos (visores).
+ */
+app.post("/api/teams/:id/allies/:allyId/members", async (req: Request, res: Response) => {
+  try {
+    const { name, email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "El correo es obligatorio" });
+    }
+    const result = await addExternalAllyMember(req.params.id, req.params.allyId, { name: name || "", email });
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

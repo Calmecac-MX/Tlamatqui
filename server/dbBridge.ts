@@ -3,7 +3,7 @@ import path from "path";
 import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled } from "./lib/prisma.js";
-import { Team, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, UserRole, ApiKeyItem, SystemHealthData } from "./types.js";
+import { Team, TeamMember, Ally, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, UserRole, ApiKeyItem, SystemHealthData } from "./types.js";
 import { resolveTechnologyLogo } from "./scrapper.js";
 
 import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
@@ -787,24 +787,32 @@ export async function getDbTeams(): Promise<Team[]> {
           image: t.image || undefined,
           ownerName: t.ownerName,
           ownerEmail: t.ownerEmail,
-          members: t.members.map(m => ({
+          contactEmail: (t as any).contactEmail || undefined,
+          contactPhone: (t as any).contactPhone || undefined,
+          members: t.members.map((m: any) => ({
             id: m.id,
             name: m.name,
             email: m.email,
             role: m.role as any,
-            avatar: m.avatar || undefined
+            avatar: m.avatar || undefined,
+            status: (m.status as any) || "approved",
+            isExternal: Boolean(m.isExternal),
+            addedByAllyEmail: m.addedByAllyEmail || undefined,
+            requestedAt: m.requestedAt ? m.requestedAt.toISOString() : undefined
           })),
           inviteToken: t.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
           inviteRole: (t.inviteRole as any) || "Visor",
           teamBrandName: t.teamBrandName || undefined,
           teamBrandLogo: t.teamBrandLogo || undefined,
           teamBrandWebsite: t.teamBrandWebsite || undefined,
-          allies: t.allies ? t.allies.map(a => ({
+          allies: t.allies ? t.allies.map((a: any) => ({
             id: a.id,
             name: a.name,
             logo: a.logo,
             url: a.url,
-            teamId: a.teamId
+            teamId: a.teamId,
+            representativeEmail: a.representativeEmail || undefined,
+            members: (a.members as any) || []
           })) : [],
           createdAt: t.createdAt.toISOString()
         }));
@@ -830,78 +838,112 @@ export async function getDbTeams(): Promise<Team[]> {
  * @returns {Promise<Team>} Equipo guardado en la base de datos o almacenamiento local.
  */
 export async function saveDbTeam(team: Team): Promise<Team> {
+  const cleanTeam: Team = {
+    ...team,
+    inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
+    inviteRole: team.inviteRole || "Visor",
+    members: (team.members || []).map(m => ({
+      ...m,
+      status: m.status || "approved",
+      isExternal: Boolean(m.isExternal),
+      addedByAllyEmail: m.addedByAllyEmail || undefined
+    })),
+    allies: (team.allies || []).map(a => ({
+      ...a,
+      id: a.id || "ally-" + Math.random().toString(36).substring(2, 11),
+      members: a.members || []
+    })),
+    createdAt: team.createdAt || new Date().toISOString()
+  };
+
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        // Since members and allies are child relation tables, clear existing and insert to sync
         await prisma.$transaction([
-          prisma.teamMember.deleteMany({ where: { teamId: team.id } }),
-          prisma.ally.deleteMany({ where: { teamId: team.id } }),
+          prisma.teamMember.deleteMany({ where: { teamId: cleanTeam.id } }),
+          prisma.ally.deleteMany({ where: { teamId: cleanTeam.id } }),
           prisma.team.upsert({
-            where: { id: team.id },
+            where: { id: cleanTeam.id },
             update: {
-              name: team.name,
-              image: team.image || null,
-              ownerName: team.ownerName,
-              ownerEmail: team.ownerEmail,
-              inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
-              inviteRole: (team.inviteRole as any) || "Visor",
-              teamBrandName: team.teamBrandName || null,
-              teamBrandLogo: team.teamBrandLogo || null,
-              teamBrandWebsite: team.teamBrandWebsite || null,
+              name: cleanTeam.name,
+              image: cleanTeam.image || null,
+              ownerName: cleanTeam.ownerName,
+              ownerEmail: cleanTeam.ownerEmail,
+              contactEmail: (cleanTeam as any).contactEmail || null,
+              contactPhone: (cleanTeam as any).contactPhone || null,
+              inviteToken: cleanTeam.inviteToken,
+              inviteRole: (cleanTeam.inviteRole as any) || "Visor",
+              teamBrandName: cleanTeam.teamBrandName || null,
+              teamBrandLogo: cleanTeam.teamBrandLogo || null,
+              teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
               members: {
-                create: (team.members || []).map(m => ({
-                  id: m.id,
+                create: cleanTeam.members.map(m => ({
+                  id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                   name: m.name,
                   email: m.email,
                   role: m.role as any,
-                  avatar: m.avatar || null
+                  avatar: m.avatar || null,
+                  status: m.status || "approved",
+                  isExternal: Boolean(m.isExternal),
+                  addedByAllyEmail: m.addedByAllyEmail || null,
+                  requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
                 }))
               },
               allies: {
-                create: (team.allies || []).map(a => ({
-                  id: a.id || "ally-" + Math.random().toString(36).substring(2, 11),
+                create: (cleanTeam.allies || []).map(a => ({
+                  id: a.id,
                   name: a.name,
                   logo: a.logo,
-                  url: a.url
+                  url: a.url,
+                  representativeEmail: a.representativeEmail || null,
+                  members: (a.members as any) || null
                 }))
               }
             },
             create: {
-              id: team.id,
-              name: team.name,
-              image: team.image || null,
-              ownerName: team.ownerName,
-              ownerEmail: team.ownerEmail,
-              inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
-              inviteRole: (team.inviteRole as any) || "Visor",
-              teamBrandName: team.teamBrandName || null,
-              teamBrandLogo: team.teamBrandLogo || null,
-              teamBrandWebsite: team.teamBrandWebsite || null,
-              createdAt: team.createdAt ? new Date(team.createdAt) : new Date(),
+              id: cleanTeam.id,
+              name: cleanTeam.name,
+              image: cleanTeam.image || null,
+              ownerName: cleanTeam.ownerName,
+              ownerEmail: cleanTeam.ownerEmail,
+              contactEmail: (cleanTeam as any).contactEmail || null,
+              contactPhone: (cleanTeam as any).contactPhone || null,
+              inviteToken: cleanTeam.inviteToken,
+              inviteRole: (cleanTeam.inviteRole as any) || "Visor",
+              teamBrandName: cleanTeam.teamBrandName || null,
+              teamBrandLogo: cleanTeam.teamBrandLogo || null,
+              teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
+              createdAt: cleanTeam.createdAt ? new Date(cleanTeam.createdAt) : new Date(),
               members: {
-                create: (team.members || []).map(m => ({
-                  id: m.id,
+                create: cleanTeam.members.map(m => ({
+                  id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                   name: m.name,
                   email: m.email,
                   role: m.role as any,
-                  avatar: m.avatar || null
+                  avatar: m.avatar || null,
+                  status: m.status || "approved",
+                  isExternal: Boolean(m.isExternal),
+                  addedByAllyEmail: m.addedByAllyEmail || null,
+                  requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
                 }))
               },
               allies: {
-                create: (team.allies || []).map(a => ({
-                  id: a.id || "ally-" + Math.random().toString(36).substring(2, 11),
+                create: (cleanTeam.allies || []).map(a => ({
+                  id: a.id,
                   name: a.name,
                   logo: a.logo,
-                  url: a.url
+                  url: a.url,
+                  representativeEmail: a.representativeEmail || null,
+                  members: (a.members as any) || null
                 }))
               }
             }
           })
         ]);
 
-        return team;
+        invalidateApiQueryCache("teams");
+        return cleanTeam;
       } catch (err) {
         console.error("Error saving team to database:", err);
       }
@@ -910,13 +952,7 @@ export async function saveDbTeam(team: Team): Promise<Team> {
 
   // Local fallback
   const teams = await getDbTeams();
-  const index = teams.findIndex(t => t.id === team.id);
-  const cleanTeam = {
-    ...team,
-    inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
-    inviteRole: team.inviteRole || "Visor",
-    createdAt: team.createdAt || new Date().toISOString()
-  };
+  const index = teams.findIndex(t => t.id === cleanTeam.id);
 
   if (index === -1) {
     teams.push(cleanTeam);
@@ -929,6 +965,8 @@ export async function saveDbTeam(team: Team): Promise<Team> {
   } catch (err) {
     console.error("Error writing team to local file:", err);
   }
+
+  invalidateApiQueryCache("teams");
   return cleanTeam;
 }
 
@@ -944,6 +982,7 @@ export async function deleteDbTeam(id: string): Promise<boolean> {
     if (prisma) {
       try {
         await prisma.team.delete({ where: { id } });
+        invalidateApiQueryCache("teams");
         return true;
       } catch (err) {
         console.error("Error deleting team from database:", err);
@@ -959,6 +998,7 @@ export async function deleteDbTeam(id: string): Promise<boolean> {
   }
   try {
     fs.writeFileSync(TEAMS_FILE, JSON.stringify(filtered, null, 2), "utf-8");
+    invalidateApiQueryCache("teams");
     return true;
   } catch (err) {
     console.error("Error deleting team from local file:", err);
@@ -993,20 +1033,21 @@ export async function resetTeamInviteToken(teamId: string): Promise<Team | null>
 }
 
 /**
- * Incorpora un nuevo miembro a un equipo mediante su token de invitación.
+ * Incorpora a un usuario a un equipo mediante su token de invitación.
+ * Si el usuario NO estaba en el listado previo del equipo, se registra con status 'pending' (En espera de aprobación).
  * 
  * @param {string} token - Token de invitación.
- * @param {string} name - Nombre del usuario a incorporar.
- * @param {string} email - Correo del usuario a incorporar.
- * @param {string} [avatar] - Avatar del usuario opcional.
- * @returns {Promise<{ success: boolean; message: string; team?: Team; member?: any }>} Resultado.
+ * @param {string} name - Nombre del usuario.
+ * @param {string} email - Correo del usuario.
+ * @param {string} [avatar] - Avatar opcional.
+ * @returns {Promise<{ success: boolean; message: string; pendingApproval?: boolean; team?: Team; member?: any }>} Resultado.
  */
 export async function joinTeamViaInviteToken(
   token: string,
   name: string,
   email: string,
   avatar?: string
-): Promise<{ success: boolean; message: string; team?: Team; member?: any }> {
+): Promise<{ success: boolean; message: string; pendingApproval?: boolean; team?: Team; member?: any }> {
   const team = await getTeamByInviteToken(token);
   if (!team) {
     return { success: false, message: "El enlace de invitación no es válido o ha caducado." };
@@ -1020,31 +1061,80 @@ export async function joinTeamViaInviteToken(
   const existingMember = team.members.find(m => m.email.toLowerCase() === cleanEmail);
 
   if (existingMember) {
+    if (existingMember.status === "pending") {
+      return {
+        success: true,
+        pendingApproval: true,
+        message: `Tu solicitud para unirte al equipo '${team.name}' ya fue recibida y está en espera de aprobación por el dueño del equipo.`,
+        team,
+        member: existingMember
+      };
+    }
+
     return {
       success: true,
-      message: `¡Ya formas parte del equipo '${team.name}'!`,
+      pendingApproval: false,
+      message: `¡Ya formas parte activa del equipo '${team.name}'!`,
       team,
       member: existingMember
     };
   }
 
+  // Si no figura en el listado previo, queda en espera de aprobación (status: 'pending')
   const newMember = {
     id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     name: name.trim() || cleanEmail.split("@")[0],
     email: cleanEmail,
     role: team.inviteRole || "Visor",
-    avatar: avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80`
+    avatar: avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80`,
+    status: "pending" as const,
+    isExternal: false,
+    requestedAt: new Date().toISOString()
   };
 
   team.members.push(newMember);
   const updatedTeam = await saveDbTeam(team);
 
+  return {
+    success: true,
+    pendingApproval: true,
+    message: `¡Solicitud enviada! Al no estar pre-registrado, tu ingreso al equipo '${team.name}' está en espera de aprobación por el administrador.`,
+    team: updatedTeam,
+    member: newMember
+  };
+}
+
+/**
+ * Aprueba el ingreso de un miembro pendiente en el equipo.
+ * 
+ * @param {string} teamId - ID del equipo.
+ * @param {string} memberId - ID del miembro.
+ * @returns {Promise<{ success: boolean; message: string; team?: Team }>}
+ */
+export async function approveTeamMember(
+  teamId: string,
+  memberId: string
+): Promise<{ success: boolean; message: string; team?: Team }> {
+  const teams = await getDbTeams();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) {
+    return { success: false, message: "Equipo no encontrado" };
+  }
+
+  const member = team.members.find(m => m.id === memberId);
+  if (!member) {
+    return { success: false, message: "Miembro no encontrado en el equipo" };
+  }
+
+  member.status = "approved";
+  const updatedTeam = await saveDbTeam(team);
+
   // Sincronizar el rol de la cuenta de usuario en el sistema
   try {
     const users = await getDbUsers();
-    const targetUserIndex = users.findIndex(u => u.email.toLowerCase() === cleanEmail);
+    const targetUserIndex = users.findIndex(u => u.email.toLowerCase() === member.email.toLowerCase());
     if (targetUserIndex >= 0 && (users[targetUserIndex].role === "Visor" || !users[targetUserIndex].role)) {
-      users[targetUserIndex].role = (team.inviteRole || "Agente") as UserRole;
+      users[targetUserIndex].role = (member.role || "Agente") as UserRole;
       await writeJsonAsync(USERS_FILE, users);
     }
   } catch (e) {
@@ -1053,9 +1143,97 @@ export async function joinTeamViaInviteToken(
 
   return {
     success: true,
-    message: `¡Te has unido exitosamente al equipo '${team.name}' como ${newMember.role}!`,
-    team: updatedTeam,
-    member: newMember
+    message: `El miembro '${member.name}' ha sido aprobado exitosamente.`,
+    team: updatedTeam
+  };
+}
+
+/**
+ * Rechaza y remueve la solicitud de un miembro pendiente en el equipo.
+ * 
+ * @param {string} teamId - ID del equipo.
+ * @param {string} memberId - ID del miembro.
+ * @returns {Promise<{ success: boolean; message: string; team?: Team }>}
+ */
+export async function rejectTeamMember(
+  teamId: string,
+  memberId: string
+): Promise<{ success: boolean; message: string; team?: Team }> {
+  const teams = await getDbTeams();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) {
+    return { success: false, message: "Equipo no encontrado" };
+  }
+
+  const memberIndex = team.members.findIndex(m => m.id === memberId);
+  if (memberIndex === -1) {
+    return { success: false, message: "Miembro no encontrado en el equipo" };
+  }
+
+  const removed = team.members.splice(memberIndex, 1)[0];
+  const updatedTeam = await saveDbTeam(team);
+
+  return {
+    success: true,
+    message: `La solicitud de '${removed.name}' ha sido rechazada y eliminada.`,
+    team: updatedTeam
+  };
+}
+
+/**
+ * Permite a un representante de aliado invitar y registrar nuevos miembros como visores externos.
+ * 
+ * @param {string} teamId - ID del equipo.
+ * @param {string} allyId - ID del aliado.
+ * @param {{ name: string; email: string }} memberData - Datos del nuevo colaborador externo.
+ * @returns {Promise<{ success: boolean; message: string; team?: Team }>}
+ */
+export async function addExternalAllyMember(
+  teamId: string,
+  allyId: string,
+  memberData: { name: string; email: string }
+): Promise<{ success: boolean; message: string; team?: Team }> {
+  const teams = await getDbTeams();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) {
+    return { success: false, message: "Equipo no encontrado" };
+  }
+
+  const ally = (team.allies || []).find(a => a.id === allyId);
+  if (!ally) {
+    return { success: false, message: "Aliado no encontrado en el equipo" };
+  }
+
+  const cleanEmail = memberData.email.trim().toLowerCase();
+  if (!cleanEmail.includes("@")) {
+    return { success: false, message: "Correo no válido" };
+  }
+
+  // Verificar si ya existe en el equipo
+  if (team.members.some(m => m.email.toLowerCase() === cleanEmail)) {
+    return { success: false, message: "Este correo ya está registrado en el equipo" };
+  }
+
+  const newExtMember: TeamMember = {
+    id: `mem-ext-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    name: memberData.name.trim() || cleanEmail.split("@")[0],
+    email: cleanEmail,
+    role: "Visor",
+    avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80`,
+    status: "approved",
+    isExternal: true,
+    addedByAllyEmail: ally.representativeEmail || undefined
+  };
+
+  team.members.push(newExtMember);
+  if (!ally.members) ally.members = [];
+  ally.members.push({ id: newExtMember.id, name: newExtMember.name, email: newExtMember.email, role: "Visor" });
+
+  const updatedTeam = await saveDbTeam(team);
+  return {
+    success: true,
+    message: `Miembro externo '${newExtMember.name}' agregado exitosamente como Visor.`,
+    team: updatedTeam
   };
 }
 
