@@ -1,6 +1,6 @@
 /**
  * @file formatters.ts
- * @description Funciones de utilidad para formateo de fechas, montos financieros y métricas abreviadas.
+ * @description Funciones de utilidad para formateo de fechas, montos financieros con decimales y métricas abreviadas ($1.2M, $450k).
  */
 
 /**
@@ -25,40 +25,78 @@ export const formatReportDate = (dateStr?: string): string => {
 };
 
 /**
- * Convierte montos numéricos grandes a notación financiera abreviada (ej. 1500000 -> "$1.5M" o 450000 -> "$450k").
+ * Convierte montos numéricos grandes a notación financiera abreviada elegante (ej. 1500000 -> "1.5M" o 450000 -> "450k").
+ * Para montos con centavos que no son múltiplos grandes, muestra hasta 2 decimales.
  *
  * @param {number} value - Cantidad numérica a abreviar.
- * @returns {string} Texto abreviado con sufijos 'k' o 'M'.
+ * @param {boolean} [includeDecimals=true] - Si se deben preservar decimales significativos.
+ * @returns {string} Texto abreviado con sufijos 'k' o 'M' o con 2 decimales.
  */
-export const formatAbbreviatedAmount = (value: number): string => {
-  if (value >= 1000000) {
-    const val = value / 1000000;
-    return val % 1 === 0 ? `${val}M` : `${val.toFixed(2).replace(/\.?0+$/, '')}M`;
+export const formatAbbreviatedAmount = (value: number, includeDecimals: boolean = true): string => {
+  const num = Number(value) || 0;
+  const abs = Math.abs(num);
+
+  if (abs >= 1_000_000) {
+    const val = num / 1_000_000;
+    const formatted = val % 1 === 0 ? val.toString() : val.toFixed(includeDecimals ? 1 : 0).replace(/\.0$/, '');
+    return `${formatted}M`;
   }
-  if (value >= 1000) {
-    const val = value / 1000;
-    return val % 1 === 0 ? `${val}k` : `${val.toFixed(2).replace(/\.?0+$/, '')}k`;
+  if (abs >= 100_000) {
+    const val = num / 1_000;
+    const formatted = val % 1 === 0 ? val.toString() : val.toFixed(0);
+    return `${formatted}k`;
   }
-  return value.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (abs >= 1_000) {
+    const val = num / 1_000;
+    const formatted = val % 1 === 0 ? val.toString() : val.toFixed(includeDecimals ? 1 : 0).replace(/\.0$/, '');
+    return `${formatted}k`;
+  }
+
+  return num.toLocaleString("es-MX", {
+    minimumFractionDigits: num % 1 !== 0 ? 2 : 0,
+    maximumFractionDigits: 2
+  });
 };
 
 /**
- * Formatea una cifra numérica a formato estándar de moneda local ($ MXN / $ USD).
+ * Formatea una cifra numérica a formato estándar de moneda local ($ MXN / $ USD) con soporte para notación compacta ($1.2M) o decimales ($29.99).
  *
  * @param {number} amount - Cifra numérica.
  * @param {string} [currency='MXN'] - Código de divisa (MXN, USD).
+ * @param {object} [options] - Opciones de configuración (compact, decimals).
  * @returns {string} Cifra formateada como divisa.
  */
-export const formatCurrency = (amount: number, currency: string = 'MXN'): string => {
-  return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currency}`;
+export const formatCurrency = (
+  amount: number,
+  currency: string = 'MXN',
+  options?: { compact?: boolean; decimals?: number }
+): string => {
+  const num = Number(amount) || 0;
+  const suffix = currency ? ` ${currency}` : '';
+
+  if (options?.compact) {
+    return `$${formatAbbreviatedAmount(num)}${suffix}`;
+  }
+
+  const minDecimals = options?.decimals !== undefined 
+    ? options.decimals 
+    : (num % 1 !== 0 ? 2 : 0);
+  const maxDecimals = options?.decimals !== undefined ? options.decimals : 2;
+
+  return `$${num.toLocaleString('es-MX', { minimumFractionDigits: minDecimals, maximumFractionDigits: maxDecimals })}${suffix}`;
 };
 
 /**
- * Formatea un número entero o decimal agregando comas como separadores de millares.
+ * Formatea un número entero o decimal agregando comas como separadores de millares y preservando decimales.
  *
  * @param {number} value - Valor numérico a formatear.
+ * @param {number} [decimals] - Cantidad opcional fija de decimales.
  * @returns {string} Número formateado con separadores de millar.
  */
-export const formatNumber = (value: number): string => {
-  return value.toLocaleString('es-MX');
+export const formatNumber = (value: number, decimals?: number): string => {
+  const num = Number(value) || 0;
+  const minDecimals = decimals !== undefined ? decimals : (num % 1 !== 0 ? 2 : 0);
+  const maxDecimals = decimals !== undefined ? decimals : 2;
+  return num.toLocaleString('es-MX', { minimumFractionDigits: minDecimals, maximumFractionDigits: maxDecimals });
 };
+

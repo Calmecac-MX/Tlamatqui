@@ -7,6 +7,6 @@
  */
 
 export const BACKEND_VERSION = "2.5.65";
-export const FRONTEND_VERSION = "2.5.77";
+export const FRONTEND_VERSION = "2.5.78";
 
 export default BACKEND_VERSION;

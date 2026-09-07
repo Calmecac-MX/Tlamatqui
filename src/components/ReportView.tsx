@@ -17,7 +17,7 @@ import { Tooltip } from "./Tooltip";
 import RealTimeDashboard from "./RealTimeDashboard";
 import SavingsProjectionChart from "./SavingsProjectionChart";
 import { exportReportToCSV, exportReportToExcel, exportReportToMarkdown, exportReportToPrintPDF } from "../lib/exporter";
-import { formatReportDate, formatAbbreviatedAmount } from "../utils/formatters";
+import { formatReportDate, formatAbbreviatedAmount, formatCurrency, formatNumber } from "../utils/formatters";
 import { getVisitorId, sendReportInteraction } from "../utils/telemetryHelpers";
 import { ReportPrintPresentation } from "./report/ReportPrintPresentation";
 import SendEmailModal from "./SendEmailModal";
@@ -1921,12 +1921,12 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                                     </span>
                                     <span className="font-mono font-black text-xs md:text-sm text-white">
                                       {details.isCustomSelection ? (
-                                        <span className="text-accent-theme">${details.effectiveCost.toLocaleString()} {tool.currency}</span>
+                                        <span className="text-accent-theme">{formatCurrency(details.effectiveCost, tool.currency)}</span>
                                       ) : (
                                         details.costMin === details.costMax ? (
-                                          `$${details.costMin.toLocaleString()} ${tool.currency}`
+                                          formatCurrency(details.costMin, tool.currency)
                                         ) : (
-                                          `$${details.costMin.toLocaleString()} - $${details.costMax.toLocaleString()} ${tool.currency}`
+                                          `$${formatNumber(details.costMin)} - $${formatNumber(details.costMax)} ${tool.currency}`
                                         )
                                       )}
                                     </span>

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.78 (Frontend) / v2.5.65 (Backend)] - 2026-09-07
+
+### 🐛 Corregido & Bug Fixes
+- **db:** sanitize report data and relations for chismografo reports in prisma (`d0b960e`)
+
 ## [v2.5.77 (Frontend) / v2.5.65 (Backend)] - 2026-09-07
 
 ### 🐛 Corregido & Bug Fixes

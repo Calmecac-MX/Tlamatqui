@@ -3949,6 +3949,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">GMV Mensual Estimado ($ MXN) *</label>
                           <input 
                             type="number" 
+                            step="0.01"
                             value={editingReport.gmv || 0} 
                             onChange={e => setEditingReport(prev => ({ ...prev, gmv: Number(e.target.value) }))}
                             className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white font-medium"
@@ -3979,6 +3980,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Mínimo ($ MXN)</label>
                             <input 
                               type="number"
+                              step="0.01"
                               value={editingReport.fugasRangoMin || 0}
                               onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMin: Number(e.target.value) }))}
                               className="w-full text-sm px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
@@ -3988,6 +3990,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             <label className="block text-[10px] text-text-dim-theme uppercase font-bold mb-1">Rango Máximo ($ MXN)</label>
                             <input 
                               type="number"
+                              step="0.01"
                               value={editingReport.fugasRangoMax || 0}
                               onChange={e => setEditingReport(prev => ({ ...prev, fugasRangoMax: Number(e.target.value) }))}
                               className="w-full text-sm px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-surface-theme border-border-theme text-white font-mono"
@@ -4042,6 +4045,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             <label className="block text-[10px] text-text-dim-theme font-semibold mb-1">Costo Fijo (USD)</label>
                             <input 
                               type="number"
+                              step="0.01"
                               value={editingReport.shopifyPlanCustomPrice || 0}
                               onChange={e => setEditingReport(prev => ({ ...prev, shopifyPlanCustomPrice: Number(e.target.value) }))}
                               className="w-full text-sm px-3 py-1.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white"
@@ -4333,6 +4337,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Precio Exacto Mensual</label>
                             <input 
                               type="number" 
+                              step="0.01"
                               value={newTool.costExact || 0} 
                               onChange={e => setNewTool(prev => ({ ...prev, costExact: Number(e.target.value) }))}
                               className={`w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme ${toolErrors.costExact ? "border-red-theme" : "border-border-theme focus:ring-1 focus:ring-accent-theme text-white"}`}
@@ -4344,6 +4349,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Precio Mínimo ($)</label>
                               <input 
                                 type="number" 
+                                step="0.01"
                                 value={newTool.costMin || 0} 
                                 onChange={e => setNewTool(prev => ({ ...prev, costMin: Number(e.target.value) }))}
                                 className={`w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme ${toolErrors.costMin ? "border-red-theme" : "border-border-theme focus:ring-1 focus:ring-accent-theme text-white"}`}
@@ -4353,6 +4359,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1.5">Precio Máximo ($)</label>
                               <input 
                                 type="number" 
+                                step="0.01"
                                 value={newTool.costMax || 0} 
                                 onChange={e => setNewTool(prev => ({ ...prev, costMax: Number(e.target.value) }))}
                                 className={`w-full text-xs px-3 py-2 rounded-lg border outline-none bg-bg-theme ${toolErrors.costMax ? "border-red-theme" : "border-border-theme focus:ring-1 focus:ring-accent-theme text-white"}`}

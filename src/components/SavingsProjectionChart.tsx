@@ -18,6 +18,7 @@ import {
   ReferenceLine
 } from "recharts";
 import { TrendingUp, Coins, Calendar, ArrowUpRight, BarChart3, LineChart } from "lucide-react";
+import { formatAbbreviatedAmount } from "../utils/formatters";
 
 /**
  * Propiedades del componente de gráfico de proyección de ahorro.
@@ -225,7 +226,7 @@ export default function SavingsProjectionChart({
                   tickLine={false} 
                   axisLine={false} 
                   stroke={colors.text}
-                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v) => `$${formatAbbreviatedAmount(v, false)}`}
                   style={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: colors.lime, strokeWidth: 1.5, strokeDasharray: "3 3" }} />
@@ -266,7 +267,7 @@ export default function SavingsProjectionChart({
                   tickLine={false} 
                   axisLine={false} 
                   stroke={colors.text}
-                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v) => `$${formatAbbreviatedAmount(v, false)}`}
                   style={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(163, 230, 53, 0.05)" }} />
@@ -303,7 +304,7 @@ export default function SavingsProjectionChart({
                   tickLine={false} 
                   axisLine={false} 
                   stroke={colors.text}
-                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v) => `$${formatAbbreviatedAmount(v, false)}`}
                   style={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: colors.grid, strokeWidth: 1.5 }} />
@@ -351,7 +352,7 @@ export default function SavingsProjectionChart({
                   tickLine={false} 
                   axisLine={false} 
                   stroke={colors.text}
-                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v) => `$${formatAbbreviatedAmount(v, false)}`}
                   style={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255, 255, 255, 0.03)" }} />
