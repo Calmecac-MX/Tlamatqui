@@ -1432,6 +1432,97 @@ export async function getDbReportById(id: string): Promise<Report | null> {
  * @param {Report} report - Datos completos del reporte de diagnóstico.
  * @returns {Promise<Report>} Reporte guardado.
  */
+const VALID_SHOPIFY_PLANS = ["basic", "grow", "advanced", "plus", "custom"] as const;
+const VALID_TIENDANUBE_PLANS = ["basic", "tiendanube", "advanced", "evolution"] as const;
+
+function sanitizeShopifyPlan(raw?: string | null): "basic" | "grow" | "advanced" | "plus" | "custom" {
+  const norm = String(raw || "").toLowerCase().trim();
+  if (norm === "grow" || norm === "growth" || norm === "standard") return "grow";
+  if (norm === "basic" || norm === "starter") return "basic";
+  if (norm === "advanced" || norm === "pro") return "advanced";
+  if (norm === "plus" || norm === "enterprise") return "plus";
+  if (norm === "custom") return "custom";
+  return "grow";
+}
+
+function sanitizeTiendanubePlan(raw?: string | null): "basic" | "tiendanube" | "advanced" | "evolution" {
+  const norm = String(raw || "").toLowerCase().trim();
+  if (norm === "evolution" || norm === "evolucion") return "evolution";
+  if (norm === "tiendanube" || norm === "nube" || norm === "standard") return "tiendanube";
+  if (norm === "advanced" || norm === "avanzado") return "advanced";
+  if (norm === "basic" || norm === "basico") return "basic";
+  return "evolution";
+}
+
+function sanitizeCostType(raw?: string | null): "exact" | "range" {
+  const norm = String(raw || "").toLowerCase().trim();
+  return norm === "range" ? "range" : "exact";
+}
+
+function sanitizeCurrency(raw?: string | null): "MXN" | "USD" {
+  const norm = String(raw || "").toUpperCase().trim();
+  return norm === "MXN" ? "MXN" : "USD";
+}
+
+function sanitizeSemaphore(raw?: string | null): "green" | "yellow" | "red" {
+  const norm = String(raw || "").toLowerCase().trim();
+  if (norm === "green" || norm === "verde") return "green";
+  if (norm === "red" || norm === "rojo") return "red";
+  return "yellow";
+}
+
+function sanitizeInt(val: any, fallback = 0): number {
+  if (typeof val === "number" && Number.isFinite(val)) return Math.round(val);
+  if (typeof val === "string") {
+    const parsed = parseFloat(val.replace(/[^0-9.-]/g, ""));
+    if (Number.isFinite(parsed)) return Math.round(parsed);
+  }
+  return fallback;
+}
+
+function sanitizeFloat(val: any, fallback = 0): number {
+  if (typeof val === "number" && Number.isFinite(val)) return val;
+  if (typeof val === "string") {
+    const parsed = parseFloat(val.replace(/[^0-9.-]/g, ""));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function sanitizePageSpeed(ps: any) {
+  if (!ps || typeof ps !== "object") return null;
+  const rawPerf = ps.performanceScore ?? ps.performance ?? ps.scores?.performance ?? 0;
+  const perfNum = typeof rawPerf === "number" ? rawPerf : parseFloat(String(rawPerf)) || 0;
+  const performanceScore = Math.min(100, Math.max(0, Math.round(perfNum <= 1 && perfNum > 0 ? perfNum * 100 : perfNum)));
+
+  const rawAcc = ps.accessibilityScore ?? ps.accessibility ?? ps.scores?.accessibility ?? 0;
+  const accNum = typeof rawAcc === "number" ? rawAcc : parseFloat(String(rawAcc)) || 0;
+  const accessibilityScore = Math.min(100, Math.max(0, Math.round(accNum <= 1 && accNum > 0 ? accNum * 100 : accNum)));
+
+  const rawSeo = ps.seoScore ?? ps.seo ?? ps.scores?.seo ?? 0;
+  const seoNum = typeof rawSeo === "number" ? rawSeo : parseFloat(String(rawSeo)) || 0;
+  const seoScore = Math.min(100, Math.max(0, Math.round(seoNum <= 1 && seoNum > 0 ? seoNum * 100 : seoNum)));
+
+  return {
+    performanceScore,
+    accessibilityScore,
+    seoScore,
+    fcp: ps.fcp ? String(ps.fcp) : (ps.metrics?.fcp ? String(ps.metrics.fcp) : null),
+    lcp: ps.lcp ? String(ps.lcp) : (ps.metrics?.lcp ? String(ps.metrics.lcp) : null),
+    tbt: ps.tbt ? String(ps.tbt) : (ps.metrics?.tbt ? String(ps.metrics.tbt) : null),
+    cls: ps.cls ? String(ps.cls) : (ps.metrics?.cls ? String(ps.metrics.cls) : null),
+    speedIndex: ps.speedIndex ? String(ps.speedIndex) : (ps.metrics?.speedIndex ? String(ps.metrics.speedIndex) : null),
+    interactive: ps.interactive ? String(ps.interactive) : (ps.metrics?.interactive ? String(ps.metrics.interactive) : null),
+    isDemo: Boolean(ps.isDemo)
+  };
+}
+
+/**
+ * Guarda o actualiza un reporte de diagnóstico financiero con sus herramientas e interacciones.
+ * 
+ * @param {Report} report - Datos completos del reporte de diagnóstico.
+ * @returns {Promise<Report>} Reporte guardado.
+ */
 export async function saveDbReport(report: Report): Promise<Report> {
   const cleanReport: Report = {
     ...report,
@@ -1444,36 +1535,60 @@ export async function saveDbReport(report: Report): Promise<Report> {
     createdAt: report.createdAt || new Date().toISOString()
   };
 
+  const DEFAULT_LOGOS_FALLBACK = [
+    "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
+    "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
+    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
+  ];
+
+  const sanitizedAdminLogos = Array.isArray(cleanReport.adminLogos) && cleanReport.adminLogos.length > 0
+    ? cleanReport.adminLogos.map(l => String(l))
+    : DEFAULT_LOGOS_FALLBACK;
+
+  const sanitizedPaymentGateways = Array.isArray(cleanReport.paymentGateways)
+    ? cleanReport.paymentGateways.map(p => String(p))
+    : [];
+
+  const sanitizedPixels = Array.isArray(cleanReport.pixels) ? cleanReport.pixels : [];
+  const sanitizedInfrastructure = Array.isArray(cleanReport.infrastructure) ? cleanReport.infrastructure : [];
+  const sanitizedServerLocation = cleanReport.serverLocation && typeof cleanReport.serverLocation === "object"
+    ? cleanReport.serverLocation
+    : null;
+  const sanitizedServerLatencyMs = cleanReport.serverLatencyMs != null
+    ? sanitizeInt(cleanReport.serverLatencyMs, 0)
+    : null;
+  const sanitizedPageSpeed = sanitizePageSpeed(cleanReport.pageSpeed);
+
   const prismaReportData = {
-    name: cleanReport.name,
-    logo: cleanReport.logo || null,
-    tagline: cleanReport.tagline || null,
-    fugasCantidad: Math.round(cleanReport.fugasCantidad || 0),
-    fugasRangoMin: Number(cleanReport.fugasRangoMin || 0),
-    fugasRangoMax: Number(cleanReport.fugasRangoMax || 0),
-    visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
-    gmv: Number(cleanReport.gmv || 0),
-    shopifyFee: Number(cleanReport.shopifyFee || 0),
-    msi: cleanReport.msi || null,
-    businessUrl: cleanReport.businessUrl || null,
-    shopifyPlan: cleanReport.shopifyPlan as any,
-    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
-    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
-    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
-    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
-    tiendanubePlan: cleanReport.tiendanubePlan as any,
-    detectedCms: cleanReport.detectedCms || null,
-    activeTheme: cleanReport.activeTheme || null,
-    screenshotDesktop: cleanReport.screenshotDesktop || null,
-    screenshotMobile: cleanReport.screenshotMobile || null,
-    paymentGateways: cleanReport.paymentGateways as any || null,
-    pixels: cleanReport.pixels as any || null,
-    infrastructure: cleanReport.infrastructure as any || null,
-    serverLocation: cleanReport.serverLocation as any || null,
-    serverLatencyMs: cleanReport.serverLatencyMs ? Math.round(cleanReport.serverLatencyMs) : null,
-    contactEmail: cleanReport.contactEmail,
-    contactWhatsapp: cleanReport.contactWhatsapp,
-    adminLogos: cleanReport.adminLogos as any,
+    name: String(cleanReport.name || "").trim(),
+    logo: cleanReport.logo ? String(cleanReport.logo).trim() : null,
+    tagline: cleanReport.tagline ? String(cleanReport.tagline).trim() : null,
+    fugasCantidad: sanitizeInt(cleanReport.fugasCantidad, 0),
+    fugasRangoMin: sanitizeFloat(cleanReport.fugasRangoMin, 0),
+    fugasRangoMax: sanitizeFloat(cleanReport.fugasRangoMax, 0),
+    visitasMensuales: sanitizeInt(cleanReport.visitasMensuales, 0),
+    gmv: sanitizeFloat(cleanReport.gmv, 0),
+    shopifyFee: sanitizeFloat(cleanReport.shopifyFee, 0),
+    msi: cleanReport.msi ? String(cleanReport.msi).trim() : null,
+    businessUrl: cleanReport.businessUrl ? String(cleanReport.businessUrl).trim() : null,
+    shopifyPlan: sanitizeShopifyPlan(cleanReport.shopifyPlan),
+    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee != null ? sanitizeFloat(cleanReport.shopifyPlanCustomFee, 0) : null,
+    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice != null ? sanitizeFloat(cleanReport.shopifyPlanCustomPrice, 0) : null,
+    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD != null ? sanitizeFloat((cleanReport as any).shopifyAppsCostUSD, 0) : null,
+    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN != null ? sanitizeFloat((cleanReport as any).shopifyAppsCostMXN, 0) : null,
+    tiendanubePlan: sanitizeTiendanubePlan(cleanReport.tiendanubePlan),
+    detectedCms: cleanReport.detectedCms ? String(cleanReport.detectedCms).trim() : "Shopify",
+    activeTheme: cleanReport.activeTheme ? String(cleanReport.activeTheme).trim() : null,
+    screenshotDesktop: cleanReport.screenshotDesktop ? String(cleanReport.screenshotDesktop).trim() : null,
+    screenshotMobile: cleanReport.screenshotMobile ? String(cleanReport.screenshotMobile).trim() : null,
+    paymentGateways: sanitizedPaymentGateways as any,
+    pixels: sanitizedPixels as any,
+    infrastructure: sanitizedInfrastructure as any,
+    serverLocation: sanitizedServerLocation as any,
+    serverLatencyMs: sanitizedServerLatencyMs,
+    contactEmail: String(cleanReport.contactEmail || "comercial@tiendanube.mx").trim(),
+    contactWhatsapp: String(cleanReport.contactWhatsapp || "5512345678").trim(),
+    adminLogos: sanitizedAdminLogos as any,
     brandCard1Title: cleanReport.brandCard1Title || null,
     brandCard1Desc: cleanReport.brandCard1Desc || null,
     brandCard1Logo: cleanReport.brandCard1Logo || null,
@@ -1483,24 +1598,51 @@ export async function saveDbReport(report: Report): Promise<Report> {
     brandCard2Logo: cleanReport.brandCard2Logo || null,
     brandCard2Link: cleanReport.brandCard2Link || null,
     finalSlideMainLogo: cleanReport.finalSlideMainLogo || null,
-    viewCount: cleanReport.viewCount || 0,
-    openCount: cleanReport.openCount || 0,
-    uniqueVisitors: cleanReport.uniqueVisitors || 0,
-    uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || [],
-    teamId: cleanReport.teamId || null,
-    createdBy: cleanReport.createdBy || null
+    viewCount: sanitizeInt(cleanReport.viewCount, 0),
+    openCount: sanitizeInt(cleanReport.openCount, 0),
+    uniqueVisitors: sanitizeInt(cleanReport.uniqueVisitors, 0),
+    uniqueVisitorIds: (Array.isArray(cleanReport.uniqueVisitorIds) ? cleanReport.uniqueVisitorIds : []) as any,
+    createdBy: cleanReport.createdBy ? String(cleanReport.createdBy).trim() : null
   };
+
+  const sanitizedTools = (cleanReport.tools || []).map((t, idx) => ({
+    id: t.id && String(t.id).trim().length > 0 ? String(t.id).trim() : `tool_${cleanReport.id}_${idx}_${Date.now()}`,
+    reportId: cleanReport.id,
+    name: String(t.name || "Herramienta"),
+    category: String(t.category || "General"),
+    costType: sanitizeCostType(t.costType),
+    costExact: sanitizeFloat(t.costExact, 0),
+    costMin: sanitizeFloat(t.costMin, 0),
+    costMax: sanitizeFloat(t.costMax, 0),
+    currency: sanitizeCurrency(t.currency),
+    semaphore: sanitizeSemaphore(t.semaphore),
+    url: t.url ? String(t.url).trim() : null,
+    description: t.description ? String(t.description).trim() : null,
+    logo: t.logo ? String(t.logo).trim() : null,
+    precios: Array.isArray(t.precios) ? (t.precios as any) : null,
+    selectedPlanId: t.selectedPlanId != null ? String(t.selectedPlanId) : null
+  }));
+
+  const sanitizedComparisonRows = (cleanReport.comparisonRows || []).map((row, idx) => ({
+    id: row.id && String(row.id).trim().length > 0 ? String(row.id).trim() : `row_${cleanReport.id}_${idx}_${Date.now()}`,
+    reportId: cleanReport.id,
+    variable: String(row.variable || ""),
+    shopify: String(row.shopify || ""),
+    tiendanube: String(row.tiendanube || ""),
+    pillText: String(row.pillText || "")
+  }));
 
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
       try {
         // Validar que teamId exista para evitar errores de Foreign Key en PostgreSQL
-        if (prismaReportData.teamId) {
-          const teamExists = await prisma.team.findUnique({ where: { id: prismaReportData.teamId } });
+        let safeTeamId: string | null = cleanReport.teamId || null;
+        if (safeTeamId) {
+          const teamExists = await prisma.team.findUnique({ where: { id: safeTeamId } }).catch(() => null);
           if (!teamExists) {
-            if (prismaReportData.teamId === "team-default") {
-              await prisma.team.create({
+            if (safeTeamId === "team-default") {
+              const created = await prisma.team.create({
                 data: {
                   id: "team-default",
                   name: "Equipo Evolución",
@@ -1508,235 +1650,143 @@ export async function saveDbReport(report: Report): Promise<Report> {
                   ownerEmail: "cesar.ayar19@gmail.com"
                 }
               }).catch(() => null);
+              if (!created) {
+                safeTeamId = null;
+              }
             } else {
-              prismaReportData.teamId = null;
+              safeTeamId = null;
             }
           }
         }
 
-        await prisma.$transaction([
-          // Limpiar relaciones hijas previas
-          prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } }),
-          prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } }),
-          // Upsert registro maestro
-          prisma.report.upsert({
-            where: { id: cleanReport.id },
-            update: {
-              ...prismaReportData,
-              tools: {
-                create: (cleanReport.tools || []).map((t, idx) => ({
-                  id: t.id || `tool-${Date.now()}-${idx}`,
-                  name: t.name,
-                  category: t.category,
-                  costType: t.costType as any,
-                  costExact: Number(t.costExact || 0),
-                  costMin: Number(t.costMin || 0),
-                  costMax: Number(t.costMax || 0),
-                  currency: t.currency as any,
-                  semaphore: t.semaphore as any,
-                  url: t.url || null,
-                  description: t.description || null,
-                  logo: t.logo || null
-                }))
-              },
-              comparisonRows: {
-                create: (cleanReport.comparisonRows || []).map((row, idx) => ({
-                  id: row.id || `row-${Date.now()}-${idx}`,
-                  variable: row.variable,
-                  shopify: row.shopify,
-                  tiendanube: row.tiendanube,
-                  pillText: row.pillText
-                }))
-              },
-              interactions: cleanReport.interactions ? {
-                upsert: {
-                  create: {
-                    slideViews: cleanReport.interactions.slideViews as any,
-                    whatsappClicks: cleanReport.interactions.whatsappClicks,
-                    toolClicks: cleanReport.interactions.toolClicks,
-                    calculatorInteractions: cleanReport.interactions.calculatorInteractions,
-                    timeSpentSeconds: cleanReport.interactions.timeSpentSeconds
-                  },
-                  update: {
-                    slideViews: cleanReport.interactions.slideViews as any,
-                    whatsappClicks: cleanReport.interactions.whatsappClicks,
-                    toolClicks: cleanReport.interactions.toolClicks,
-                    calculatorInteractions: cleanReport.interactions.calculatorInteractions,
-                    timeSpentSeconds: cleanReport.interactions.timeSpentSeconds
-                  }
-                }
-              } : undefined,
-              pageSpeed: cleanReport.pageSpeed ? {
-                upsert: {
-                  create: {
-                    performanceScore: cleanReport.pageSpeed.performanceScore || 0,
-                    accessibilityScore: cleanReport.pageSpeed.accessibilityScore || 0,
-                    seoScore: cleanReport.pageSpeed.seoScore || 0,
-                    fcp: cleanReport.pageSpeed.fcp || null,
-                    lcp: cleanReport.pageSpeed.lcp || null,
-                    tbt: cleanReport.pageSpeed.tbt || null,
-                    cls: cleanReport.pageSpeed.cls || null,
-                    speedIndex: cleanReport.pageSpeed.speedIndex || null,
-                    interactive: cleanReport.pageSpeed.interactive || null,
-                    isDemo: Boolean(cleanReport.pageSpeed.isDemo)
-                  },
-                  update: {
-                    performanceScore: cleanReport.pageSpeed.performanceScore || 0,
-                    accessibilityScore: cleanReport.pageSpeed.accessibilityScore || 0,
-                    seoScore: cleanReport.pageSpeed.seoScore || 0,
-                    fcp: cleanReport.pageSpeed.fcp || null,
-                    lcp: cleanReport.pageSpeed.lcp || null,
-                    tbt: cleanReport.pageSpeed.tbt || null,
-                    cls: cleanReport.pageSpeed.cls || null,
-                    speedIndex: cleanReport.pageSpeed.speedIndex || null,
-                    interactive: cleanReport.pageSpeed.interactive || null,
-                    isDemo: Boolean(cleanReport.pageSpeed.isDemo)
-                  }
-                }
-              } : undefined,
-              metrics: {
-                upsert: {
-                  create: {
-                    visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
-                    gmv: Number(cleanReport.gmv || 0),
-                    fugasCantidad: cleanReport.fugasCantidad ? Math.round(cleanReport.fugasCantidad) : null,
-                    fugasRangoMin: cleanReport.fugasRangoMin ? Number(cleanReport.fugasRangoMin) : null,
-                    fugasRangoMax: cleanReport.fugasRangoMax ? Number(cleanReport.fugasRangoMax) : null
-                  },
-                  update: {
-                    visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
-                    gmv: Number(cleanReport.gmv || 0),
-                    fugasCantidad: cleanReport.fugasCantidad ? Math.round(cleanReport.fugasCantidad) : null,
-                    fugasRangoMin: cleanReport.fugasRangoMin ? Number(cleanReport.fugasRangoMin) : null,
-                    fugasRangoMax: cleanReport.fugasRangoMax ? Number(cleanReport.fugasRangoMax) : null
-                  }
-                }
-              },
-              platformConfig: {
-                upsert: {
-                  create: {
-                    shopifyPlan: cleanReport.shopifyPlan as any,
-                    shopifyFee: cleanReport.shopifyFee ? Number(cleanReport.shopifyFee) : null,
-                    msi: cleanReport.msi || null,
-                    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
-                    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
-                    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
-                    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
-                    tiendanubePlan: cleanReport.tiendanubePlan as any
-                  },
-                  update: {
-                    shopifyPlan: cleanReport.shopifyPlan as any,
-                    shopifyFee: cleanReport.shopifyFee ? Number(cleanReport.shopifyFee) : null,
-                    msi: cleanReport.msi || null,
-                    shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
-                    shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
-                    shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
-                    shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
-                    tiendanubePlan: cleanReport.tiendanubePlan as any
-                  }
-                }
-              },
-              analytics: {
-                upsert: {
-                  create: {
-                    viewCount: cleanReport.viewCount || 0,
-                    openCount: cleanReport.openCount || 0,
-                    uniqueVisitors: cleanReport.uniqueVisitors || 0,
-                    uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || []
-                  },
-                  update: {
-                    viewCount: cleanReport.viewCount || 0,
-                    openCount: cleanReport.openCount || 0,
-                    uniqueVisitors: cleanReport.uniqueVisitors || 0,
-                    uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || []
-                  }
-                }
-              }
-            },
+        // 1. Upsert registro maestro del reporte
+        await prisma.report.upsert({
+          where: { id: cleanReport.id },
+          update: {
+            ...prismaReportData,
+            teamId: safeTeamId
+          },
+          create: {
+            id: cleanReport.id,
+            ...prismaReportData,
+            teamId: safeTeamId,
+            createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
+          }
+        });
+
+        // 2. Limpiar e insertar herramientas hijas
+        await prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
+        if (sanitizedTools.length > 0) {
+          await prisma.reportTool.createMany({
+            data: sanitizedTools
+          });
+        }
+
+        // 3. Limpiar e insertar filas comparativas
+        await prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
+        if (sanitizedComparisonRows.length > 0) {
+          await prisma.reportComparisonRow.createMany({
+            data: sanitizedComparisonRows
+          });
+        }
+
+        // 4. Upsert subtabla de Métricas
+        await prisma.reportMetrics.upsert({
+          where: { reportId: cleanReport.id },
+          create: {
+            reportId: cleanReport.id,
+            visitasMensuales: prismaReportData.visitasMensuales,
+            gmv: prismaReportData.gmv,
+            fugasCantidad: prismaReportData.fugasCantidad,
+            fugasRangoMin: prismaReportData.fugasRangoMin,
+            fugasRangoMax: prismaReportData.fugasRangoMax
+          },
+          update: {
+            visitasMensuales: prismaReportData.visitasMensuales,
+            gmv: prismaReportData.gmv,
+            fugasCantidad: prismaReportData.fugasCantidad,
+            fugasRangoMin: prismaReportData.fugasRangoMin,
+            fugasRangoMax: prismaReportData.fugasRangoMax
+          }
+        });
+
+        // 5. Upsert subtabla de Configuración de Plataforma
+        await prisma.reportPlatformConfig.upsert({
+          where: { reportId: cleanReport.id },
+          create: {
+            reportId: cleanReport.id,
+            shopifyPlan: prismaReportData.shopifyPlan,
+            shopifyFee: prismaReportData.shopifyFee,
+            msi: prismaReportData.msi,
+            shopifyPlanCustomFee: prismaReportData.shopifyPlanCustomFee,
+            shopifyPlanCustomPrice: prismaReportData.shopifyPlanCustomPrice,
+            shopifyAppsCostUSD: prismaReportData.shopifyAppsCostUSD,
+            shopifyAppsCostMXN: prismaReportData.shopifyAppsCostMXN,
+            tiendanubePlan: prismaReportData.tiendanubePlan
+          },
+          update: {
+            shopifyPlan: prismaReportData.shopifyPlan,
+            shopifyFee: prismaReportData.shopifyFee,
+            msi: prismaReportData.msi,
+            shopifyPlanCustomFee: prismaReportData.shopifyPlanCustomFee,
+            shopifyPlanCustomPrice: prismaReportData.shopifyPlanCustomPrice,
+            shopifyAppsCostUSD: prismaReportData.shopifyAppsCostUSD,
+            shopifyAppsCostMXN: prismaReportData.shopifyAppsCostMXN,
+            tiendanubePlan: prismaReportData.tiendanubePlan
+          }
+        });
+
+        // 6. Upsert subtabla de Analítica
+        await prisma.reportAnalytics.upsert({
+          where: { reportId: cleanReport.id },
+          create: {
+            reportId: cleanReport.id,
+            viewCount: prismaReportData.viewCount,
+            openCount: prismaReportData.openCount,
+            uniqueVisitors: prismaReportData.uniqueVisitors,
+            uniqueVisitorIds: prismaReportData.uniqueVisitorIds as any
+          },
+          update: {
+            viewCount: prismaReportData.viewCount,
+            openCount: prismaReportData.openCount,
+            uniqueVisitors: prismaReportData.uniqueVisitors,
+            uniqueVisitorIds: prismaReportData.uniqueVisitorIds as any
+          }
+        });
+
+        // 7. Upsert subtabla de Rendimiento PageSpeed
+        if (sanitizedPageSpeed) {
+          await prisma.reportPageSpeed.upsert({
+            where: { reportId: cleanReport.id },
             create: {
-              id: cleanReport.id,
-              ...prismaReportData,
-              createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date(),
-              tools: {
-                create: (cleanReport.tools || []).map((t, idx) => ({
-                  id: t.id || `tool-${Date.now()}-${idx}`,
-                  name: t.name,
-                  category: t.category,
-                  costType: t.costType as any,
-                  costExact: Number(t.costExact || 0),
-                  costMin: Number(t.costMin || 0),
-                  costMax: Number(t.costMax || 0),
-                  currency: t.currency as any,
-                  semaphore: t.semaphore as any,
-                  url: t.url || null,
-                  description: t.description || null,
-                  logo: t.logo || null
-                }))
-              },
-              comparisonRows: {
-                create: (cleanReport.comparisonRows || []).map((row, idx) => ({
-                  id: row.id || `row-${Date.now()}-${idx}`,
-                  variable: row.variable,
-                  shopify: row.shopify,
-                  tiendanube: row.tiendanube,
-                  pillText: row.pillText
-                }))
-              },
-              interactions: cleanReport.interactions ? {
-                create: {
-                  slideViews: cleanReport.interactions.slideViews as any,
-                  whatsappClicks: cleanReport.interactions.whatsappClicks,
-                  toolClicks: cleanReport.interactions.toolClicks,
-                  calculatorInteractions: cleanReport.interactions.calculatorInteractions,
-                  timeSpentSeconds: cleanReport.interactions.timeSpentSeconds
-                }
-              } : undefined,
-              pageSpeed: cleanReport.pageSpeed ? {
-                create: {
-                  performanceScore: cleanReport.pageSpeed.performanceScore || 0,
-                  accessibilityScore: cleanReport.pageSpeed.accessibilityScore || 0,
-                  seoScore: cleanReport.pageSpeed.seoScore || 0,
-                  fcp: cleanReport.pageSpeed.fcp || null,
-                  lcp: cleanReport.pageSpeed.lcp || null,
-                  tbt: cleanReport.pageSpeed.tbt || null,
-                  cls: cleanReport.pageSpeed.cls || null,
-                  speedIndex: cleanReport.pageSpeed.speedIndex || null,
-                  interactive: cleanReport.pageSpeed.interactive || null,
-                  isDemo: Boolean(cleanReport.pageSpeed.isDemo)
-                }
-              } : undefined,
-              metrics: {
-                create: {
-                  visitasMensuales: Math.round(cleanReport.visitasMensuales || 0),
-                  gmv: Number(cleanReport.gmv || 0),
-                  fugasCantidad: cleanReport.fugasCantidad ? Math.round(cleanReport.fugasCantidad) : null,
-                  fugasRangoMin: cleanReport.fugasRangoMin ? Number(cleanReport.fugasRangoMin) : null,
-                  fugasRangoMax: cleanReport.fugasRangoMax ? Number(cleanReport.fugasRangoMax) : null
-                }
-              },
-              platformConfig: {
-                create: {
-                  shopifyPlan: cleanReport.shopifyPlan as any,
-                  shopifyFee: cleanReport.shopifyFee ? Number(cleanReport.shopifyFee) : null,
-                  msi: cleanReport.msi || null,
-                  shopifyPlanCustomFee: cleanReport.shopifyPlanCustomFee || null,
-                  shopifyPlanCustomPrice: cleanReport.shopifyPlanCustomPrice || null,
-                  shopifyAppsCostUSD: (cleanReport as any).shopifyAppsCostUSD || null,
-                  shopifyAppsCostMXN: (cleanReport as any).shopifyAppsCostMXN || null,
-                  tiendanubePlan: cleanReport.tiendanubePlan as any
-                }
-              },
-              analytics: {
-                create: {
-                  viewCount: cleanReport.viewCount || 0,
-                  openCount: cleanReport.openCount || 0,
-                  uniqueVisitors: cleanReport.uniqueVisitors || 0,
-                  uniqueVisitorIds: cleanReport.uniqueVisitorIds as any || []
-                }
-              }
+              reportId: cleanReport.id,
+              ...sanitizedPageSpeed
+            },
+            update: sanitizedPageSpeed
+          });
+        }
+
+        // 8. Upsert subtabla de Interacciones
+        if (cleanReport.interactions) {
+          await prisma.reportInteraction.upsert({
+            where: { reportId: cleanReport.id },
+            create: {
+              reportId: cleanReport.id,
+              slideViews: (cleanReport.interactions.slideViews as any) || {},
+              whatsappClicks: sanitizeInt(cleanReport.interactions.whatsappClicks, 0),
+              toolClicks: sanitizeInt(cleanReport.interactions.toolClicks, 0),
+              calculatorInteractions: sanitizeInt(cleanReport.interactions.calculatorInteractions, 0),
+              timeSpentSeconds: sanitizeInt(cleanReport.interactions.timeSpentSeconds, 0)
+            },
+            update: {
+              slideViews: (cleanReport.interactions.slideViews as any) || {},
+              whatsappClicks: sanitizeInt(cleanReport.interactions.whatsappClicks, 0),
+              toolClicks: sanitizeInt(cleanReport.interactions.toolClicks, 0),
+              calculatorInteractions: sanitizeInt(cleanReport.interactions.calculatorInteractions, 0),
+              timeSpentSeconds: sanitizeInt(cleanReport.interactions.timeSpentSeconds, 0)
             }
-          })
-        ]);
+          });
+        }
       } catch (err) {
         console.error("Error saving report to database:", err);
       }
@@ -1758,6 +1808,8 @@ export async function saveDbReport(report: Report): Promise<Report> {
   }
 
   invalidateApiQueryCache("reports");
+  invalidateApiQueryCache(`report_${cleanReport.id}`);
+  invalidateApiQueryCache(`report_${cleanReport.id.toLowerCase()}`);
   invalidateApiQueryCache(`report_${cleanReport.id}`);
   return cleanReport;
 }

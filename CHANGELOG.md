@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.77 (Frontend) / v2.5.65 (Backend)] - 2026-09-07
+
+### 🐛 Corregido & Bug Fixes
+- **database:** inicialización segura de dotenv, pool con soporte SSL para PostgreSQL en la nube y persistencia Prisma (`ea82383`)
+
 ## [v2.5.77 (Frontend) / v2.5.64 (Backend)] - 2026-09-07
 
 ### 🐛 Corregido & Bug Fixes
