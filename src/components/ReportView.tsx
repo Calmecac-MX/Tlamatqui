@@ -878,12 +878,43 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   // Fetch Report Data and Exchange Rate
   useEffect(() => {
     async function loadData() {
+      if (!reportId) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         // Load report
-        const resReport = await fetch(`/api/reports/${reportId}`);
-        if (!resReport.ok) throw new Error("Reporte no encontrado");
-        const reportData: Report = await resReport.json();
+        const cleanId = encodeURIComponent(String(reportId).trim());
+        let reportData: Report | null = null;
+        try {
+          const resReport = await fetch(`/api/reports/${cleanId}`);
+          if (resReport.ok) {
+            reportData = await resReport.json();
+          }
+        } catch (fetchErr) {
+          console.warn("Error consultando reporte directamente:", fetchErr);
+        }
+
+        // Fallback: si la ruta directa por ID no responde, intentar localizarlo en el catálogo general
+        if (!reportData) {
+          try {
+            const allRes = await fetch("/api/reports");
+            if (allRes.ok) {
+              const allReports: Report[] = await allRes.json();
+              reportData = allReports.find(
+                r => r.id === reportId || r.id?.toLowerCase() === String(reportId).toLowerCase()
+              ) || null;
+            }
+          } catch (allErr) {
+            console.warn("Error en fallback de listado general de reportes:", allErr);
+          }
+        }
+
+        if (!reportData) {
+          throw new Error("Reporte de diagnóstico no encontrado o ID inválido");
+        }
+
         setReport(reportData);
         if (reportData.name) {
           document.title = `Reporte de ${reportData.name} | Tlamatqui`;
@@ -899,16 +930,16 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         const initialPlanSelections: Record<string, string | number> = {};
         let sumUSD = 0;
         let sumMXN = 0;
-        reportData.tools?.forEach(t => {
+        (reportData.tools || []).forEach(t => {
           const precios = t.precios || [];
-          let cMin = t.costMin;
-          let cMax = t.costMax;
+          let cMin = t.costMin || 0;
+          let cMax = t.costMax || 0;
           if (precios.length > 0) {
             cMin = Math.min(...precios.map(p => p.precio));
             cMax = Math.max(...precios.map(p => p.precio));
           } else if (t.costType === "exact") {
-            cMin = t.costExact;
-            cMax = t.costExact;
+            cMin = t.costExact || 0;
+            cMax = t.costExact || 0;
           }
           
           const selPlanId = t.selectedPlanId ? String(t.selectedPlanId) : "average";
@@ -925,14 +956,24 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
         setCalcAppsCostMXN(Number(sumMXN.toFixed(2)));
 
         // Configure plan default values
-        configurePlanDefaults(reportData.shopifyPlan, reportData);
+        try {
+          configurePlanDefaults(reportData.shopifyPlan, reportData);
+        } catch (planErr) {
+          console.warn("Error configuring plan defaults:", planErr);
+        }
 
-        // Fetch currency conversion rate
-        const resRate = await fetch("/api/exchange-rate");
-        const rateData = await resRate.json();
-        setExchangeRate(rateData.rate || 18.50);
+        // Fetch currency conversion rate (isolated try/catch)
+        try {
+          const resRate = await fetch("/api/exchange-rate");
+          if (resRate.ok) {
+            const rateData = await resRate.json();
+            setExchangeRate(rateData.rate || 18.50);
+          }
+        } catch (rateErr) {
+          setExchangeRate(18.50);
+        }
 
-        // Fetch config for metricsUpdateInterval
+        // Fetch config for metricsUpdateInterval (isolated try/catch)
         try {
           const resConfig = await fetch("/api/config");
           if (resConfig.ok) {
@@ -946,10 +987,10 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           console.error("Error fetching config in ReportView", err);
         }
 
-        // Track view/open event
+        // Track view/open event (isolated try/catch)
         try {
           const trackType = isShared ? "view" : "open";
-          await fetch(`/api/reports/${reportId}/${trackType}`, { method: "POST" });
+          await fetch(`/api/reports/${cleanId}/${trackType}`, { method: "POST" });
         } catch (err) {
           console.warn("Error tracking report event", err);
         }

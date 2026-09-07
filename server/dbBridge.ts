@@ -1280,12 +1280,23 @@ export async function getDbReports(): Promise<Report[]> {
  * @returns {Promise<Report | null>} Instancia del reporte o `null` si no existe.
  */
 export async function getDbReportById(id: string): Promise<Report | null> {
+  if (!id) return null;
+  const cleanId = String(id).trim();
+
+  const cachedReport = getCachedQueryResult<Report>(`report_${cleanId}`);
+  if (cachedReport) return cachedReport;
+
   if (isPrismaEnabled()) {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        const r = await prisma.report.findUnique({
-          where: { id },
+        const r = await prisma.report.findFirst({
+          where: {
+            OR: [
+              { id: cleanId },
+              { id: { equals: cleanId, mode: "insensitive" } }
+            ]
+          },
           include: {
             tools: true,
             comparisonRows: true,
@@ -1294,18 +1305,18 @@ export async function getDbReportById(id: string): Promise<Report | null> {
           }
         });
         if (r) {
-          return {
+          const mappedReport: Report = {
             id: r.id,
             name: r.name,
             logo: r.logo || undefined,
-            tagline: r.tagline,
-            fugasCantidad: r.fugasCantidad,
-            fugasRangoMin: r.fugasRangoMin,
-            fugasRangoMax: r.fugasRangoMax,
-            visitasMensuales: r.visitasMensuales,
-            gmv: r.gmv,
-            shopifyFee: r.shopifyFee,
-            msi: r.msi,
+            tagline: r.tagline || undefined,
+            fugasCantidad: r.fugasCantidad || 0,
+            fugasRangoMin: r.fugasRangoMin || 0,
+            fugasRangoMax: r.fugasRangoMax || 0,
+            visitasMensuales: r.visitasMensuales || 0,
+            gmv: r.gmv || 0,
+            shopifyFee: r.shopifyFee || 0,
+            msi: r.msi || undefined,
             shopifyPlan: r.shopifyPlan as any,
             shopifyPlanCustomFee: r.shopifyPlanCustomFee || undefined,
             shopifyPlanCustomPrice: r.shopifyPlanCustomPrice || undefined,
@@ -1334,7 +1345,7 @@ export async function getDbReportById(id: string): Promise<Report | null> {
               interactive: r.pageSpeed.interactive || undefined,
               isDemo: r.pageSpeed.isDemo
             } : undefined,
-            tools: r.tools.map(t => ({
+            tools: (r.tools || []).map(t => ({
               id: t.id,
               name: t.name,
               category: t.category,
@@ -1348,16 +1359,16 @@ export async function getDbReportById(id: string): Promise<Report | null> {
               description: t.description || undefined,
               logo: resolveTechnologyLogo(t.name, t.url, t.logo)
             })),
-            comparisonRows: r.comparisonRows.map(row => ({
+            comparisonRows: (r.comparisonRows || []).map(row => ({
               id: row.id,
               variable: row.variable,
               shopify: row.shopify,
               tiendanube: row.tiendanube,
               pillText: row.pillText
             })),
-            contactEmail: r.contactEmail,
-            contactWhatsapp: r.contactWhatsapp,
-            adminLogos: r.adminLogos as any as string[],
+            contactEmail: r.contactEmail || "comercial@tiendanube.mx",
+            contactWhatsapp: r.contactWhatsapp || "5512345678",
+            adminLogos: (r.adminLogos as any as string[]) || [],
             brandCard1Title: r.brandCard1Title || undefined,
             brandCard1Desc: r.brandCard1Desc || undefined,
             brandCard1Logo: r.brandCard1Logo || undefined,
@@ -1382,6 +1393,8 @@ export async function getDbReportById(id: string): Promise<Report | null> {
             teamId: r.teamId || undefined,
             createdBy: r.createdBy || undefined
           };
+          setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
+          return mappedReport;
         }
       } catch (err) {
         console.error("Error fetching report by ID from database:", err);
@@ -1389,9 +1402,28 @@ export async function getDbReportById(id: string): Promise<Report | null> {
     }
   }
 
-  // Local fallback
-  const reports = await getDbReports();
-  return reports.find(r => r.id === id) || null;
+  // Local fallback: Consultar directamente el archivo JSON para máxima resiliencia
+  try {
+    const localReports = await readJsonAsync<Report[]>(REPORTS_FILE, []);
+    const localFound = localReports.find(
+      r => r.id === cleanId || r.id?.toLowerCase() === cleanId.toLowerCase()
+    );
+    if (localFound) {
+      const clean = {
+        ...localFound,
+        tools: (localFound.tools || []).map(t => ({
+          ...t,
+          logo: resolveTechnologyLogo(t.name, t.url, t.logo)
+        }))
+      };
+      setCachedQueryResult(`report_${cleanId}`, clean, 3000);
+      return clean;
+    }
+  } catch (err) {
+    console.error("Error reading local reports fallback:", err);
+  }
+
+  return null;
 }
 
 /**

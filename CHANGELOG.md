@@ -4,6 +4,17 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.77 (Frontend) / v2.5.63 (Backend)] - 2026-09-07
+
+### 🚀 Features & Nuevas Funcionalidades
+- **ci:** desacoplar flujos de CI/CD por rama (calpilli, tlamatini, omeyocan) con acción centralizada (`df78ccf`)
+
+### 🐛 Corregido & Bug Fixes
+- **reports:** corregir persistencia, invalidación de caché y sincronización en guardado de reportes (`6a2ab69`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **main:** release tlamatqui 2.6.0 (`68773a5`)
+
 ## [2.6.0](https://github.com/Calmecac-MX/Tlamatqui/compare/tlamatqui-v2.5.0...tlamatqui-v2.6.0) (2026-09-05)
 
 
