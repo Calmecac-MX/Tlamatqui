@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.77 (Frontend) / v2.5.64 (Backend)] - 2026-09-07
+
+### 🐛 Corregido & Bug Fixes
+- **reports:** resolver consulta resiliente por ID, fallback directo a JSON y aislamiento de errores en ReportView (`bbd88de`)
+
 ## [v2.5.77 (Frontend) / v2.5.63 (Backend)] - 2026-09-07
 
 ### 🚀 Features & Nuevas Funcionalidades

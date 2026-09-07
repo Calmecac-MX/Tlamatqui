@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * 
- * Módulo de Inicialización Segura del Cliente de Prisma ORM.
- * Verifica la existencia de DATABASE_URL o DB_URL para la persistencia en PostgreSQL.
- */
+import dotenv from "dotenv";
+dotenv.config();
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -49,7 +44,22 @@ export function getPrisma(): PrismaClient | null {
       if (dbUrl.startsWith("prisma://") || dbUrl.startsWith("prisma+postgres://")) {
         prisma = new PrismaClient({ accelerateUrl: dbUrl });
       } else {
-        const pool = new pg.Pool({ connectionString: dbUrl });
+        const isSslNeeded = dbUrl.includes("sslmode=require") || 
+                            dbUrl.includes("supabase.co") || 
+                            dbUrl.includes("neon.tech") || 
+                            dbUrl.includes("render.com") || 
+                            dbUrl.includes("railway.app") ||
+                            dbUrl.includes("vercel-storage.com") ||
+                            dbUrl.includes("pooler.supabase.com");
+
+        const pool = new pg.Pool({
+          connectionString: dbUrl,
+          ssl: isSslNeeded ? { rejectUnauthorized: false } : undefined,
+          max: 10,
+          connectionTimeoutMillis: 5000,
+          idleTimeoutMillis: 30000
+        });
+
         const adapter = new PrismaPg(pool);
         prisma = new PrismaClient({ adapter });
       }
