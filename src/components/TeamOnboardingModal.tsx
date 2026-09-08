@@ -275,6 +275,7 @@ export default function TeamOnboardingModal({
         }
       });
 
+      const parsedPhone = contactPhone.trim() ? parseFloat(contactPhone.replace(/\D/g, '')) || undefined : undefined;
       const teamPayload: Partial<Team> = {
         name: teamName.trim(),
         brandName: (brandName.trim() || teamName.trim()),
@@ -288,6 +289,27 @@ export default function TeamOnboardingModal({
         ownerEmail: currentUserEmail,
         members: initialMembers,
         allies: finalAllies,
+        partners: finalAllies.map(a => ({
+          id: a.id,
+          name: a.name,
+          logo: a.logo || "",
+          link: a.url || a.website || "",
+          description: (a as any).description || "",
+          members: (a.members || []).map((m: any) => ({
+            id: m.id,
+            name: m.name || "",
+            email: m.email,
+            role: m.role || "Lector",
+            partnerId: a.id
+          }))
+        })),
+        config: {
+          reportConfig: {
+            emailReport: contactEmail.trim() || currentUserEmail,
+            phoneReport: parsedPhone,
+            reportLogos: finalAllies.map(a => a.id)
+          }
+        },
         inviteToken: inviteToken,
         inviteRole: inviteRole
       };

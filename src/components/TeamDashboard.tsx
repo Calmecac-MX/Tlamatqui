@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   Users, Settings, Shield, Plus, Trash2, Edit, UploadCloud, 
-  Mail, Clock, FileText, DollarSign, Crown, CheckCircle, X, ChevronRight, User, AlertTriangle, Copy, Link as LinkIcon, RefreshCw, Check, Sparkles
+  Mail, Clock, FileText, DollarSign, Crown, CheckCircle, X, ChevronRight, User, AlertTriangle, Copy, Link as LinkIcon, RefreshCw, Check, Sparkles,
+  Phone, ArrowUp, ArrowDown, UserCheck, Layers
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Team, TeamMember, Report, Ally } from "../types";
@@ -72,6 +73,12 @@ export default function TeamDashboard({
   const [teamOwnerEmail, setTeamOwnerEmail] = useState("");
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+
+  // Subtabla Config -> ReportConfig State
+  const [reportEmail, setReportEmail] = useState("");
+  const [reportPhone, setReportPhone] = useState("");
+  const [reportUserId, setReportUserId] = useState("");
+  const [reportSelectedPartnerIds, setReportSelectedPartnerIds] = useState<string[]>([]);
 
   // Report Brand & Allies State
   const [teamBrandName, setTeamBrandName] = useState("");
@@ -210,6 +217,15 @@ export default function TeamDashboard({
       setTeamBrandLogo(activeTeam.teamBrandLogo || "");
       setTeamBrandWebsite(activeTeam.teamBrandWebsite || "");
       setAllies(activeTeam.allies || []);
+
+      const rc = activeTeam.config?.reportConfig;
+      setReportEmail(rc?.emailReport || activeTeam.contactEmail || activeTeam.ownerEmail || "");
+      setReportPhone(rc?.phoneReport !== undefined && rc?.phoneReport !== null ? String(rc.phoneReport) : (activeTeam.contactPhone || ""));
+      setReportUserId(rc?.userId || "");
+      setReportSelectedPartnerIds(rc?.reportLogos && rc.reportLogos.length > 0 
+        ? rc.reportLogos 
+        : (activeTeam.partners || activeTeam.allies || []).map(p => p.id)
+      );
     }
   }, [activeTeam]);
 
@@ -227,6 +243,7 @@ export default function TeamDashboard({
       url: newAllyUrl.trim()
     };
     setAllies(prev => [...prev, newAlly]);
+    setReportSelectedPartnerIds(prev => [...prev, newAlly.id]);
     setNewAllyName("");
     setNewAllyLogo("");
     setNewAllyUrl("");
@@ -234,6 +251,25 @@ export default function TeamDashboard({
 
   const handleDeleteAlly = (allyId: string) => {
     setAllies(prev => prev.filter(a => a.id !== allyId));
+    setReportSelectedPartnerIds(prev => prev.filter(id => id !== allyId));
+  };
+
+  const handleToggleReportPartner = (partnerId: string) => {
+    setReportSelectedPartnerIds(prev =>
+      prev.includes(partnerId) ? prev.filter(id => id !== partnerId) : [...prev, partnerId]
+    );
+  };
+
+  const handleMoveReportPartner = (index: number, direction: "up" | "down") => {
+    setReportSelectedPartnerIds(prev => {
+      const copy = [...prev];
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= copy.length) return prev;
+      const temp = copy[index];
+      copy[index] = copy[targetIndex];
+      copy[targetIndex] = temp;
+      return copy;
+    });
   };
 
   // Handle Save Team Configuration
@@ -243,16 +279,44 @@ export default function TeamDashboard({
     setIsSavingConfig(true);
     setConfigError(null);
 
+    const numericPhone = reportPhone.trim() ? parseFloat(reportPhone.replace(/\D/g, '')) || undefined : undefined;
     const updatedTeam: Team = {
       ...activeTeam,
       name: teamName,
       image: teamImage || undefined,
       ownerName: teamOwnerName,
       ownerEmail: teamOwnerEmail,
+      contactEmail: reportEmail.trim() || teamOwnerEmail,
+      contactPhone: reportPhone.trim() || undefined,
       teamBrandName: teamBrandName.trim() || undefined,
       teamBrandLogo: teamBrandLogo.trim() || undefined,
       teamBrandWebsite: teamBrandWebsite.trim() || undefined,
-      allies: allies
+      allies: allies,
+      partners: allies.map(a => ({
+        id: a.id,
+        name: a.name,
+        logo: a.logo || "",
+        description: (a as any).description || "",
+        link: a.url || a.website || "",
+        members: (a.members || []).map((m: any) => ({
+          id: m.id,
+          name: m.name || "",
+          email: m.email,
+          role: m.role || "Lector",
+          partnerId: a.id
+        }))
+      })),
+      config: {
+        ...activeTeam.config,
+        reportConfig: {
+          id: activeTeam.config?.reportConfig?.id,
+          configId: activeTeam.config?.reportConfig?.configId,
+          emailReport: reportEmail.trim() || undefined,
+          phoneReport: numericPhone,
+          userId: reportUserId || undefined,
+          reportLogos: reportSelectedPartnerIds
+        }
+      }
     };
 
     try {
@@ -1118,7 +1182,155 @@ export default function TeamDashboard({
                 <form onSubmit={handleSaveConfig} className="p-6 rounded-2xl border border-border-theme bg-surface-theme/50 backdrop-blur-md space-y-6">
                   <div className="flex items-center gap-2 mb-2 border-b border-border-theme/30 pb-2">
                     <Settings className="w-4 h-4 text-accent-theme" />
-                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">Configuración del reporte</h3>
+                    <h3 className="font-bold text-sm text-white uppercase tracking-wider">Configuración del Equipo y Reporte</h3>
+                  </div>
+
+                  {/* SECCIÓN: Subtabla ReportConfig (Contacto, Usuario 1:1 y Logos de Campaña) */}
+                  <div className="p-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/15 backdrop-blur-md space-y-5">
+                    <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-indigo-400" />
+                        <div>
+                          <h4 className="font-bold text-xs text-indigo-200 uppercase tracking-wider">Subtabla ReportConfig</h4>
+                          <p className="text-[11px] text-text-dim-theme">Configuración directa del reporte de diagnóstico del equipo</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/30">
+                        Config &gt; ReportConfig
+                      </span>
+                    </div>
+
+                    {/* Datos de Contacto del Reporte */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-indigo-400" /> Correo del Reporte (emailReport)
+                        </label>
+                        <input 
+                          type="email" 
+                          value={reportEmail} 
+                          onChange={e => setReportEmail(e.target.value)}
+                          placeholder="contacto@miempresa.com"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-emerald-400" /> Teléfono / WhatsApp (phoneReport)
+                        </label>
+                        <input 
+                          type="tel" 
+                          value={reportPhone} 
+                          onChange={e => setReportPhone(e.target.value)}
+                          placeholder="5512345678"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5 flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-amber-400" /> Miembro Asignado 1:1 (User)
+                        </label>
+                        <select
+                          value={reportUserId}
+                          onChange={e => setReportUserId(e.target.value)}
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white cursor-pointer"
+                        >
+                          <option value="">Seleccionar miembro...</option>
+                          {activeTeam?.members.map(m => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} ({m.email}) - {m.role}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Logos de Partners en Campaña (reportLogos con orden) */}
+                    <div className="pt-3 border-t border-indigo-500/20 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Logos en Campaña (reportLogos 1:M - Orden de Aparición)
+                        </label>
+                        <span className="text-[10px] text-text-dim-theme font-mono">
+                          {reportSelectedPartnerIds.length} seleccionados
+                        </span>
+                      </div>
+
+                      {allies.length === 0 ? (
+                        <p className="text-xs text-text-dim-theme italic p-3 rounded-lg bg-bg-theme/40 border border-border-theme">
+                          No hay aliados registrados en este equipo. Agrega aliados en la sección inferior para asignarlos al reporte.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {allies.map((ally) => {
+                            const isSelected = reportSelectedPartnerIds.includes(ally.id);
+                            const orderIndex = reportSelectedPartnerIds.indexOf(ally.id);
+
+                            return (
+                              <div 
+                                key={ally.id}
+                                className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                                  isSelected 
+                                    ? "bg-indigo-950/40 border-indigo-500/40 shadow-sm" 
+                                    : "bg-bg-theme/40 border-border-theme/40 opacity-60"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <input 
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleToggleReportPartner(ally.id)}
+                                    className="w-4 h-4 rounded text-accent-theme cursor-pointer accent-indigo-500"
+                                  />
+                                  <img 
+                                    src={ally.logo} 
+                                    alt={ally.name} 
+                                    className="w-8 h-8 object-contain rounded bg-white/5 p-1 border border-border-theme shrink-0" 
+                                    onError={e => { (e.target as HTMLElement).style.display = 'none'; }} 
+                                  />
+                                  <div className="truncate">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-white truncate">{ally.name}</span>
+                                      {isSelected && (
+                                        <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded border border-indigo-500/30">
+                                          Posición #{orderIndex + 1}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-text-dim-theme truncate block">{ally.url}</span>
+                                  </div>
+                                </div>
+
+                                {isSelected && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      disabled={orderIndex === 0}
+                                      onClick={() => handleMoveReportPartner(orderIndex, "up")}
+                                      className="p-1 rounded bg-bg-theme hover:bg-white/10 text-text-dim-theme hover:text-white disabled:opacity-30 disabled:cursor-not-allowed border border-border-theme"
+                                      title="Subir posición"
+                                    >
+                                      <ArrowUp className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={orderIndex === reportSelectedPartnerIds.length - 1}
+                                      onClick={() => handleMoveReportPartner(orderIndex, "down")}
+                                      className="p-1 rounded bg-bg-theme hover:bg-white/10 text-text-dim-theme hover:text-white disabled:opacity-30 disabled:cursor-not-allowed border border-border-theme"
+                                      title="Bajar posición"
+                                    >
+                                      <ArrowDown className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* SECCIÓN: Marca del Reporte */}

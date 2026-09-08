@@ -356,10 +356,10 @@ export interface UserAccount {
  */
 export interface PartnerMember {
   id: string;
-  name: string;
+  name?: string;
   email: string;
-  role: string; // "Lector" | "Lector y Comentarista"
-  partnerId: string;
+  role?: string; // "Lector" | "Lector y Comentarista"
+  partnerId?: string;
 }
 
 /**
@@ -369,8 +369,10 @@ export interface Partner {
   id: string;
   name: string;
   logo: string;
-  description: string;
+  description?: string;
   link?: string;
+  representativeEmail?: string;
+  teamId?: string;
   members: PartnerMember[];
 }
 
