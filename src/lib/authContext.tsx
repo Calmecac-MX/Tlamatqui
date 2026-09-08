@@ -58,7 +58,7 @@ const DEFAULT_DEMO_USER: AuthUser = {
 };
 
 function InnerAuthProvider({ children }: { children: React.ReactNode }) {
-  // Manejador interno que combina Auth0 real con fallback local
+  // Manejador interno que combina Auth0 real con validación estricta de cookies de sesión
   const auth0 = useAuth0();
   const [demoUser, setDemoUser] = useState<AuthUser | null>(() => {
     const saved = localStorage.getItem("tn_demo_user");
@@ -67,6 +67,67 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
   const [isDemoActive, setIsDemoActive] = useState<boolean>(() => {
     return localStorage.getItem("tn_demo_active") === "true";
   });
+  const [isSessionChecking, setIsSessionChecking] = useState<boolean>(true);
+  const [verifiedDbUser, setVerifiedDbUser] = useState<AuthUser | null>(null);
+  const [syncedRole, setSyncedRole] = useState<string | null>(null);
+
+  // Validación estricta de cookies y existencia del usuario en la base de datos en cada carga de página
+  useEffect(() => {
+    let isMounted = true;
+
+    const validateSessionAndUserExistence = async () => {
+      try {
+        const res = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include"
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data && data.authenticated && data.user) {
+            const dbUser: AuthUser = {
+              name: data.user.name || data.user.email.split("@")[0],
+              email: data.user.email,
+              picture: data.user.avatar || DEFAULT_DEMO_USER.picture,
+              role: data.user.role || "Administrador",
+              sub: data.user.sub || data.user.id
+            };
+            setVerifiedDbUser(dbUser);
+            setSyncedRole(dbUser.role || null);
+            if (dbUser.role === "Superusuario" && typeof window !== "undefined") {
+              localStorage.setItem("tlamatqui_persisted_role", "Superusuario");
+            }
+          }
+        } else {
+          // Si el backend responde 401 (cookie inválida o usuario eliminado de la base de datos)
+          if (isMounted) {
+            setVerifiedDbUser(null);
+            if (isDemoActive) {
+              setDemoUser(null);
+              setIsDemoActive(false);
+              localStorage.removeItem("tn_demo_user");
+              localStorage.removeItem("tn_demo_active");
+            }
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("tlamatqui_persisted_role");
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[Session Validator] Error al verificar sesión activa con base de datos:", err);
+      } finally {
+        if (isMounted) {
+          setIsSessionChecking(false);
+        }
+      }
+    };
+
+    validateSessionAndUserExistence();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const demoLogin = (customUser?: Partial<AuthUser>) => {
     const userToSave = { ...DEFAULT_DEMO_USER, ...customUser };
@@ -86,6 +147,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
 
   const demoLogout = () => {
     setDemoUser(null);
+    setVerifiedDbUser(null);
     setIsDemoActive(false);
     localStorage.removeItem("tn_demo_user");
     localStorage.removeItem("tn_demo_active");
@@ -107,8 +169,6 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
       window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ""));
     }
   };
-
-  const [syncedRole, setSyncedRole] = useState<string | null>(null);
 
   // Sincronizar automáticamente el usuario y sus tokens con el Backend
   useEffect(() => {
@@ -190,13 +250,13 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           role: effectiveRole,
           sub: auth0.user.sub
         }
-      : null;
+      : verifiedDbUser;
 
     return (
       <AuthContext.Provider
         value={{
-          isAuthenticated: auth0.isAuthenticated,
-          isLoading: auth0.isLoading,
+          isAuthenticated: auth0.isAuthenticated || Boolean(verifiedDbUser),
+          isLoading: auth0.isLoading || isSessionChecking,
           user: authUser,
           error: auth0.error || null,
           loginWithRedirect: async (options?: any) => {
@@ -234,12 +294,13 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Si Auth0 no está configurado o si el usuario eligió el modo demo
+  const activeUser = verifiedDbUser || demoUser;
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated: isDemoActive && Boolean(demoUser),
-        isLoading: false,
-        user: demoUser,
+        isAuthenticated: (isDemoActive && Boolean(demoUser)) || Boolean(verifiedDbUser),
+        isLoading: isSessionChecking,
+        user: activeUser,
         error: null,
         loginWithRedirect: async (options?: any) => {
           if (isAuth0Configured) {

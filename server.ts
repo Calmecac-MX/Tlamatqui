@@ -254,7 +254,7 @@ app.get("/api/auth/callback", (req: Request, res: Response) => {
 
 /**
  * @route GET /api/auth/session
- * @description Valida la cookie de sesión HttpOnly y retorna el usuario autenticado activo.
+ * @description Valida la cookie de sesión HttpOnly y comprueba en la base de datos que el usuario exista y esté activo.
  */
 app.get("/api/auth/session", async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -263,14 +263,29 @@ app.get("/api/auth/session", async (req: AuthenticatedRequest, res: Response) =>
     const sessionToken = parsedCookies[SESSION_COOKIE_NAME];
 
     if (!sessionToken) {
-      // Si no hay cookie pero hay token de Auth0 en Authorization
+      // Fallback a token Bearer en cabecera Authorization
       if (req.userEmail && req.userRole) {
+        const users = await getDbUsers();
+        const existingUser = users.find(
+          (u) => u.email.toLowerCase().trim() === req.userEmail?.toLowerCase().trim() || (req.userSub && u.sub === req.userSub)
+        );
+
+        if (!existingUser) {
+          return res.status(401).json({
+            authenticated: false,
+            error: "El usuario autenticado por token no existe en la base de datos."
+          });
+        }
+
         return res.json({
           authenticated: true,
           user: {
-            email: req.userEmail,
-            role: req.userRole,
-            sub: req.userSub,
+            id: existingUser.id,
+            email: existingUser.email,
+            name: existingUser.name,
+            role: existingUser.role,
+            avatar: existingUser.avatar,
+            sub: existingUser.sub || req.userSub,
           },
           sessionSource: "bearer_token"
         });
@@ -282,6 +297,7 @@ app.get("/api/auth/session", async (req: AuthenticatedRequest, res: Response) =>
       });
     }
 
+    // 1. Validar firma criptográfica y expiración de la cookie
     const validation = validateSessionToken(sessionToken);
     if (!validation.valid || !validation.user) {
       res.setHeader("Set-Cookie", buildClearSessionCookieHeader());
@@ -291,9 +307,35 @@ app.get("/api/auth/session", async (req: AuthenticatedRequest, res: Response) =>
       });
     }
 
+    // 2. Validar que el usuario exista en la base de datos del sistema
+    const userEmail = validation.user.email.toLowerCase().trim();
+    const allUsers = await getDbUsers();
+    const existingUser = allUsers.find(
+      (u) => u.email.toLowerCase().trim() === userEmail || (validation.user?.sub && u.sub === validation.user.sub)
+    );
+
+    // Si el usuario no existe en la base de datos (fue eliminado o revocado), anular la sesión
+    if (!existingUser) {
+      res.setHeader("Set-Cookie", buildClearSessionCookieHeader());
+      return res.status(401).json({
+        authenticated: false,
+        error: "El usuario asociado a esta sesión no existe en el sistema o fue dado de baja."
+      });
+    }
+
+    // Retornar los datos actualizados y confirmados por la base de datos
     res.json({
       authenticated: true,
-      user: validation.user,
+      user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        name: existingUser.name,
+        role: existingUser.role,
+        avatar: existingUser.avatar,
+        sub: existingUser.sub || validation.user.sub,
+        createdAt: validation.user.createdAt,
+        exp: validation.user.exp
+      },
       sessionSource: "secure_cookie"
     });
   } catch (err: any) {
