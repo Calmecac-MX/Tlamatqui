@@ -123,9 +123,9 @@ export interface Report {
   /** Matriz de características comparativas activas en este reporte */
   comparisonRows: ComparisonRow[];
   /** Correo de contacto del consultor comercial */
-  contactEmail: string;
+  contactEmail?: string;
   /** Número de WhatsApp de contacto del consultor comercial */
-  contactWhatsapp: string;
+  contactWhatsapp?: string;
   /** Arreglo de URLs de logotipos de administradores/agencia */
   adminLogos: string[];
   /** Título de la tarjeta del socio consultor 1 */

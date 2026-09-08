@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.84 (Frontend) / v2.5.73 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **frontend:** integrate TeamReportConfig editor and ordered reportLogos in TeamDashboard and TeamOnboardingModal (`f2a5de5`)
+
 ## [v2.5.83 (Frontend) / v2.5.72 (Backend)] - 2026-09-08
 
 ### ♻️ Refactorización de Código

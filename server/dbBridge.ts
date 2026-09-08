@@ -1417,8 +1417,8 @@ function mapPrismaReportToDomain(r: any): Report {
       tiendanube: row.tiendanube,
       pillText: row.pillText
     })),
-    contactEmail: r.contactEmail || "comercial@tiendanube.mx",
-    contactWhatsapp: r.contactWhatsapp || "5512345678",
+    contactEmail: r.contactEmail || undefined,
+    contactWhatsapp: r.contactWhatsapp || undefined,
     adminLogos: [],
     brandCard1Title: undefined,
     brandCard1Desc: undefined,
@@ -1763,8 +1763,8 @@ export async function saveDbReport(report: Report): Promise<Report> {
     tools: report.tools || [],
     comparisonRows: report.comparisonRows || [],
     adminLogos: report.adminLogos || [],
-    contactEmail: report.contactEmail || "comercial@tiendanube.mx",
-    contactWhatsapp: report.contactWhatsapp || "5512345678",
+    contactEmail: report.contactEmail ? String(report.contactEmail).trim() : undefined,
+    contactWhatsapp: report.contactWhatsapp ? String(report.contactWhatsapp).trim() : undefined,
     createdAt: report.createdAt || new Date().toISOString()
   };
 
@@ -1806,8 +1806,8 @@ export async function saveDbReport(report: Report): Promise<Report> {
     infrastructure: sanitizedInfrastructure as any,
     serverLocation: sanitizedServerLocation as any,
     serverLatencyMs: sanitizedServerLatencyMs,
-    contactEmail: String(cleanReport.contactEmail || "comercial@tiendanube.mx").trim(),
-    contactWhatsapp: String(cleanReport.contactWhatsapp || "5512345678").trim()
+    contactEmail: cleanReport.contactEmail ? String(cleanReport.contactEmail).trim() : null,
+    contactWhatsapp: cleanReport.contactWhatsapp ? String(cleanReport.contactWhatsapp).trim() : null
   };
 
   const metricsData = {
