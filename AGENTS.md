@@ -15,7 +15,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 ### 1.2 Arquitectura Unificada Fullstack (Client / Server Single App)
 - **Backend (API REST Express + Prisma ORM):**
   - **Ubicación:** `server.ts`, `server/`, `prisma/`, `data/`.
-  - **Tecnologías:** Express 4, TypeScript, Prisma ORM 7 (`prisma@7.9.1`, `@prisma/config`), Auth0, Zod, esbuild.
+  - **Tecnologías:** Express 4, TypeScript, Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`), Auth0, Zod, esbuild.
   - **Puerto Dev:** `http://localhost:4000` (API REST `/api/*`).
   - **Build Output:** `dist/server.cjs`.
 - **Frontend (SPA React 19 + Vite 6):**

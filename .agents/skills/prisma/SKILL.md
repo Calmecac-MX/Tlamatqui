@@ -1,18 +1,18 @@
 ---
 name: prisma
-description: Use when managing Prisma ORM 7 schemas, generating Prisma client, executing Prisma database migrations (db push, migrate dev, migrate deploy), managing datasources, and validating database state in Tlamatqui.
+description: Use when managing Prisma ORM 8 schemas, generating Prisma client, executing Prisma database migrations, managing datasources, and validating database state in Tlamatqui.
 ---
 
 # Prisma ORM Management Skill for Antigravity
 
-This skill provides standard operating procedures for managing Prisma ORM 7 schemas, client generation, database schema deployment, and migration workflows within the Tlamatqui fullstack repository.
+This skill provides standard operating procedures for managing Prisma ORM 8 schemas, client generation, database schema deployment, and migration workflows within the Tlamatqui fullstack repository.
 
 ---
 
 ## 1. 📐 Architecture & Key Files
 
 - **Prisma Schema:** `prisma/schema.prisma`
-- **Prisma 7 Config:** `prisma.config.ts`
+- **Prisma Config:** `prisma.config.ts`
 - **Prisma Migrations:** `prisma/migrations/`
 - **Prisma Singleton / Client:** `server/lib/prisma.ts`
 - **Client Output:** `node_modules/@prisma/client`

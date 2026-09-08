@@ -10,7 +10,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 ## 1. Contexto Rápido del Repositorio
 - **Nombre:** Tlamatqui
 - **Arquitectura:** Desacoplada (Backend API REST en Express/TypeScript en puerto `4000`, Frontend React 19/Vite 6/Tailwind CSS v4 en puerto `3000`).
-- **Base de Datos:** Prisma ORM 7 (`prisma@7.9.1`, `@prisma/config`).
+- **Base de Datos:** Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`).
 - **Autenticación:** Auth0 (`@auth0/auth0-react` en Frontend y validación JWT en Backend).
 
 ---
@@ -21,7 +21,7 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 - `surgical-patch`: Correcciones quirúrgicas de bugs.
 - `safe-refactor`: Refactorización con garantía de comportamiento.
 - `lean-build`: Construcción delgada de nuevas características.
-- `migration` / `prisma`: Migraciones seguras, esquemas de Prisma ORM 7 y despliegue de DB.
+- `migration` / `prisma`: Migraciones seguras, esquemas de Prisma ORM 8 y despliegue de DB.
 - `verify-and-stop`: Verificación con linters y pruebas antes de concluir.
 - `author-auth0-skill`: Patrones y guías de Auth0.
 - `commit-writer`: Guía para redacción de commits estructurados bajo Conventional Commits y Release Please.
