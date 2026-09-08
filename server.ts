@@ -65,7 +65,9 @@ import {
   getPublicCdnUrl,
   buildStorageKey,
   detectCategoryFromKey,
-  isStorageActionAllowed
+  isStorageActionAllowed,
+  signBunnyCdnUrl,
+  isBunnyTokenAuthEnabled
 } from "./server/storageService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 import {
@@ -1545,6 +1547,65 @@ app.post("/api/storage/presign", async (req: AuthenticatedRequest, res: Response
   } catch (error: any) {
     res.status(500).json({
       error: "Error al generar URL prefirmada S3.",
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/storage/sign-token
+ * @description Genera URLs firmadas con Bunny CDN Advanced Token Authentication (HMAC-SHA256, IP locking, geo-restrictions, directory tokens, speed limit).
+ */
+app.post("/api/storage/sign-token", async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const {
+      url,
+      key,
+      securityKey,
+      expirationTime,
+      expiresAt,
+      userIp,
+      isDirectory,
+      pathAllowed,
+      countriesAllowed,
+      countriesBlocked,
+      ignoreParams,
+      speedLimit
+    } = req.body;
+
+    const userRole = (req.headers["x-user-role"] as string) || req.userRole || "Invitado";
+
+    // Si se especifica una key o url, validar permisos de lectura
+    const targetKey = key || (url ? new URL(url.startsWith("http") ? url : `https://${url}`).pathname : "");
+    const category = detectCategoryFromKey(targetKey);
+    const check = isStorageActionAllowed(userRole, category, "read");
+
+    if (!check.allowed) {
+      return res.status(403).json({
+        error: "Acceso denegado a firma de token CDN",
+        message: check.reason || `El rol '${userRole}' no tiene permisos para firmar URLs en '${category}'.`
+      });
+    }
+
+    const signedResult = signBunnyCdnUrl({
+      url,
+      key,
+      securityKey,
+      expirationTime: Number(expirationTime) || 3600,
+      expiresAt: expiresAt ? Number(expiresAt) : undefined,
+      userIp,
+      isDirectory: Boolean(isDirectory),
+      pathAllowed,
+      countriesAllowed,
+      countriesBlocked,
+      ignoreParams: Boolean(ignoreParams),
+      speedLimit: Number(speedLimit) || 0
+    });
+
+    res.json(signedResult);
+  } catch (error: any) {
+    res.status(500).json({
+      error: "Error al firmar URL con Bunny CDN Token Authentication.",
       details: error.message
     });
   }

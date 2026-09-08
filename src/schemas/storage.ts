@@ -46,6 +46,7 @@ export type StorageAccessPolicy = z.infer<typeof StorageAccessPolicySchema>;
 export const StorageStatusSchema = z.object({
   isS3Configured: z.boolean(),
   isBunnyCdnConfigured: z.boolean(),
+  isTokenAuthEnabled: z.boolean().default(false),
   bucket: z.string(),
   region: z.string(),
   endpoint: z.string(),
@@ -95,7 +96,7 @@ export const PurgeCdnRequestSchema = z.object({
 export type PurgeCdnRequest = z.infer<typeof PurgeCdnRequestSchema>;
 
 /**
- * Esquema de validación Zod para generar una URL prefirmada (Presigned URL) de subida o descarga.
+ * Esquema de validación Zod para generar una URL prefirmada (Presigned URL) de subida o descarga S3.
  */
 export const PresignUrlRequestSchema = z.object({
   key: z.string().min(1, "La clave del archivo es requerida"),
@@ -117,3 +118,35 @@ export const PresignUrlResponseSchema = z.object({
 });
 
 export type PresignUrlResponse = z.infer<typeof PresignUrlResponseSchema>;
+
+/**
+ * Esquema de validación Zod para la generación de URLs firmadas con Bunny CDN Advanced Token Authentication (HMAC-SHA256).
+ */
+export const SignBunnyCdnTokenRequestSchema = z.object({
+  url: z.string().optional(),
+  key: z.string().optional(),
+  securityKey: z.string().optional(),
+  expirationTime: z.number().min(1).default(3600),
+  expiresAt: z.number().optional(),
+  userIp: z.string().optional(),
+  isDirectory: z.boolean().default(false),
+  pathAllowed: z.string().optional(),
+  countriesAllowed: z.string().optional(),
+  countriesBlocked: z.string().optional(),
+  ignoreParams: z.boolean().default(false),
+  speedLimit: z.number().min(0).default(0),
+});
+
+export type SignBunnyCdnTokenRequest = z.infer<typeof SignBunnyCdnTokenRequestSchema>;
+
+export const SignBunnyCdnTokenResponseSchema = z.object({
+  success: z.boolean(),
+  signedUrl: z.string().url(),
+  token: z.string(),
+  expires: z.number(),
+  isDirectory: z.boolean(),
+  path: z.string(),
+  expiresInSeconds: z.number(),
+});
+
+export type SignBunnyCdnTokenResponse = z.infer<typeof SignBunnyCdnTokenResponseSchema>;

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.92 (Frontend) / v2.5.83 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **storage:** add configurable destination paths and RBAC access policies (`0a7013a`)
+
 ## [v2.5.91 (Frontend) / v2.5.82 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades

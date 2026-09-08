@@ -10,12 +10,20 @@
  * - Sin encabezados no soportados en PutObject (sin Cache-Control ni ACLs en S3; la caché se gestiona en Bunny CDN).
  * - Control de acceso granular (RBAC) y distribución pública de contenido para screenshots, logos y perfiles.
  * - Rutas de almacenamiento modulares y configurables mediante variables de entorno en un espacio unificado.
+ * - Bunny CDN Advanced Token Authentication (HMAC-SHA256): URLs firmadas, tokens de directorio, IP locking, geo-restricción y speed limits.
  */
 
+import crypto from "crypto";
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
-import type { StorageFolderCategory, StoragePathsConfig, StorageAccessPolicy } from "../src/schemas/storage.js";
+import type {
+  StorageFolderCategory,
+  StoragePathsConfig,
+  StorageAccessPolicy,
+  SignBunnyCdnTokenRequest,
+  SignBunnyCdnTokenResponse
+} from "../src/schemas/storage.js";
 
 dotenv.config();
 
@@ -36,6 +44,16 @@ export const STORAGE_PATH_SCREENSHOTS = (process.env.STORAGE_PATH_SCREENSHOTS ||
 export const STORAGE_PATH_ALLIES = (process.env.STORAGE_PATH_ALLIES || process.env.STORAGE_PATH_PARTNER_LOGOS || "allies").trim().replace(/^\/+|\/+$/g, "");
 export const STORAGE_PATH_TEAMS = (process.env.STORAGE_PATH_TEAMS || process.env.STORAGE_PATH_TEAM_LOGOS || "teams").trim().replace(/^\/+|\/+$/g, "");
 export const STORAGE_PATH_AVATARS = (process.env.STORAGE_PATH_AVATARS || process.env.STORAGE_PATH_PROFILES || "avatars").trim().replace(/^\/+|\/+$/g, "");
+
+// Claves de autenticación y firma avanzada de tokens de Bunny CDN
+const BUNNY_CDN_HOSTNAME = process.env.BUNNY_CDN_HOSTNAME || process.env.BUNNY_PULL_ZONE_URL || "";
+const BUNNY_API_KEY = process.env.BUNNY_API_KEY || "";
+const BUNNY_CDN_SECURITY_KEY = (
+  process.env.BUNNY_CDN_SECURITY_KEY ||
+  process.env.BUNNY_CDN_TOKEN_KEY ||
+  process.env.BUNNY_TOKEN_AUTH_KEY ||
+  ""
+).trim();
 
 /**
  * Retorna la configuración de rutas activas de almacenamiento.
@@ -223,10 +241,6 @@ function resolveS3Endpoint(): string | undefined {
 
 const S3_ENDPOINT = resolveS3Endpoint();
 
-// Configuración de Bunny CDN Pull Zone
-const BUNNY_CDN_HOSTNAME = process.env.BUNNY_CDN_HOSTNAME || process.env.BUNNY_PULL_ZONE_URL || "";
-const BUNNY_API_KEY = process.env.BUNNY_API_KEY || "";
-
 let s3ClientInstance: S3Client | null = null;
 
 /**
@@ -264,6 +278,13 @@ export function isS3Configured(): boolean {
  */
 export function isBunnyCdnConfigured(): boolean {
   return Boolean(BUNNY_CDN_HOSTNAME);
+}
+
+/**
+ * Comprueba si la clave de autenticación por Token de Bunny CDN está configurada.
+ */
+export function isBunnyTokenAuthEnabled(): boolean {
+  return Boolean(BUNNY_CDN_SECURITY_KEY);
 }
 
 /**
@@ -409,6 +430,158 @@ export async function getPresignedUploadUrl(
 }
 
 /**
+ * Normaliza y enmascara direcciones IP para firma de tokens según la especificación de Bunny CDN:
+ * - IPv4: dirección exacta o máscara de red /24.
+ * - IPv6: enmascarada a los primeros 4 bloques (prefijo /64).
+ */
+function normalizeUserIpForSigning(ip: string): string {
+  const trimmed = ip.trim();
+  if (!trimmed) return "";
+  
+  if (trimmed.includes(":")) {
+    if (trimmed.includes("::")) {
+      const parts = trimmed.split("::");
+      const left = parts[0].split(":").filter(Boolean);
+      const prefix = left.slice(0, 4);
+      while (prefix.length < 4) prefix.push("0");
+      return prefix.join(":") + "::";
+    }
+    const parts = trimmed.split(":");
+    return parts.slice(0, 4).join(":") + "::";
+  }
+  
+  return trimmed;
+}
+
+/**
+ * Opciones para la firma de URLs con Bunny CDN Advanced Token Authentication.
+ */
+export interface BunnySignUrlOptions {
+  url?: string;
+  key?: string;
+  securityKey?: string;
+  expirationTime?: number;
+  expiresAt?: number;
+  userIp?: string;
+  isDirectory?: boolean;
+  pathAllowed?: string;
+  countriesAllowed?: string;
+  countriesBlocked?: string;
+  ignoreParams?: boolean;
+  speedLimit?: number;
+}
+
+/**
+ * Genera una URL firmada segura utilizando Bunny CDN Advanced Token Authentication (HMAC-SHA256).
+ * 
+ * Fórmula oficial:
+ * token = "HS256-" + flags + Base64URL(HMAC-SHA256(security_key, signature_path + expires + user_ip + signing_data))
+ */
+export function signBunnyCdnUrl(options: BunnySignUrlOptions): SignBunnyCdnTokenResponse {
+  const securityKey = options.securityKey || BUNNY_CDN_SECURITY_KEY;
+  if (!securityKey) {
+    throw new Error("BUNNY_CDN_SECURITY_KEY no está configurada para firmar URLs con token de autenticación.");
+  }
+
+  // Resolver URL destino completa
+  let targetUrlString = options.url || "";
+  if (!targetUrlString && options.key) {
+    targetUrlString = getPublicCdnUrl(options.key);
+  }
+  if (!targetUrlString.startsWith("http")) {
+    targetUrlString = `https://${targetUrlString}`;
+  }
+
+  const parsedUrl = new URL(targetUrlString);
+  const path = parsedUrl.pathname;
+  const signaturePath = options.pathAllowed || path;
+
+  // Calcular timestamp de expiración UNIX
+  let expires: number;
+  if (options.expiresAt && options.expiresAt > 0) {
+    expires = Math.floor(options.expiresAt);
+  } else {
+    const offsetSeconds = options.expirationTime && options.expirationTime > 0 ? options.expirationTime : 3600;
+    expires = Math.floor(Date.now() / 1000) + offsetSeconds;
+  }
+
+  const expiresStr = expires.toString();
+
+  // Enmascaramiento y validación de IP (IP Locking)
+  const normalizedIp = options.userIp ? normalizeUserIpForSigning(options.userIp) : "";
+  const flags = normalizedIp ? "1-" : "";
+
+  // Construcción de parámetros de firma (ordenamiento alfabético estricto)
+  const signingParams: Record<string, string> = {};
+
+  if (options.countriesAllowed) {
+    signingParams["token_countries"] = options.countriesAllowed.trim().toUpperCase();
+  }
+  if (options.countriesBlocked) {
+    signingParams["token_countries_blocked"] = options.countriesBlocked.trim().toUpperCase();
+  }
+  if (options.ignoreParams) {
+    signingParams["token_ignore_params"] = "true";
+  } else {
+    parsedUrl.searchParams.forEach((val, key) => {
+      if (key !== "token" && key !== "expires") {
+        signingParams[key] = val;
+      }
+    });
+  }
+  if (options.pathAllowed) {
+    signingParams["token_path"] = options.pathAllowed;
+  }
+  if (options.speedLimit && options.speedLimit > 0) {
+    signingParams["limit"] = options.speedLimit.toString();
+  }
+
+  const sortedKeys = Object.keys(signingParams).sort();
+  const signingData = sortedKeys.map(k => `${k}=${signingParams[k]}`).join("&");
+
+  // HMAC-SHA256(security_key, signature_path + expires + user_ip + signing_data)
+  const messageToSign = `${signaturePath}${expiresStr}${normalizedIp}${signingData}`;
+  const hmac = crypto.createHmac("sha256", securityKey);
+  hmac.update(messageToSign);
+  const rawBase64 = hmac.digest("base64");
+  const base64UrlHash = rawBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  const token = `HS256-${flags}${base64UrlHash}`;
+
+  let signedUrl = "";
+
+  if (options.isDirectory) {
+    // Path-based token format (/bcdn_token=.../path/to/file)
+    const tokenParams: string[] = [`token=${token}`, `expires=${expiresStr}`];
+    sortedKeys.forEach(k => {
+      tokenParams.push(`${encodeURIComponent(k)}=${encodeURIComponent(signingParams[k])}`);
+    });
+    const tokenPathSegment = `bcdn_token=${tokenParams.join("&")}`;
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    signedUrl = `${parsedUrl.protocol}//${parsedUrl.host}/${tokenPathSegment}${cleanPath}${parsedUrl.search}`;
+  } else {
+    // Query string token format (?token=...&expires=...)
+    const finalUrl = new URL(targetUrlString);
+    finalUrl.searchParams.set("token", token);
+    finalUrl.searchParams.set("expires", expiresStr);
+    sortedKeys.forEach(k => {
+      finalUrl.searchParams.set(k, signingParams[k]);
+    });
+    signedUrl = finalUrl.toString();
+  }
+
+  return {
+    success: true,
+    signedUrl,
+    token,
+    expires,
+    isDirectory: Boolean(options.isDirectory),
+    path: signaturePath,
+    expiresInSeconds: Math.max(0, expires - Math.floor(Date.now() / 1000)),
+  };
+}
+
+/**
  * Elimina un objeto del bucket S3 (Single Object Delete) y purga la caché perimetral en Bunny CDN.
  * 
  * @param key Clave del objeto a eliminar.
@@ -500,6 +673,7 @@ export function getStorageStatus() {
   return {
     isS3Configured: isS3Configured(),
     isBunnyCdnConfigured: isBunnyCdnConfigured(),
+    isTokenAuthEnabled: isBunnyTokenAuthEnabled(),
     bucket: S3_BUCKET_NAME,
     region: S3_REGION,
     endpoint: S3_ENDPOINT || "AWS S3 Default",

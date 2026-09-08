@@ -9,7 +9,7 @@
 import fs from "fs";
 import path from "path";
 import { updateChangelogFile } from "./scripts/generate-changelog.js";
-import { getStorageStatus, purgeBunnyCdnCache, getPublicCdnUrl } from "./server/storageService.js";
+import { getStorageStatus, purgeBunnyCdnCache, getPublicCdnUrl, signBunnyCdnUrl } from "./server/storageService.js";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
@@ -55,12 +55,14 @@ Comandos disponibles:
   \x1b[32mseed\x1b[0m                 Restaura el reporte por defecto "Ginebra".
   \x1b[32mstorage | cdn\x1b[0m        Inspecciona el estado de S3 y Bunny CDN.
   \x1b[32mpurge-cdn [url]\x1b[0m      Purga la caché perimetral de Bunny CDN.
+  \x1b[32msign-token <url>\x1b[0m     Genera URL firmada con Bunny CDN Token Auth.
   \x1b[32mchangelog\x1b[0m            Genera/actualiza CHANGELOG.md mediante Conventional Commits.
   \x1b[32mhelp\x1b[0m                 Muestra esta ayuda.
 
 Ejemplo de uso:
   \x1b[33mnpm run cli list\x1b[0m
   \x1b[33mnpm run cli storage\x1b[0m
+  \x1b[33mnpm run cli sign-token screenshots/audit_demo.webp\x1b[0m
   \x1b[33mnpm run cli purge-cdn\x1b[0m
   \x1b[33mnpm run cli changelog\x1b[0m
 `);
@@ -268,6 +270,26 @@ Teléfono Whatsapp: ${report.contactWhatsapp}
         console.log(`\x1b[31m✖ ${result.message}\x1b[0m\n`);
       }
     });
+    break;
+  }
+
+  case "sign-token": {
+    const target = args[1] || "screenshots/demo_sample.webp";
+    const expiration = Number(args[2]) || 3600;
+    console.log(`\n\x1b[1m\x1b[36m=== Bunny CDN Token Signer (HMAC-SHA256) ===\x1b[0m`);
+    try {
+      const signed = signBunnyCdnUrl({
+        key: target.startsWith("http") ? undefined : target,
+        url: target.startsWith("http") ? target : undefined,
+        expirationTime: expiration
+      });
+      console.log(`- \x1b[1mRuta Objetivo:\x1b[0m       ${signed.path}`);
+      console.log(`- \x1b[1mToken Generado:\x1b[0m      \x1b[33m${signed.token}\x1b[0m`);
+      console.log(`- \x1b[1mExpira En:\x1b[0m           ${signed.expiresInSeconds} segundos (UNIX: ${signed.expires})`);
+      console.log(`- \x1b[1mURL Firmada:\x1b[0m         \x1b[32m${signed.signedUrl}\x1b[0m\n`);
+    } catch (err: any) {
+      console.log(`\x1b[31m✖ Error al firmar token:\x1b[0m ${err.message}\n`);
+    }
     break;
   }
 
