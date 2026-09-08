@@ -259,6 +259,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
   }, [report?.name]);
 
   const sendInteraction = async (type: string, details?: any) => {
+    if (!reportId || !report) return;
     await sendReportInteraction(reportId, type, details);
   };
 
@@ -573,20 +574,20 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
 
   // Real-time user interaction and unique user tracking
   useEffect(() => {
-    if (reportId && activeSlide !== undefined) {
+    if (report && reportId && activeSlide !== undefined) {
       const slideName = SLIDES[activeSlide] || `Slide ${activeSlide}`;
       sendInteraction("slide_view", { slideName });
     }
-  }, [activeSlide, reportId]);
+  }, [activeSlide, reportId, report]);
 
   useEffect(() => {
-    if (reportId && activeToolIdx !== undefined && activeToolIdx !== 0) {
+    if (report && reportId && activeToolIdx !== undefined && activeToolIdx !== 0) {
       sendInteraction("tool_click", { toolIndex: activeToolIdx });
     }
-  }, [activeToolIdx, reportId]);
+  }, [activeToolIdx, reportId, report]);
 
   useEffect(() => {
-    if (!reportId) return;
+    if (!reportId || !report) return;
     const delayDebounceFn = setTimeout(() => {
       if (
         calcGmv !== (report?.gmv || 450000) ||
@@ -604,15 +605,15 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
     }, 1500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [calcGmv, calcAppsCostUSD, calcAppsCostMXN, calcShopifyPlan, reportId]);
+  }, [calcGmv, calcAppsCostUSD, calcAppsCostMXN, calcShopifyPlan, reportId, report]);
 
   useEffect(() => {
-    if (!reportId) return;
+    if (!reportId || !report) return;
     const interval = setInterval(() => {
       sendInteraction("heartbeat", { seconds: 10 });
     }, 10000);
     return () => clearInterval(interval);
-  }, [reportId]);
+  }, [reportId, report]);
 
   // Auto-save report edits (GMV, visitas, apps, funciones comparativas y planes) to database
   useEffect(() => {

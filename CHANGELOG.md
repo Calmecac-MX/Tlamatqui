@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.85 (Frontend) / v2.5.73 (Backend)] - 2026-09-08
+
+### 🐛 Corregido & Bug Fixes
+- **report:** make contactEmail and contactWhatsapp optional in database schema and types (`db1fa8b`)
+
 ## [v2.5.84 (Frontend) / v2.5.73 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades
