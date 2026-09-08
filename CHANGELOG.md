@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.89 (Frontend) / v2.5.79 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **auth:** validate session cookies and database user existence on each page load (`55e55fa`)
+
 ## [v2.5.88 (Frontend) / v2.5.78 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades

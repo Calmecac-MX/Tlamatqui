@@ -55,6 +55,7 @@ import { scrapeShopifyStoreNative, detectStoreWithChismografo } from "./server/s
 import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
+import { getStorageStatus, uploadBase64ToStorage, purgeBunnyCdnCache, deleteFileFromStorage } from "./server/storageService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 import {
   runAuditWorkflow,
@@ -1426,6 +1427,72 @@ app.post("/api/logo-config", async (req: Request, res: Response) => {
     res.json(saved);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// MÓDULO DE ALMACENAMIENTO S3 Y DISTRIBUCIÓN BUNNY CDN
+// ----------------------------------------------------------------------------
+
+/**
+ * @route GET /api/storage/status
+ * @description Retorna el estado consolidado de la infraestructura S3 y aceleración Bunny CDN.
+ */
+app.get("/api/storage/status", async (req: Request, res: Response) => {
+  try {
+    const status = getStorageStatus();
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: "Error al consultar estado de almacenamiento.", details: error.message });
+  }
+});
+
+/**
+ * @route POST /api/storage/upload
+ * @description Sube un archivo o imagen base64 a S3 / Bunny Storage con distribución en Bunny CDN.
+ */
+app.post("/api/storage/upload", requireRole(["Superusuario", "Administrador", "Agente"]), async (req: Request, res: Response) => {
+  try {
+    const { data, filename, folder, contentType } = req.body;
+
+    if (!data || !filename) {
+      return res.status(400).json({
+        error: "Los campos 'data' (base64 o contenido) y 'filename' son obligatorios."
+      });
+    }
+
+    const cleanFolder = (folder || "uploads").replace(/^\/+|\/+$/g, "");
+    const cleanFilename = filename.replace(/^\/+/, "");
+    const key = `${cleanFolder}/${Date.now()}_${cleanFilename}`;
+
+    const uploadResult = await uploadBase64ToStorage(data, key, contentType || "image/webp");
+
+    res.json({
+      success: true,
+      ...uploadResult
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: "Error al subir archivo a almacenamiento S3 / Bunny CDN.",
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/storage/purge-cdn
+ * @description Purga la caché de distribución de Bunny CDN (Requiere rol Administrador o Superusuario).
+ */
+app.post("/api/storage/purge-cdn", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
+  try {
+    const { urlOrKey } = req.body;
+    const result = await purgeBunnyCdnCache(urlOrKey);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      error: "Error al purgar caché de Bunny CDN.",
+      details: error.message
+    });
   }
 });
 
