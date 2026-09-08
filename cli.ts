@@ -9,6 +9,7 @@
 import fs from "fs";
 import path from "path";
 import { updateChangelogFile } from "./scripts/generate-changelog.js";
+import { getStorageStatus, purgeBunnyCdnCache, getPublicCdnUrl } from "./server/storageService.js";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
@@ -52,11 +53,15 @@ Comandos disponibles:
   \x1b[32minfo <id>\x1b[0m            Muestra el detalle financiero de un reporte.
   \x1b[32mdelete <id>\x1b[0m          Elimina un reporte de diagnóstico.
   \x1b[32mseed\x1b[0m                 Restaura el reporte por defecto "Ginebra".
+  \x1b[32mstorage | cdn\x1b[0m        Inspecciona el estado de S3 y Bunny CDN.
+  \x1b[32mpurge-cdn [url]\x1b[0m      Purga la caché perimetral de Bunny CDN.
   \x1b[32mchangelog\x1b[0m            Genera/actualiza CHANGELOG.md mediante Conventional Commits.
   \x1b[32mhelp\x1b[0m                 Muestra esta ayuda.
 
 Ejemplo de uso:
   \x1b[33mnpm run cli list\x1b[0m
+  \x1b[33mnpm run cli storage\x1b[0m
+  \x1b[33mnpm run cli purge-cdn\x1b[0m
   \x1b[33mnpm run cli changelog\x1b[0m
 `);
 }
@@ -224,6 +229,35 @@ Teléfono Whatsapp: ${report.contactWhatsapp}
     ];
     saveReports(defaultReports);
     console.log("\x1b[32mÉxito: Datos iniciales del reporte 'Ginebra' restaurados.\x1b[0m");
+    break;
+  }
+
+  case "storage":
+  case "cdn": {
+    const status = getStorageStatus();
+    console.log(`\n\x1b[1m\x1b[36m=== Estado de Almacenamiento S3 y Bunny CDN ===\x1b[0m`);
+    console.log(`- \x1b[1mS3 Configurado:\x1b[0m         ${status.isS3Configured ? "\x1b[32mSí (Activo)\x1b[0m" : "\x1b[33mNo configurado\x1b[0m"}`);
+    console.log(`- \x1b[1mBunny CDN Configurado:\x1b[0m  ${status.isBunnyCdnConfigured ? "\x1b[32mSí (Activo)\x1b[0m" : "\x1b[33mNo configurado (Directo a S3)\x1b[0m"}`);
+    console.log(`- \x1b[1mStorage Bucket/Zone:\x1b[0m    ${status.bucket}`);
+    console.log(`- \x1b[1mRegión:\x1b[0m                 ${status.region}`);
+    console.log(`- \x1b[1mEndpoint S3:\x1b[0m            ${status.endpoint}`);
+    console.log(`- \x1b[1mHostname Bunny CDN:\x1b[0m     ${status.cdnHostname}`);
+    console.log(`- \x1b[1mEjemplo URL CDN:\x1b[0m        ${getPublicCdnUrl("demo/screenshot.webp")}`);
+    console.log(`- \x1b[1mRegiones S3 Soportadas:\x1b[0m ${status.supportedRegions.join(", ")}`);
+    console.log("");
+    break;
+  }
+
+  case "purge-cdn": {
+    const target = args[1];
+    console.log(`\n\x1b[1m\x1b[36mPurgando caché en Bunny CDN...\x1b[0m`);
+    purgeBunnyCdnCache(target).then((result) => {
+      if (result.success) {
+        console.log(`\x1b[32m✔ ${result.message}\x1b[0m\n`);
+      } else {
+        console.log(`\x1b[31m✖ ${result.message}\x1b[0m\n`);
+      }
+    });
     break;
   }
 
