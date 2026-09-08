@@ -48,3 +48,25 @@ export const PurgeCdnRequestSchema = z.object({
 });
 
 export type PurgeCdnRequest = z.infer<typeof PurgeCdnRequestSchema>;
+
+/**
+ * Esquema de validación Zod para generar una URL prefirmada (Presigned URL) de subida o descarga.
+ */
+export const PresignUrlRequestSchema = z.object({
+  key: z.string().min(1, "La clave del archivo es requerida"),
+  type: z.enum(["upload", "download"]).default("download"),
+  contentType: z.string().optional(),
+  expiresInSeconds: z.number().min(1).max(604800).default(3600),
+});
+
+export type PresignUrlRequest = z.infer<typeof PresignUrlRequestSchema>;
+
+export const PresignUrlResponseSchema = z.object({
+  success: z.boolean(),
+  key: z.string(),
+  presignedUrl: z.string().url(),
+  publicCdnUrl: z.string().url(),
+  expiresInSeconds: z.number(),
+});
+
+export type PresignUrlResponse = z.infer<typeof PresignUrlResponseSchema>;

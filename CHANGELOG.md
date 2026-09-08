@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.90 (Frontend) / v2.5.80 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **storage:** add S3 compatible storage integration and Bunny CDN acceleration (`b203ff1`)
+
 ## [v2.5.89 (Frontend) / v2.5.79 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades

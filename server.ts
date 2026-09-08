@@ -55,7 +55,7 @@ import { scrapeShopifyStoreNative, detectStoreWithChismografo } from "./server/s
 import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
-import { getStorageStatus, uploadBase64ToStorage, purgeBunnyCdnCache, deleteFileFromStorage } from "./server/storageService.js";
+import { getStorageStatus, uploadBase64ToStorage, purgeBunnyCdnCache, deleteFileFromStorage, getPresignedUploadUrl, getPresignedDownloadUrl, getPublicCdnUrl } from "./server/storageService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 import {
   runAuditWorkflow,
@@ -1474,6 +1474,71 @@ app.post("/api/storage/upload", requireRole(["Superusuario", "Administrador", "A
   } catch (error: any) {
     res.status(500).json({
       error: "Error al subir archivo a almacenamiento S3 / Bunny CDN.",
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/storage/presign
+ * @description Genera URLs prefirmadas (Presigned URLs) para subida directa o descarga segura con expiración configurable (1s a 7 días).
+ */
+app.post("/api/storage/presign", requireRole(["Superusuario", "Administrador", "Agente"]), async (req: Request, res: Response) => {
+  try {
+    const { key, type, contentType, expiresInSeconds } = req.body;
+    if (!key) {
+      return res.status(400).json({ error: "El parámetro 'key' es requerido para generar la URL prefirmada." });
+    }
+
+    const expires = Number(expiresInSeconds) || 3600;
+    let presignedUrl = "";
+
+    if (type === "upload") {
+      presignedUrl = await getPresignedUploadUrl(key, contentType || "application/octet-stream", expires);
+    } else {
+      presignedUrl = await getPresignedDownloadUrl(key, expires);
+    }
+
+    const publicCdnUrl = getPublicCdnUrl(key);
+
+    res.json({
+      success: true,
+      key,
+      type: type || "download",
+      presignedUrl,
+      publicCdnUrl,
+      expiresInSeconds: expires
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: "Error al generar URL prefirmada S3.",
+      details: error.message
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/storage/file
+ * @description Elimina un objeto de S3 / Bunny Storage de forma atómica y purga la URL en Bunny CDN.
+ */
+app.delete("/api/storage/file", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
+  try {
+    const { key } = req.body;
+    if (!key) {
+      return res.status(400).json({ error: "El parámetro 'key' es obligatorio para eliminar el archivo." });
+    }
+
+    const deleted = await deleteFileFromStorage(key);
+    // Purgar la caché del CDN para la llave eliminada
+    await purgeBunnyCdnCache(key);
+
+    res.json({
+      success: deleted,
+      message: deleted ? `Archivo '${key}' eliminado exitosamente de S3 y purgado en Bunny CDN.` : `No se pudo eliminar el archivo '${key}'.`
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: "Error al eliminar archivo de almacenamiento S3.",
       details: error.message
     });
   }
