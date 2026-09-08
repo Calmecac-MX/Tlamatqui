@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.82 (Frontend) / v2.5.71 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **team:** add TeamConfig and TeamReportConfig with reportLogos and user relations (`2a23a6b`)
+
 ## [v2.5.81 (Frontend) / v2.5.70 (Backend)] - 2026-09-08
 
 ### ♻️ Refactorización de Código

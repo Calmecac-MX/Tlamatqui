@@ -452,15 +452,6 @@ export interface Team {
 
 /**
  * Logotipo de partner seleccionado en el reporte del equipo con orden de aparición.
- */
-export interface TeamReportLogo {
-  id: string;
-  order: number;
-  reportConfigId: string;
-  partnerId: string;
-  partner?: Partner;
-}
-
 /**
  * Subtabla ReportConfig contenida dentro de TeamConfig.
  */
@@ -471,7 +462,7 @@ export interface TeamReportConfig {
   phoneReport?: number;
   userId?: string;
   user?: { id: string; name: string; email: string };
-  reportLogos?: TeamReportLogo[];
+  reportLogos?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

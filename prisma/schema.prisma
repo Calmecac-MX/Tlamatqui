@@ -125,32 +125,18 @@ model TeamConfig {
 
 /// Subtabla ReportConfig contenida dentro de TeamConfig.
 model TeamReportConfig {
-  id          String           @id @default(uuid())
-  configId    String           @unique
-  config      TeamConfig       @relation(fields: [configId], references: [id], onDelete: Cascade)
+  id          String     @id @default(uuid())
+  configId    String     @unique
+  config      TeamConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
   emailReport String?
   phoneReport Float?
-  userId      String?          @unique
-  user        User?            @relation("TeamReportConfigUser", fields: [userId], references: [id], onDelete: SetNull)
-  reportLogos TeamReportLogo[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @default(now()) @updatedAt
+  userId      String?    @unique
+  user        User?      @relation("TeamReportConfigUser", fields: [userId], references: [id], onDelete: SetNull)
+  reportLogos String[]   @default([]) // Arreglo ordenado de IDs de partners seleccionados
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
 
   @@index([userId])
-}
-
-/// Logos de partners seleccionados en ReportConfig por orden de aparición (1:M -> Partners).
-model TeamReportLogo {
-  id             String           @id @default(uuid())
-  order          Int              @default(0)
-  reportConfigId String
-  reportConfig   TeamReportConfig @relation(fields: [reportConfigId], references: [id], onDelete: Cascade)
-  partnerId      String
-  partner        Partner          @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  createdAt      DateTime         @default(now())
-
-  @@index([reportConfigId])
-  @@index([partnerId])
 }
 
 /// Integrantes y roles dentro de un equipo o workspace.
@@ -364,7 +350,6 @@ model Partner {
   teamId              String?
   team                Team?           @relation(fields: [teamId], references: [id], onDelete: Cascade)
   members             PartnerMember[]
-  reportLogos         TeamReportLogo[]
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @default(now()) @updatedAt
 

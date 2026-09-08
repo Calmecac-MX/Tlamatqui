@@ -786,10 +786,6 @@ export async function getDbTeams(): Promise<Team[]> {
                 include: {
                   reportConfig: {
                     include: {
-                      reportLogos: {
-                        include: { partner: { include: { members: true } } },
-                        orderBy: { order: "asc" }
-                      },
                       user: {
                         select: { id: true, name: true, email: true }
                       }
@@ -866,27 +862,7 @@ export async function getDbTeams(): Promise<Team[]> {
               phoneReport: t.config.reportConfig.phoneReport !== null && t.config.reportConfig.phoneReport !== undefined ? Number(t.config.reportConfig.phoneReport) : undefined,
               userId: t.config.reportConfig.userId || undefined,
               user: t.config.reportConfig.user || undefined,
-              reportLogos: t.config.reportConfig.reportLogos ? t.config.reportConfig.reportLogos.map((rl: any) => ({
-                id: rl.id,
-                order: rl.order,
-                reportConfigId: rl.reportConfigId,
-                partnerId: rl.partnerId,
-                partner: rl.partner ? {
-                  id: rl.partner.id,
-                  name: rl.partner.name,
-                  logo: rl.partner.logo,
-                  description: rl.partner.description || "",
-                  link: rl.partner.link || undefined,
-                  representativeEmail: rl.partner.representativeEmail || undefined,
-                  teamId: rl.partner.teamId,
-                  members: (rl.partner.members || []).map((pm: any) => ({
-                    id: pm.id,
-                    name: pm.name,
-                    email: pm.email,
-                    role: pm.role
-                  }))
-                } : undefined
-              })) : [],
+              reportLogos: Array.isArray(t.config.reportConfig.reportLogos) ? t.config.reportConfig.reportLogos : [],
               createdAt: t.config.reportConfig.createdAt?.toISOString(),
               updatedAt: t.config.reportConfig.updatedAt?.toISOString()
             } : undefined,
@@ -1050,44 +1026,23 @@ export async function saveDbTeam(team: Team): Promise<Team> {
 
             if (cleanTeam.config.reportConfig) {
               const rc = cleanTeam.config.reportConfig;
-              const reportConfig = await tx.teamReportConfig.upsert({
+              await tx.teamReportConfig.upsert({
                 where: { configId: teamConfig.id },
                 update: {
                   emailReport: rc.emailReport || null,
                   phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
-                  userId: rc.userId || null
+                  userId: rc.userId || null,
+                  reportLogos: Array.isArray(rc.reportLogos) ? rc.reportLogos : []
                 },
                 create: {
                   id: rc.id || `trc-${teamConfig.id}`,
                   configId: teamConfig.id,
                   emailReport: rc.emailReport || null,
                   phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
-                  userId: rc.userId || null
+                  userId: rc.userId || null,
+                  reportLogos: Array.isArray(rc.reportLogos) ? rc.reportLogos : []
                 }
               });
-
-              await tx.teamReportLogo.deleteMany({
-                where: { reportConfigId: reportConfig.id }
-              });
-
-              if (rc.reportLogos && rc.reportLogos.length > 0) {
-                for (let i = 0; i < rc.reportLogos.length; i++) {
-                  const rl = rc.reportLogos[i];
-                  const partnerExists = await tx.partner.findUnique({
-                    where: { id: rl.partnerId }
-                  });
-                  if (partnerExists) {
-                    await tx.teamReportLogo.create({
-                      data: {
-                        id: rl.id || `trl-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
-                        reportConfigId: reportConfig.id,
-                        partnerId: rl.partnerId,
-                        order: rl.order !== undefined ? rl.order : i
-                      }
-                    });
-                  }
-                }
-              }
             }
           }
         });
