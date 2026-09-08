@@ -74,6 +74,14 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
     setIsDemoActive(true);
     localStorage.setItem("tn_demo_user", JSON.stringify(userToSave));
     localStorage.setItem("tn_demo_active", "true");
+
+    // Sincronizar cookie de sesión HttpOnly segura con el backend
+    fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(userToSave)
+    }).catch((err) => console.warn("No se pudo establecer cookie de sesión demo:", err));
   };
 
   const demoLogout = () => {
@@ -81,6 +89,12 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
     setIsDemoActive(false);
     localStorage.removeItem("tn_demo_user");
     localStorage.removeItem("tn_demo_active");
+
+    // Limpiar cookie de sesión segura en el backend
+    fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include"
+    }).catch(() => {});
   };
 
   const clearAuthError = () => {
@@ -126,6 +140,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           const res = await fetch("/api/users/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({
               email: auth0.user.email,
               name: auth0.user.name || auth0.user.nickname,
@@ -200,6 +215,7 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
           },
           logout: () => {
             hideAuth0Lock();
+            fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
             auth0.logout({
               logoutParams: {
                 returnTo: window.location.origin

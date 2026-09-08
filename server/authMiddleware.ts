@@ -1,17 +1,38 @@
 import { Request, Response, NextFunction } from "express";
+import { parseCookies, validateSessionToken, SESSION_COOKIE_NAME, SessionUser } from "./sessionService.js";
 
 export interface AuthenticatedRequest extends Request {
   userRole?: string;
   userEmail?: string;
   userSub?: string;
+  sessionUser?: SessionUser;
+  parsedCookies?: Record<string, string>;
 }
 
 /**
- * Middleware para validar y decodificar tokens Bearer de Auth0 o cabeceras de rol.
+ * Middleware para validar y decodificar cookies de sesión seguras o tokens Bearer de Auth0.
+ * Prioriza cookies HttpOnly firmadas criptográficamente para máxima protección contra XSS.
  */
 export function verifyAuth0Token(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  // 1. Extraer cookies de sesión del encabezado HTTP
+  const cookieHeader = req.headers.cookie;
+  const parsedCookies = parseCookies(cookieHeader);
+  req.cookies = parsedCookies;
+
+  const sessionCookieToken = parsedCookies[SESSION_COOKIE_NAME] || parsedCookies["auth_token"] || parsedCookies["appSession"];
+  if (sessionCookieToken) {
+    const sessionValidation = validateSessionToken(sessionCookieToken);
+    if (sessionValidation.valid && sessionValidation.user) {
+      req.sessionUser = sessionValidation.user;
+      req.userEmail = sessionValidation.user.email;
+      req.userRole = sessionValidation.user.role;
+      req.userSub = sessionValidation.user.sub || sessionValidation.user.id;
+      return next();
+    }
+  }
+
+  // 2. Fallback a encabezado Authorization Bearer si no hay cookie de sesión
   const authHeader = req.headers.authorization;
-  
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
     try {
@@ -56,12 +77,17 @@ export function requireRole(allowedRoles: Array<"Superusuario" | "Administrador"
 }
 
 /**
- * Middleware opcional para verificar sesión de Auth0.
+ * Middleware para verificar sesión activa (mediante cookie segura HttpOnly o token Auth0).
  */
 export function verifySession(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  if (!authHeader && process.env.NODE_ENV === "production" && process.env.STRICT_AUTH === "true") {
-    return res.status(401).json({ error: "No autorizado. Se requiere token de sesión Auth0." });
+  const hasValidSession = Boolean(req.sessionUser || (authHeader && authHeader.startsWith("Bearer ")));
+
+  if (!hasValidSession && process.env.NODE_ENV === "production" && process.env.STRICT_AUTH === "true") {
+    return res.status(401).json({
+      error: "No autorizado",
+      message: "Se requiere una cookie de sesión válida o token de autorización para continuar."
+    });
   }
   next();
 }

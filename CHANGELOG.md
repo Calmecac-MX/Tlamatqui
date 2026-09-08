@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.87 (Frontend) / v2.5.77 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **schemas:** modularize application domain schemas with zod and typescript interoperability (`56c2456`)
+
 ## [v2.5.86 (Frontend) / v2.5.76 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades

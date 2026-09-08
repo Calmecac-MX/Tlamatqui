@@ -48,7 +48,8 @@ import {
   toggleApiLock,
   resetInstanceToFactorySettings
 } from "./server/dbBridge.js";
-import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock } from "./server/authMiddleware.js";
+import { requireRole, verifyAuth0Token, verifyApiSecretToken, verifyApiLock, AuthenticatedRequest } from "./server/authMiddleware.js";
+import { createSessionToken, buildSessionCookieHeader, buildClearSessionCookieHeader, validateSessionToken, parseCookies, SESSION_COOKIE_NAME } from "./server/sessionService.js";
 import { ReportSchema, TeamSchema, ScrapeRequestSchema, SendEmailRequestSchema, SendTeamInviteEmailRequestSchema } from "./server/schemas.js";
 import { scrapeShopifyStoreNative, detectStoreWithChismografo } from "./server/scrapper.js";
 import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
@@ -252,8 +253,110 @@ app.get("/api/auth/callback", (req: Request, res: Response) => {
 });
 
 /**
+ * @route GET /api/auth/session
+ * @description Valida la cookie de sesión HttpOnly y retorna el usuario autenticado activo.
+ */
+app.get("/api/auth/session", async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const cookieHeader = req.headers.cookie;
+    const parsedCookies = parseCookies(cookieHeader);
+    const sessionToken = parsedCookies[SESSION_COOKIE_NAME];
+
+    if (!sessionToken) {
+      // Si no hay cookie pero hay token de Auth0 en Authorization
+      if (req.userEmail && req.userRole) {
+        return res.json({
+          authenticated: true,
+          user: {
+            email: req.userEmail,
+            role: req.userRole,
+            sub: req.userSub,
+          },
+          sessionSource: "bearer_token"
+        });
+      }
+
+      return res.status(401).json({
+        authenticated: false,
+        message: "No hay sesión activa o la cookie no fue proporcionada."
+      });
+    }
+
+    const validation = validateSessionToken(sessionToken);
+    if (!validation.valid || !validation.user) {
+      res.setHeader("Set-Cookie", buildClearSessionCookieHeader());
+      return res.status(401).json({
+        authenticated: false,
+        error: validation.error || "Cookie de sesión inválida o expirada."
+      });
+    }
+
+    res.json({
+      authenticated: true,
+      user: validation.user,
+      sessionSource: "secure_cookie"
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Error al validar la sesión.", details: err.message });
+  }
+});
+
+/**
+ * @route POST /api/auth/session
+ * @description Genera y establece una cookie de sesión HttpOnly firmada criptográficamente.
+ */
+app.post("/api/auth/session", async (req: Request, res: Response) => {
+  try {
+    const { email, name, role, sub, avatar } = req.body;
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return res.status(400).json({ error: "Email válido es requerido para crear la sesión." });
+    }
+
+    const sessionToken = createSessionToken({
+      email,
+      name,
+      role: role || "Administrador",
+      sub,
+      avatar
+    });
+
+    const cookieHeader = buildSessionCookieHeader(sessionToken);
+    res.setHeader("Set-Cookie", cookieHeader);
+
+    res.json({
+      success: true,
+      message: "Cookie de sesión generada y validada exitosamente.",
+      user: {
+        email,
+        name,
+        role: role || "Administrador",
+        sub
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Error al generar cookie de sesión.", details: err.message });
+  }
+});
+
+/**
+ * @route POST /api/auth/logout
+ * @description Invalida y elimina de forma segura la cookie de sesión HttpOnly.
+ */
+app.post("/api/auth/logout", (req: Request, res: Response) => {
+  try {
+    res.setHeader("Set-Cookie", buildClearSessionCookieHeader());
+    res.json({
+      success: true,
+      message: "Sesión cerrada y cookie eliminada con éxito."
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Error al cerrar sesión.", details: err.message });
+  }
+});
+
+/**
  * @route POST /api/users/sync
- * @description Sincroniza o registra un usuario al iniciar sesión.
+ * @description Sincroniza o registra un usuario al iniciar sesión y emite la cookie de sesión HttpOnly segura.
  * REGLA: Si la lista de usuarios está vacía, le otorga automáticamente el rol de Superusuario al primer usuario.
  */
 app.post("/api/users/sync", async (req: Request, res: Response) => {
@@ -273,6 +376,17 @@ app.post("/api/users/sync", async (req: Request, res: Response) => {
       tokenExpiresAt,
       lastLoginAt
     });
+
+    // Generar y emitir cookie de sesión HttpOnly segura automáticamente
+    const sessionToken = createSessionToken({
+      id: syncedUser.id,
+      email: syncedUser.email,
+      name: syncedUser.name,
+      role: syncedUser.role,
+      sub: syncedUser.sub,
+      avatar: syncedUser.avatar
+    });
+    res.setHeader("Set-Cookie", buildSessionCookieHeader(sessionToken));
 
     res.json({
       success: true,

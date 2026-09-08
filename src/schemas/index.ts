@@ -14,3 +14,4 @@ export * from "./domain";
 export * from "./email";
 export * from "./settings";
 export * from "./report";
+export * from "./session";
