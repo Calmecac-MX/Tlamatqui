@@ -137,7 +137,7 @@ El repositorio utiliza un sistema de **Auto-Versionado Desacoplado Independiente
 
 ## 6. 📝 Reglas de Conventional Commits y Automatización de Changelog (Google Release Please)
 
-El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por **Google Release Please** y pipeline de CI/CD (con Node.js 24, Lint y Build) mediante [`.github/workflows/ci-cd.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/ci-cd.yml).
+El repositorio cuenta con integración automatizada de [`CHANGELOG.md`](file:///Users/cesarayar/Documents/tlamatqui/CHANGELOG.md) guiada por **Google Release Please** y pipeline de CI/CD (con Node.js 24, Lint y Build) mediante [`.github/workflows/omeyocan.yml`](file:///Users/cesarayar/Documents/tlamatqui/.github/workflows/omeyocan.yml).
 
 ### 6.1 Estructura Obligatoria de Commits
 Todo mensaje de commit redactado por desarrolladores o agentes de IA debe seguir strictly el estándar Conventional Commits:

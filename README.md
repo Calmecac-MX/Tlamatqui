@@ -168,15 +168,10 @@ El área ejecutiva de administración se encuentra disponible en la ruta client-
 
 ## ⚙️ Integración Continua (CI/CD con Node.js 24)
 
-El pipeline de integración continua está configurado mediante **GitHub Actions** ([`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)):
-
-1. **Etapa 1 - CI Build & Lint (`Node.js 24`):**
-   - Ejecuta `actions/checkout@v7` y `actions/setup-node@v5` especificando **Node.js 24**.
-   - Genera el cliente Prisma con `npx prisma generate`.
-   - Verifica los tipos estáticos con `npm run lint` (`tsc --noEmit`).
-   - Compila la aplicación completa con `npm run build`.
-2. **Etapa 2 - Release Please:**
-   - Ejecuta `googleapis/release-please-action@v5` en pushes a `main` para automatizar versiones semánticas y actualizar [`CHANGELOG.md`](CHANGELOG.md).
+El pipeline de integración continua está configurado mediante **GitHub Actions** con arquitectura de 3 ramas:
+- **Calpilli (Desarrollo):** [`.github/workflows/calpilli.yml`](.github/workflows/calpilli.yml) para integración continua en Node.js 24.
+- **Tlamatini (Preview / Staging):** [`.github/workflows/tlamatini.yml`](.github/workflows/tlamatini.yml) para validaciones de staging.
+- **Omeyocan (Producción & Releases):** [`.github/workflows/omeyocan.yml`](.github/workflows/omeyocan.yml) con integración de Google Release Please.
 
 ---
 
