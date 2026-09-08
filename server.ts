@@ -644,6 +644,8 @@ app.post("/api/teams", async (req: Request, res: Response) => {
       ownerEmail: ownerEmail,
       members: initialMembers,
       allies: Array.isArray(req.body.allies) ? req.body.allies : [],
+      partners: Array.isArray(req.body.partners) ? req.body.partners : (Array.isArray(req.body.allies) ? req.body.allies : []),
+      config: req.body.config || undefined,
       inviteToken: req.body.inviteToken || `team-inv-sec_${Math.random().toString(36).substring(2, 10)}`,
       inviteRole: req.body.inviteRole || "Visor",
       createdAt: new Date().toISOString()

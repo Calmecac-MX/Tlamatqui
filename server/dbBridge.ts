@@ -779,7 +779,25 @@ export async function getDbTeams(): Promise<Team[]> {
       try {
         const dbTeams = await withDbTimeout(
           prisma.team.findMany({
-            include: { members: true, partners: { include: { members: true } } }
+            include: {
+              members: true,
+              partners: { include: { members: true } },
+              config: {
+                include: {
+                  reportConfig: {
+                    include: {
+                      reportLogos: {
+                        include: { partner: { include: { members: true } } },
+                        orderBy: { order: "asc" }
+                      },
+                      user: {
+                        select: { id: true, name: true, email: true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }),
           3500
         );
@@ -838,6 +856,43 @@ export async function getDbTeams(): Promise<Team[]> {
               role: pm.role
             }))
           })) : [],
+          config: t.config ? {
+            id: t.config.id,
+            teamId: t.config.teamId,
+            reportConfig: t.config.reportConfig ? {
+              id: t.config.reportConfig.id,
+              configId: t.config.reportConfig.configId,
+              emailReport: t.config.reportConfig.emailReport || undefined,
+              phoneReport: t.config.reportConfig.phoneReport !== null && t.config.reportConfig.phoneReport !== undefined ? Number(t.config.reportConfig.phoneReport) : undefined,
+              userId: t.config.reportConfig.userId || undefined,
+              user: t.config.reportConfig.user || undefined,
+              reportLogos: t.config.reportConfig.reportLogos ? t.config.reportConfig.reportLogos.map((rl: any) => ({
+                id: rl.id,
+                order: rl.order,
+                reportConfigId: rl.reportConfigId,
+                partnerId: rl.partnerId,
+                partner: rl.partner ? {
+                  id: rl.partner.id,
+                  name: rl.partner.name,
+                  logo: rl.partner.logo,
+                  description: rl.partner.description || "",
+                  link: rl.partner.link || undefined,
+                  representativeEmail: rl.partner.representativeEmail || undefined,
+                  teamId: rl.partner.teamId,
+                  members: (rl.partner.members || []).map((pm: any) => ({
+                    id: pm.id,
+                    name: pm.name,
+                    email: pm.email,
+                    role: pm.role
+                  }))
+                } : undefined
+              })) : [],
+              createdAt: t.config.reportConfig.createdAt?.toISOString(),
+              updatedAt: t.config.reportConfig.updatedAt?.toISOString()
+            } : undefined,
+            createdAt: t.config.createdAt?.toISOString(),
+            updatedAt: t.config.updatedAt?.toISOString()
+          } : undefined,
           createdAt: t.createdAt.toISOString()
         }));
       } catch (err) {
@@ -856,7 +911,7 @@ export async function getDbTeams(): Promise<Team[]> {
 
 
 /**
- * Guarda o actualiza un equipo de trabajo con sus miembros y aliados asociados.
+ * Guarda o actualiza un equipo de trabajo con sus miembros, aliados y subtablas de configuración asociadas.
  * 
  * @param {Team} team - Instancia del equipo a guardar.
  * @returns {Promise<Team>} Equipo guardado en la base de datos o almacenamiento local.
@@ -884,10 +939,11 @@ export async function saveDbTeam(team: Team): Promise<Team> {
     const prisma = getPrisma();
     if (prisma) {
       try {
-        await prisma.$transaction([
-          prisma.teamMember.deleteMany({ where: { teamId: cleanTeam.id } }),
-          prisma.partner.deleteMany({ where: { teamId: cleanTeam.id } }),
-          prisma.team.upsert({
+        await prisma.$transaction(async (tx) => {
+          await tx.teamMember.deleteMany({ where: { teamId: cleanTeam.id } });
+          await tx.partner.deleteMany({ where: { teamId: cleanTeam.id } });
+
+          await tx.team.upsert({
             where: { id: cleanTeam.id },
             update: {
               name: cleanTeam.name,
@@ -979,8 +1035,62 @@ export async function saveDbTeam(team: Team): Promise<Team> {
                 }))
               }
             }
-          })
-        ]);
+          });
+
+          // Handle TeamConfig & TeamReportConfig & TeamReportLogo
+          if (cleanTeam.config) {
+            const teamConfig = await tx.teamConfig.upsert({
+              where: { teamId: cleanTeam.id },
+              update: {},
+              create: {
+                id: cleanTeam.config.id || `tc-${cleanTeam.id}`,
+                teamId: cleanTeam.id
+              }
+            });
+
+            if (cleanTeam.config.reportConfig) {
+              const rc = cleanTeam.config.reportConfig;
+              const reportConfig = await tx.teamReportConfig.upsert({
+                where: { configId: teamConfig.id },
+                update: {
+                  emailReport: rc.emailReport || null,
+                  phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
+                  userId: rc.userId || null
+                },
+                create: {
+                  id: rc.id || `trc-${teamConfig.id}`,
+                  configId: teamConfig.id,
+                  emailReport: rc.emailReport || null,
+                  phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
+                  userId: rc.userId || null
+                }
+              });
+
+              await tx.teamReportLogo.deleteMany({
+                where: { reportConfigId: reportConfig.id }
+              });
+
+              if (rc.reportLogos && rc.reportLogos.length > 0) {
+                for (let i = 0; i < rc.reportLogos.length; i++) {
+                  const rl = rc.reportLogos[i];
+                  const partnerExists = await tx.partner.findUnique({
+                    where: { id: rl.partnerId }
+                  });
+                  if (partnerExists) {
+                    await tx.teamReportLogo.create({
+                      data: {
+                        id: rl.id || `trl-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
+                        reportConfigId: reportConfig.id,
+                        partnerId: rl.partnerId,
+                        order: rl.order !== undefined ? rl.order : i
+                      }
+                    });
+                  }
+                }
+              }
+            }
+          }
+        });
 
         invalidateApiQueryCache("teams");
         return cleanTeam;

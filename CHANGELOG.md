@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.81 (Frontend) / v2.5.70 (Backend)] - 2026-09-08
+
+### ♻️ Refactorización de Código
+- **schema:** normalize Report subtablas, replace Ally with Partner/PartnerMember (v2.5.69) (`fb9ab35`)
+
 ## [v2.5.80 (Frontend) / v2.5.69 (Backend)] - 2026-09-07
 
 ### 🚀 Features & Nuevas Funcionalidades

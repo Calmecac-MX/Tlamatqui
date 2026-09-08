@@ -443,7 +443,48 @@ export interface Team {
   teamBrandWebsite?: string;
   /** Relación de empresas o socios aliados del equipo */
   allies?: Ally[];
+  /** Relación de socios/partners estratégicos */
+  partners?: Partner[];
+  /** Subtabla de configuración del equipo */
+  config?: TeamConfig;
   createdAt: string;
+}
+
+/**
+ * Logotipo de partner seleccionado en el reporte del equipo con orden de aparición.
+ */
+export interface TeamReportLogo {
+  id: string;
+  order: number;
+  reportConfigId: string;
+  partnerId: string;
+  partner?: Partner;
+}
+
+/**
+ * Subtabla ReportConfig contenida dentro de TeamConfig.
+ */
+export interface TeamReportConfig {
+  id?: string;
+  configId?: string;
+  emailReport?: string;
+  phoneReport?: number;
+  userId?: string;
+  user?: { id: string; name: string; email: string };
+  reportLogos?: TeamReportLogo[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Subtabla de configuración específica de un equipo.
+ */
+export interface TeamConfig {
+  id?: string;
+  teamId?: string;
+  reportConfig?: TeamReportConfig;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 
