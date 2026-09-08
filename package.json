@@ -21,7 +21,7 @@
     "build": "npm run build:frontend && npm run build:backend",
     "build:backend": "esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "build:frontend": "vite build",
-    "vercel-build": "prisma generate && npm run build",
+    "vercel-build": "npm run build",
     "start": "node dist/server.cjs",
     "start:backend": "node dist/server.cjs",
     "preview": "vite preview",
