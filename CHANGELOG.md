@@ -4,6 +4,17 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.86 (Frontend) / v2.5.76 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **workflows:** implement modular workflow architecture and atomic commits policy (`6b3b5df`)
+
+### 🐛 Corregido & Bug Fixes
+- **build:** update vercel-build script for prisma 8 architecture (`ed84ba7`)
+
+### 📚 Documentación
+- update workflow references and sync branching model docs (`b051525`)
+
 ## [v2.5.85 (Frontend) / v2.5.76 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades
