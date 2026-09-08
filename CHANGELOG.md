@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.85 (Frontend) / v2.5.74 (Backend)] - 2026-09-08
+
+### 🐛 Corregido & Bug Fixes
+- **telemetry:** prevent sending interactions before report data is loaded (`7e11137`)
+
 ## [v2.5.85 (Frontend) / v2.5.73 (Backend)] - 2026-09-08
 
 ### 🐛 Corregido & Bug Fixes

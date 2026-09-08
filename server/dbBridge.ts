@@ -1,17 +1,24 @@
-import fs, { promises as fsPromises } from "fs";
-import path from "path";
 import dns from "node:dns/promises";
 import crypto from "node:crypto";
 import { getPrisma, isPrismaEnabled, ensureDatabaseSchema } from "./lib/prisma.js";
-import { Team, TeamMember, Ally, Report, ComparisonTemplate, ComparisonRow, Tool, LogoConfig, UserAccount, UserRole, ApiKeyItem, SystemHealthData } from "./types.js";
+import {
+  Team,
+  TeamMember,
+  Ally,
+  Report,
+  ComparisonTemplate,
+  ComparisonRow,
+  Tool,
+  LogoConfig,
+  UserAccount,
+  UserRole,
+  ApiKeyItem,
+  SystemHealthData
+} from "./types.js";
 import { resolveTechnologyLogo } from "./scrapper.js";
-
 import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
 
-// Caché en memoria RAM para archivos JSON (evita releer de disco e invalidar cifrado AES en cada consulta)
-const jsonMemoryCache = new Map<string, { data: any; mtime: number }>();
-
-// Caché ultra-rápido en RAM con TTL de 3s para peticiones GET frecuentes de la API REST
+// Caché ultra-rápido en RAM con TTL para acelerar lecturas frecuentes y evitar sobrecarga en la base de datos
 const apiQueryCache = new Map<string, { data: any; expiresAt: number }>();
 
 function getCachedQueryResult<T>(key: string): T | null {
@@ -38,44 +45,11 @@ export function invalidateApiQueryCache(prefix?: string): void {
   }
 }
 
-// Async JSON file helper utilities (non-blocking I/O con cifrado transparente en reposo y caché RAM)
-
-async function readJsonAsync<T>(filePath: string, fallback: T): Promise<T> {
-  try {
-    if (fs.existsSync(filePath)) {
-      const stats = await fsPromises.stat(filePath);
-      const cached = jsonMemoryCache.get(filePath);
-      if (cached && cached.mtime === stats.mtimeMs) {
-        return cached.data as T;
-      }
-      const content = await fsPromises.readFile(filePath, "utf-8");
-      const rawData = JSON.parse(content);
-      const decrypted = decryptData(rawData);
-      jsonMemoryCache.set(filePath, { data: decrypted, mtime: stats.mtimeMs });
-      return decrypted;
-    }
-  } catch (error) {
-    console.error(`Error al leer archivo JSON asíncrono ${filePath}:`, error);
-  }
-  return fallback;
-}
-
-async function writeJsonAsync<T>(filePath: string, data: T): Promise<void> {
-  try {
-    const encryptedData = encryptData(data);
-    await fsPromises.writeFile(filePath, JSON.stringify(encryptedData, null, 2), "utf-8");
-    const stats = await fsPromises.stat(filePath);
-    jsonMemoryCache.set(filePath, { data, mtime: stats.mtimeMs });
-  } catch (error) {
-    console.error(`Error al escribir archivo JSON asíncrono ${filePath}:`, error);
-  }
-}
-
 /**
- * Enuelve cualquier consulta asíncrona de Prisma en un límite de tiempo (timeout) de 3.5s.
- * Evita que bloqueos de red en el driver de base de datos demoren la respuesta del servidor.
+ * Enuelve cualquier consulta asíncrona de Prisma en un límite de tiempo (timeout) de 5s.
+ * Evita que bloqueos de red en el driver de base de datos demoren indefinidamente la respuesta.
  */
-async function withDbTimeout<T>(promise: Promise<T>, ms: number = 3500): Promise<T> {
+async function withDbTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise<T> {
   let timer: NodeJS.Timeout;
   const timeoutPromise = new Promise<T>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`Consulta a la base de datos excedió ${ms}ms.`)), ms);
@@ -90,22 +64,10 @@ async function withDbTimeout<T>(promise: Promise<T>, ms: number = 3500): Promise
   }
 }
 
+// ============================================================================
+// VALORES POR DEFECTO Y SEMILLA INICIAL (ESTRICTAMENTE EN BASE DE DATOS)
+// ============================================================================
 
-
-// File storage paths (for JSON fallback)
-const DATA_DIR = path.join(process.cwd(), "data");
-const REPORTS_FILE = path.join(DATA_DIR, "reports.json");
-const TEMPLATES_FILE = path.join(DATA_DIR, "templates.json");
-const CONFIG_FILE = path.join(DATA_DIR, "config.json");
-const LOGO_CONFIG_FILE = path.join(DATA_DIR, "logo_config.json");
-const TEAMS_FILE = path.join(DATA_DIR, "teams.json");
-const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-const API_KEYS_FILE = path.join(DATA_DIR, "api_keys.json");
-const SYSTEM_SETTINGS_FILE = path.join(DATA_DIR, "system_settings.json");
-const SUPERADMIN_EMAILS_FILE = path.join(DATA_DIR, "superadmin_emails.json");
-
-// Define defaults
 const DEFAULT_CONFIG = {
   adminLogoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
   adminLogo2Url: "",
@@ -118,263 +80,369 @@ const DEFAULT_CONFIG = {
   userName: "César Ayar",
   userEmail: "cesar.ayar19@gmail.com",
   userRole: "Administrador",
-  userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80",
-  metricsUpdateInterval: 3000,
-  brandCard2Title: "Socio Consultor Autorizado",
-  brandCard2Desc: "Especialistas de confianza en migración, diseño UX/UI y optimización técnica para asegurar una transición fluida sin perder SEO.",
-  brandCard2Logo: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=120&q=80",
-  brandCard2Link: "mailto:cesar.ayar19@gmail.com",
-  customDomainEnabled: false,
+  userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+  metricsUpdateInterval: 30,
+  tagline: "Auditoría Financiera y Simulación de Ahorros",
+  brandCard1Title: "Evolución Digital",
+  brandCard1Desc: "Expertos en migración y optimización de e-commerce.",
+  brandCard1Logo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+  brandCard1Link: "https://evolucion.mx",
+  brandCard2Title: "Tiendanube Partner",
+  brandCard2Desc: "Plataforma líder para escalar tu tienda online sin costos ocultos.",
+  brandCard2Logo: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
+  brandCard2Link: "https://tiendanube.com",
   customDomain: "",
-
-  domainVerificationToken: "tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex"),
-  domainVerified: false,
-  domainVerifiedAt: null
+  domainVerificationToken: "tlamatqui-verify-sec_default_token",
+  domainVerified: false
 };
 
-const DEFAULT_LOGO_CONFIG = {
-  id: "default",
-  logoType: "text",
-  logoText: "Tlachiālōyan",
-  logoFile: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
-  globalEmail: "cesar.ayar19@gmail.com"
-};
-
-const DEFAULT_PARTNER = {
-  id: "default",
-  name: "Socio Principal",
-  logo: "https://logo.clearbit.com/tiendanube.com",
-  description: "Socio Estratégico en Migraciones y Optimización de Comercio Electrónico con más de 5 años de trayectoria.",
-  link: "https://www.tiendanube.com.mx",
-  members: [
-    {
-      id: "part-memb-1",
-      name: "Juan Pérez",
-      email: "juan.perez@tiendanube.com.mx",
-      role: "Lector y Comentarista",
-      partnerId: "default"
-    }
-  ]
-};
-
-const DEFAULT_TEAMS = [
+const DEFAULT_TEAMS: Team[] = [
   {
-    id: "team-default",
-    name: "Equipo Evolución",
-    image: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
+    id: "team_1",
+    name: "Equipo de Consultoría Principal",
+    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80",
     ownerName: "César Ayar",
     ownerEmail: "cesar.ayar19@gmail.com",
+    inviteToken: "team-inv-sec_e83b4c10a29f",
+    inviteRole: "Agente",
+    teamBrandName: "Calmecac Growth Agency",
+    teamBrandLogo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+    teamBrandWebsite: "https://calmecac.lat",
     members: [
       {
-        id: "member-1",
+        id: "mem_1",
         name: "César Ayar",
         email: "cesar.ayar19@gmail.com",
-        role: "Administrador",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
-      },
-      {
-        id: "member-2",
-        name: "Sofía Ruiz",
-        email: "sofia.ruiz@evolucion.mx",
-        role: "Agente",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
-      },
-      {
-        id: "member-3",
-        name: "Mateo Gómez",
-        email: "mateo.gomez@evolucion.mx",
-        role: "Visor",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80"
+        role: "Superusuario",
+        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+        status: "approved",
+        isExternal: false
       }
     ],
-    createdAt: new Date("2026-07-08T10:00:00Z").toISOString()
+    allies: [],
+    config: {
+      id: "tc_team_1",
+      teamId: "team_1",
+      reportConfig: {
+        id: "trc_tc_team_1",
+        configId: "tc_team_1",
+        emailReport: "cesar.ayar19@gmail.com",
+        phoneReport: 5512345678,
+        reportLogos: []
+      }
+    },
+    createdAt: new Date().toISOString()
   }
 ];
 
-const DEFAULT_TEMPLATES = [
+const DEFAULT_TEMPLATES: ComparisonTemplate[] = [
   {
-    id: "default-ecommerce",
-    name: "Comparativo Shopify vs Tiendanube (Estándar)",
+    id: "tpl_standard",
+    name: "Comparativa Estándar (Shopify vs Tiendanube)",
     rows: [
-      { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
-      { id: "row-2", variable: "Soporte", shopify: "Ticket / Chat por bot (inglés)", tiendanube: "Soporte 1-1 en español vía WhatsApp local", pillText: "Soporte Humano" },
-      { id: "row-3", variable: "Servidor", shopify: "Estabilidad global estándar", tiendanube: "Infraestructura en la nube optimizada para LatAm", pillText: "AWS Infra" },
-      { id: "row-4", variable: "Punto de Venta", shopify: "POS Pro con cobro extra por sucursal", tiendanube: "Integraciones locales nativas sin costo extra", pillText: "Integración POS" },
-      { id: "row-5", variable: "Comisión de transacción", shopify: "Cobro de 0.5% a 2% por cada venta", tiendanube: "0% comisión por transacción en todos los planes", pillText: "0% Comisión" },
-      { id: "row-6", variable: "MSI", shopify: "Requiere apps costosas de cobro recurrente", tiendanube: "Configuración de MSI nativa sin apps terceras", pillText: "MSI Nativos" }
+      {
+        id: "row_1",
+        variable: "Costo de Transacción",
+        shopify: "2.0% + $0.30 USD por venta (sin Shopify Payments)",
+        tiendanube: "0% usando Pago Nube / Pasarelas integradas",
+        pillText: "Ahorro Directo"
+      },
+      {
+        id: "row_2",
+        variable: "Soporte Técnico Local",
+        shopify: "Tickets y soporte en inglés / bots",
+        tiendanube: "Soporte 100% humano y en español",
+        pillText: "Atención Humana"
+      },
+      {
+        id: "row_3",
+        variable: "Ecosistema de Aplicaciones",
+        shopify: "Costos mensuales recurrentes en USD",
+        tiendanube: "Herramientas clave nativas y en moneda local",
+        pillText: "Menor Gasto Fijo"
+      }
     ]
   }
 ];
 
-const DEFAULT_REPORTS = [
-  {
-    id: "ginebra-evolucion",
-    name: "Ginebra",
-    teamId: "team-default",
-    logo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
-    tagline: "Hemos detectado que estás perdiendo margen operativo en comisiones ocultas y aplicaciones redundantes.",
-    fugasCantidad: 4,
-    fugasRangoMin: 12000,
-    fugasRangoMax: 45000,
-    visitasMensuales: 45000,
-    gmv: 450000,
-    shopifyFee: 14900,
-    msi: "3, 6, 9 meses sin intereses",
-    shopifyPlan: "grow",
-    shopifyPlanCustomFee: 1,
-    shopifyPlanCustomPrice: 52,
-    shopifyAppsCostUSD: 164.98,
-    shopifyAppsCostMXN: 3052.13,
-    tiendanubePlan: "evolution",
-    tools: [
-      {
-        id: "tool-1",
-        name: "Klaviyo",
-        category: "Marketing & Automatización",
-        costType: "exact",
-        costExact: 120,
-        costMin: 0,
-        costMax: 0,
-        currency: "USD",
-        semaphore: "yellow",
-        url: "https://www.klaviyo.com",
-        description: "Automatización de emails, flujos de carritos abandonados y segmentación.",
-        logo: "https://logo.clearbit.com/klaviyo.com"
-      },
-      {
-        id: "tool-2",
-        name: "Loox",
-        category: "Reviews & Social Proof",
-        costType: "range",
-        costExact: 0,
-        costMin: 29.99,
-        costMax: 99.99,
-        currency: "USD",
-        semaphore: "green",
-        url: "https://loox.io",
-        description: "Prueba social interactiva con fotos de clientes comprando. Reemplazable nativamente en Tiendanube con apps gratuitas.",
-        logo: "https://logo.clearbit.com/loox.io"
-      },
-      {
-        id: "tool-3",
-        name: "Infinite Options",
-        category: "Conversión & Checkout",
-        costType: "exact",
-        costExact: 14.99,
-        costMin: 0,
-        costMax: 0,
-        currency: "USD",
-        semaphore: "green",
-        url: "https://apps.shopify.com/infinite-options",
-        description: "Personalización avanzada de variantes. Tiendanube permite propiedades de variante infinitas integradas.",
-        logo: "https://logo.clearbit.com/shopcircle.co"
-      },
-      {
-        id: "tool-4",
-        name: "Bold Subscriptions",
-        category: "Suscripciones",
-        costType: "range",
-        costExact: 0,
-        costMin: 49.99,
-        costMax: 199.99,
-        currency: "USD",
-        semaphore: "red",
-        url: "https://boldcommerce.com",
-        description: "Módulo de compras recurrentes. Representa costo oculto y cargos extras de pasarela.",
-        logo: "https://logo.clearbit.com/boldcommerce.com"
-      }
-    ],
-    comparisonRows: [
-      { id: "row-1", variable: "Facturación", shopify: "Pesificada en USD + 16% IVA", tiendanube: "100% Pesificada en MXN Factura Local", pillText: "Ahorro Fiscal" },
-      { id: "row-2", variable: "Soporte", shopify: "Ticket / Chat por bot (inglés)", tiendanube: "Soporte 1-1 en español vía WhatsApp local", pillText: "Soporte Humano" },
-      { id: "row-3", variable: "Servidor", shopify: "Estabilidad global estándar", tiendanube: "Infraestructura en la nube optimizada para LatAm", pillText: "AWS Infra" },
-      { id: "row-4", variable: "Punto de Venta", shopify: "POS Pro con cobro extra por sucursal", tiendanube: "Integraciones locales nativas sin costo extra", pillText: "Integración POS" },
-      { id: "row-5", variable: "Comisión de transacción", shopify: "Cobro de 1.0% por transacción", tiendanube: "0% comisión por transacción en todos los planes", pillText: "0% Comisión" },
-      { id: "row-6", variable: "MSI", shopify: "Configuración a través de apps y comisiones extra", tiendanube: "Configuración nativa directa en pasarela local", pillText: "MSI Nativos" }
-    ],
-    contactEmail: "cesar.ayar19@gmail.com",
-    contactWhatsapp: "5512345678",
-    adminLogos: [
-      "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
-    ],
-    brandCard1Title: "Tiendanube",
-    brandCard1Desc: "La plataforma de comercio electrónico líder en América Latina con más de 120,000 tiendas activas y Pago Nube con 0% comisión por transacción.",
-    brandCard1Logo: "https://logo.clearbit.com/tiendanube.com",
-    brandCard1Link: "https://www.tiendanube.com.mx",
-    brandCard2Title: "Socio Consultor Autorizado",
-    brandCard2Desc: "Especialistas de confianza en migración, diseño UX/UI y optimización técnica para asegurar una transición fluida sin perder SEO.",
-    brandCard2Logo: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=120&q=80",
-    brandCard2Link: "mailto:cesar.ayar19@gmail.com",
-    finalSlideMainLogo: "https://logo.clearbit.com/tiendanube.com",
-    createdAt: new Date("2026-07-08T10:00:00Z").toISOString(),
-    viewCount: 0,
-    openCount: 0,
-    uniqueVisitors: 0,
-    uniqueVisitorIds: [] as string[],
-    interactions: {
-      slideViews: {} as Record<string, number>,
-      whatsappClicks: 0,
-      toolClicks: 0,
-      calculatorInteractions: 0,
-      timeSpentSeconds: 0
-    }
-  }
-];
+const DEFAULT_REPORTS: Report[] = [];
 
-/**
- * Inicializa la persistencia de la base de datos y la semilla inicial (seeding).
- * Garantiza que la carpeta `./data` y los archivos JSON locales contengan los valores por defecto
- * y, si PostgreSQL/Prisma está configurado, sincroniza los registros iniciales en la base de datos remota.
- * 
- * @returns {Promise<void>} Promesa que resuelve tras completar la verificación.
- */
+const DEFAULT_PARTNER = {
+  id: "default",
+  name: "Evolución Digital",
+  logo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+  description: "Consultoría especializada en optimización y migración estratégica de plataformas e-commerce.",
+  link: "https://evolucion.mx",
+  members: [
+    {
+      id: "mem_partner_1",
+      name: "César Ayar",
+      email: "cesar.ayar19@gmail.com",
+      role: "Lead Consultant"
+    }
+  ]
+};
+
+const DEFAULT_LOGO_CONFIG: LogoConfig = {
+  id: "default",
+  logoType: "logo",
+  logoText: "Tlamatqui",
+  logoFile: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+  globalEmail: "cesar.ayar19@gmail.com"
+};
+
+// ============================================================================
+// FUNCIONES AUXILIARES DE SANITIZACIÓN DE DATOS
+// ============================================================================
+
+function sanitizeInt(val: any, fallback = 0): number {
+  const parsed = parseInt(String(val), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function sanitizeFloat(val: any, fallback = 0): number {
+  const parsed = parseFloat(String(val));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function sanitizeShopifyPlan(val: any): "basic" | "grow" | "advanced" | "plus" | "custom" {
+  const valid = ["basic", "grow", "advanced", "plus", "custom"];
+  return valid.includes(val) ? val : "grow";
+}
+
+function sanitizeTiendanubePlan(val: any): "basic" | "tiendanube" | "advanced" | "evolution" {
+  const valid = ["basic", "tiendanube", "advanced", "evolution"];
+  return valid.includes(val) ? val : "evolution";
+}
+
+function sanitizeCostType(val: any): "exact" | "range" {
+  return val === "range" ? "range" : "exact";
+}
+
+function sanitizeCurrency(val: any): "USD" | "MXN" {
+  return val === "MXN" ? "MXN" : "USD";
+}
+
+function sanitizeSemaphore(val: any): "green" | "yellow" | "red" {
+  const valid = ["green", "yellow", "red"];
+  return valid.includes(val) ? val : "green";
+}
+
+function sanitizePageSpeed(pageSpeed: any): any {
+  if (!pageSpeed || typeof pageSpeed !== "object") return null;
+  return {
+    performanceScore: sanitizeInt(pageSpeed.performanceScore, 0),
+    accessibilityScore: sanitizeInt(pageSpeed.accessibilityScore, 0),
+    seoScore: sanitizeInt(pageSpeed.seoScore, 0),
+    fcp: pageSpeed.fcp ? String(pageSpeed.fcp).trim() : null,
+    lcp: pageSpeed.lcp ? String(pageSpeed.lcp).trim() : null,
+    tbt: pageSpeed.tbt ? String(pageSpeed.tbt).trim() : null,
+    cls: pageSpeed.cls ? String(pageSpeed.cls).trim() : null,
+    speedIndex: pageSpeed.speedIndex ? String(pageSpeed.speedIndex).trim() : null,
+    interactive: pageSpeed.interactive ? String(pageSpeed.interactive).trim() : null,
+    isDemo: Boolean(pageSpeed.isDemo)
+  };
+}
+
+// ============================================================================
+// INICIALIZACIÓN Y SEMILLA DE LA BASE DE DATOS (100% POSTGRESQL / PRISMA)
+// ============================================================================
+
 let isDatabaseInitialized = false;
 
 export async function initializeDatabase() {
   if (isDatabaseInitialized) return;
   isDatabaseInitialized = true;
 
-  // Ensure local folders exist
-
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!isPrismaEnabled()) {
+    console.warn("Prisma no está configurado (DATABASE_URL no detectada).");
+    return;
   }
 
-  // Local files default creation
-  if (!fs.existsSync(TEAMS_FILE)) {
-    fs.writeFileSync(TEAMS_FILE, JSON.stringify(DEFAULT_TEAMS, null, 2), "utf-8");
-  }
-  if (!fs.existsSync(CONFIG_FILE)) {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULT_CONFIG, null, 2), "utf-8");
-  }
-  if (!fs.existsSync(TEMPLATES_FILE)) {
-    fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(DEFAULT_TEMPLATES, null, 2), "utf-8");
-  }
-  if (!fs.existsSync(REPORTS_FILE)) {
-    fs.writeFileSync(REPORTS_FILE, JSON.stringify(DEFAULT_REPORTS, null, 2), "utf-8");
-  }
-  if (!fs.existsSync(PARTNERS_FILE)) {
-    fs.writeFileSync(PARTNERS_FILE, JSON.stringify(DEFAULT_PARTNER, null, 2), "utf-8");
-  }
-  if (!fs.existsSync(LOGO_CONFIG_FILE)) {
-    fs.writeFileSync(LOGO_CONFIG_FILE, JSON.stringify(DEFAULT_LOGO_CONFIG, null, 2), "utf-8");
-  }
+  const prisma = getPrisma();
+  if (!prisma) return;
 
-  // Seed external DB if Prisma is enabled
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (!prisma) return;
+  try {
+    console.log("Verificando esquema y conectividad a PostgreSQL...");
+    await ensureDatabaseSchema(prisma);
 
+    // 1. Semilla Config
+    const configCount = await prisma.config.count();
+    if (configCount === 0) {
+      console.log("Creando configuración global inicial en PostgreSQL...");
+      await prisma.config.create({
+        data: {
+          id: "default",
+          adminLogoUrl: DEFAULT_CONFIG.adminLogoUrl,
+          adminLogo2Url: DEFAULT_CONFIG.adminLogo2Url,
+          adminLogo3Url: DEFAULT_CONFIG.adminLogo3Url,
+          adminTextUrl: DEFAULT_CONFIG.adminTextUrl,
+          appUrl: DEFAULT_CONFIG.appUrl,
+          defaultContactEmail: DEFAULT_CONFIG.defaultContactEmail,
+          defaultContactWhatsapp: DEFAULT_CONFIG.defaultContactWhatsapp,
+          customExchangeRate: DEFAULT_CONFIG.customExchangeRate,
+          userName: DEFAULT_CONFIG.userName,
+          userEmail: DEFAULT_CONFIG.userEmail,
+          userRole: DEFAULT_CONFIG.userRole as any,
+          userAvatar: DEFAULT_CONFIG.userAvatar,
+          metricsUpdateInterval: DEFAULT_CONFIG.metricsUpdateInterval,
+          brandCard1Title: DEFAULT_CONFIG.brandCard1Title,
+          brandCard1Desc: DEFAULT_CONFIG.brandCard1Desc,
+          brandCard1Logo: DEFAULT_CONFIG.brandCard1Logo,
+          brandCard1Link: DEFAULT_CONFIG.brandCard1Link,
+          brandCard2Title: DEFAULT_CONFIG.brandCard2Title,
+          brandCard2Desc: DEFAULT_CONFIG.brandCard2Desc,
+          brandCard2Logo: DEFAULT_CONFIG.brandCard2Logo,
+          brandCard2Link: DEFAULT_CONFIG.brandCard2Link,
+          domainVerificationToken: DEFAULT_CONFIG.domainVerificationToken
+        }
+      });
+    }
+
+    // 2. Semilla Teams & Members
+    const teamsCount = await prisma.team.count();
+    if (teamsCount === 0) {
+      console.log("Creando equipos iniciales en PostgreSQL...");
+      for (const t of DEFAULT_TEAMS) {
+        await prisma.team.create({
+          data: {
+            id: t.id,
+            name: t.name,
+            image: t.image,
+            ownerName: t.ownerName,
+            ownerEmail: t.ownerEmail,
+            inviteToken: t.inviteToken,
+            inviteRole: (t.inviteRole as any) || "Agente",
+            teamBrandName: t.teamBrandName,
+            teamBrandLogo: t.teamBrandLogo,
+            teamBrandWebsite: t.teamBrandWebsite,
+            createdAt: new Date(t.createdAt),
+            members: {
+              create: t.members.map(m => ({
+                id: m.id,
+                name: m.name,
+                email: m.email,
+                role: m.role as any,
+                avatar: m.avatar,
+                status: m.status || "approved",
+                isExternal: Boolean(m.isExternal)
+              }))
+            },
+            config: t.config ? {
+              create: {
+                id: t.config.id || `tc_${t.id}`,
+                reportConfig: t.config.reportConfig ? {
+                  create: {
+                    id: t.config.reportConfig.id || `trc_${t.id}`,
+                    emailReport: t.config.reportConfig.emailReport || null,
+                    phoneReport: t.config.reportConfig.phoneReport !== undefined ? Number(t.config.reportConfig.phoneReport) : null,
+                    reportLogos: t.config.reportConfig.reportLogos || []
+                  }
+                } : undefined
+              }
+            } : undefined
+          }
+        });
+      }
+    }
+
+    // 3. Semilla Comparison Templates
+    const templatesCount = await prisma.comparisonTemplate.count();
+    if (templatesCount === 0) {
+      console.log("Creando plantillas comparativas iniciales en PostgreSQL...");
+      for (const tp of DEFAULT_TEMPLATES) {
+        await prisma.comparisonTemplate.create({
+          data: {
+            id: tp.id,
+            name: tp.name,
+            rows: {
+              create: tp.rows.map(r => ({
+                id: r.id,
+                variable: r.variable,
+                shopify: r.shopify,
+                tiendanube: r.tiendanube,
+                pillText: r.pillText
+              }))
+            }
+          }
+        });
+      }
+    }
+
+    // 4. Semilla Partner
+    const partnerCount = await prisma.partner.count();
+    if (partnerCount === 0) {
+      console.log("Creando Partner consultor inicial en PostgreSQL...");
+      await prisma.partner.create({
+        data: {
+          id: DEFAULT_PARTNER.id,
+          name: DEFAULT_PARTNER.name,
+          logo: DEFAULT_PARTNER.logo,
+          description: DEFAULT_PARTNER.description,
+          link: DEFAULT_PARTNER.link,
+          members: {
+            create: DEFAULT_PARTNER.members.map(m => ({
+              id: m.id,
+              name: m.name,
+              email: m.email,
+              role: m.role
+            }))
+          }
+        }
+      });
+    }
+
+    // 5. Semilla LogoConfig
+    const logoConfigCount = await prisma.logoConfig.count();
+    if (logoConfigCount === 0) {
+      console.log("Creando LogoConfig inicial en PostgreSQL...");
+      await prisma.logoConfig.create({
+        data: {
+          id: "default",
+          logoType: DEFAULT_LOGO_CONFIG.logoType as any,
+          logoText: DEFAULT_LOGO_CONFIG.logoText,
+          logoFile: DEFAULT_LOGO_CONFIG.logoFile,
+          globalEmail: DEFAULT_LOGO_CONFIG.globalEmail
+        }
+      });
+    }
+
+    // 6. Semilla SystemSetting
+    const systemSettingCount = await prisma.systemSetting.count();
+    if (systemSettingCount === 0) {
+      await prisma.systemSetting.create({
+        data: {
+          id: "default",
+          apiLocked: false,
+          lockReason: "Mantenimiento programado de la API"
+        }
+      });
+    }
+
+    console.log("🟢 Inicialización y sincronización de base de datos PostgreSQL completada.");
+  } catch (error) {
+    console.error("Error durante la inicialización de la base de datos:", error);
+  }
+}
+
+// ============================================================================
+// CONFIG CRUD OPERATORS (POSTGRESQL)
+// ============================================================================
+
+export async function getDbConfig(): Promise<any> {
+  const cachedConfig = getCachedQueryResult<any>("config");
+  if (cachedConfig) return cachedConfig;
+
+  let config: any = null;
+  const prisma = getPrisma();
+  if (prisma) {
     try {
-      console.log("Checking database connection and seeding if necessary...");
-
-      // 1. Seed Config
-      const configCount = await prisma.config.count();
-      if (configCount === 0) {
-        console.log("Seeding default Config in database...");
-        await prisma.config.create({
+      const raw = await withDbTimeout(prisma.config.findUnique({ where: { id: "default" } }), 3500);
+      if (raw) {
+        config = decryptData(raw);
+      } else {
+        // Auto-crear si no existe en la BD
+        const created = await prisma.config.create({
           data: {
             id: "default",
             adminLogoUrl: DEFAULT_CONFIG.adminLogoUrl,
@@ -390,225 +458,20 @@ export async function initializeDatabase() {
             userRole: DEFAULT_CONFIG.userRole as any,
             userAvatar: DEFAULT_CONFIG.userAvatar,
             metricsUpdateInterval: DEFAULT_CONFIG.metricsUpdateInterval,
-            brandCard2Title: DEFAULT_CONFIG.brandCard2Title,
-            brandCard2Desc: DEFAULT_CONFIG.brandCard2Desc,
-            brandCard2Logo: DEFAULT_CONFIG.brandCard2Logo,
-            brandCard2Link: DEFAULT_CONFIG.brandCard2Link
+            domainVerificationToken: DEFAULT_CONFIG.domainVerificationToken
           }
         });
+        config = decryptData(created);
       }
-
-      // 2. Seed Teams & Members
-      const teamsCount = await prisma.team.count();
-      if (teamsCount === 0) {
-        console.log("Seeding default Teams in database...");
-        for (const t of DEFAULT_TEAMS) {
-          await prisma.team.create({
-            data: {
-              id: t.id,
-              name: t.name,
-              image: t.image,
-              ownerName: t.ownerName,
-              ownerEmail: t.ownerEmail,
-              createdAt: new Date(t.createdAt),
-              members: {
-                create: t.members.map(m => ({
-                  id: m.id,
-                  name: m.name,
-                  email: m.email,
-                  role: m.role as any,
-                  avatar: m.avatar
-                }))
-              }
-            }
-          });
-        }
-      }
-
-      // 3. Seed Comparison Templates & rows
-      const templatesCount = await prisma.comparisonTemplate.count();
-      if (templatesCount === 0) {
-        console.log("Seeding default Templates in database...");
-        for (const tp of DEFAULT_TEMPLATES) {
-          await prisma.comparisonTemplate.create({
-            data: {
-              id: tp.id,
-              name: tp.name,
-              rows: {
-                create: tp.rows.map(r => ({
-                  id: r.id,
-                  variable: r.variable,
-                  shopify: r.shopify,
-                  tiendanube: r.tiendanube,
-                  pillText: r.pillText
-                }))
-              }
-            }
-          });
-        }
-      }
-
-      // 4. Seed Reports, Tools, ComparisonRows & Interactions
-      const reportsCount = await prisma.report.count();
-      if (reportsCount === 0) {
-        console.log("Seeding default Reports in database...");
-        for (const r of DEFAULT_REPORTS) {
-          await prisma.report.create({
-            data: {
-              id: r.id,
-              name: r.name,
-              logo: r.logo,
-              tagline: r.tagline,
-              contactEmail: r.contactEmail,
-              contactWhatsapp: r.contactWhatsapp,
-              teamId: r.teamId,
-              createdAt: new Date(r.createdAt),
-              metrics: {
-                create: {
-                  visitasMensuales: r.visitasMensuales || 0,
-                  gmv: r.gmv || 0,
-                  fugasCantidad: r.fugasCantidad || 0,
-                  fugasRangoMin: r.fugasRangoMin || 0,
-                  fugasRangoMax: r.fugasRangoMax || 0
-                }
-              },
-              platformConfig: {
-                create: {
-                  shopifyPlan: (r.shopifyPlan as any) || "grow",
-                  shopifyFee: r.shopifyFee || 0,
-                  msi: r.msi,
-                  shopifyPlanCustomFee: r.shopifyPlanCustomFee,
-                  shopifyPlanCustomPrice: r.shopifyPlanCustomPrice,
-                  shopifyAppsCostUSD: r.shopifyAppsCostUSD,
-                  shopifyAppsCostMXN: r.shopifyAppsCostMXN,
-                  tiendanubePlan: (r.tiendanubePlan as any) || "evolution"
-                }
-              },
-              analytics: {
-                create: {
-                  viewCount: r.viewCount || 0,
-                  openCount: r.openCount || 0,
-                  uniqueVisitors: r.uniqueVisitors || 0,
-                  uniqueVisitorIds: (r.uniqueVisitorIds as any) || []
-                }
-              },
-              tools: {
-                create: r.tools.map(tool => ({
-                  id: tool.id,
-                  name: tool.name,
-                  category: tool.category,
-                  costType: tool.costType as any,
-                  costExact: tool.costExact,
-                  costMin: tool.costMin,
-                  costMax: tool.costMax,
-                  currency: tool.currency as any,
-                  semaphore: tool.semaphore as any,
-                  url: tool.url,
-                  description: tool.description,
-                  logo: tool.logo
-                }))
-              },
-              comparisonRows: {
-                create: r.comparisonRows.map(row => ({
-                  id: row.id,
-                  variable: row.variable,
-                  shopify: row.shopify,
-                  tiendanube: row.tiendanube,
-                  pillText: row.pillText
-                }))
-              },
-              interactions: r.interactions ? {
-                create: {
-                  slideViews: r.interactions.slideViews as any,
-                  whatsappClicks: r.interactions.whatsappClicks,
-                  toolClicks: r.interactions.toolClicks,
-                  calculatorInteractions: r.interactions.calculatorInteractions,
-                  timeSpentSeconds: r.interactions.timeSpentSeconds
-                }
-              } : undefined
-            }
-          });
-        }
-      }
-      // 5. Seed Partner
-      const partnerCount = await prisma.partner.count();
-      if (partnerCount === 0) {
-        console.log("Seeding default Partner in database...");
-        await prisma.partner.create({
-          data: {
-            id: DEFAULT_PARTNER.id,
-            name: DEFAULT_PARTNER.name,
-            logo: DEFAULT_PARTNER.logo,
-            description: DEFAULT_PARTNER.description,
-            link: DEFAULT_PARTNER.link,
-            members: {
-              create: DEFAULT_PARTNER.members.map(m => ({
-                id: m.id,
-                name: m.name,
-                email: m.email,
-                role: m.role
-              }))
-            }
-          }
-        });
-      }
-
-      // 6. Seed LogoConfig
-      const logoConfigCount = await prisma.logoConfig.count();
-      if (logoConfigCount === 0) {
-        console.log("Seeding default LogoConfig in database...");
-        await prisma.logoConfig.create({
-          data: {
-            id: "default",
-            logoType: DEFAULT_LOGO_CONFIG.logoType as any,
-            logoText: DEFAULT_LOGO_CONFIG.logoText,
-            logoFile: DEFAULT_LOGO_CONFIG.logoFile,
-            globalEmail: DEFAULT_LOGO_CONFIG.globalEmail
-          }
-        });
-      }
-
-      console.log("Database seed check complete.");
-    } catch (error) {
-      console.error("Prisma database error or connection failed. Falling back to local files.", error);
-    }
-  }
-}
-
-// ==========================================
-// CONFIG CRUD OPERATORS
-// ==========================================
-
-/**
- * Obtiene los parámetros globales de configuración del panel.
- * Intenta leer desde PostgreSQL a través de Prisma ORM, o regresa la configuración desde `data/config.json`.
- * 
- * @returns {Promise<any>} Objeto con la configuración global del panel.
- */
-export async function getDbConfig(): Promise<any> {
-  const cachedConfig = getCachedQueryResult<any>("config");
-  if (cachedConfig) return cachedConfig;
-
-  let config: any = null;
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const raw = await withDbTimeout(prisma.config.findUnique({ where: { id: "default" } }), 3500);
-        if (raw) {
-          config = decryptData(raw);
-        }
-      } catch (err) {
-        console.error("Error reading config from database:", err);
-      }
+    } catch (err) {
+      console.error("Error reading config from database:", err);
     }
   }
 
   if (!config) {
-    config = await readJsonAsync(CONFIG_FILE, DEFAULT_CONFIG);
+    config = { ...DEFAULT_CONFIG };
   }
 
-  // Ensure token exists in memory without blocking write
   if (!config.domainVerificationToken) {
     config.domainVerificationToken = "tlamatqui-verify-sec_default_token";
   }
@@ -617,12 +480,6 @@ export async function getDbConfig(): Promise<any> {
   return config;
 }
 
-/**
- * Guarda o actualiza los parámetros de configuración global en la base de datos o archivo JSON.
- * 
- * @param {any} config - Objeto con las propiedades de configuración a actualizar.
- * @returns {Promise<any>} Configuración actualizada y guardada.
- */
 export async function saveDbConfig(config: any): Promise<any> {
   const currentConfig = await getDbConfig().catch(() => ({}));
   const cleanConfig = {
@@ -648,164 +505,206 @@ export async function saveDbConfig(config: any): Promise<any> {
     brandCard2Desc: config.brandCard2Desc !== undefined ? config.brandCard2Desc : (currentConfig.brandCard2Desc || null),
     brandCard2Logo: config.brandCard2Logo !== undefined ? config.brandCard2Logo : (currentConfig.brandCard2Logo || null),
     brandCard2Link: config.brandCard2Link !== undefined ? config.brandCard2Link : (currentConfig.brandCard2Link || null),
-    finalSlideMainLogo: config.finalSlideMainLogo !== undefined ? config.finalSlideMainLogo : (currentConfig.finalSlideMainLogo || null),
-    customDomainEnabled: Boolean(config.customDomainEnabled !== undefined ? config.customDomainEnabled : (currentConfig.customDomainEnabled !== undefined ? currentConfig.customDomainEnabled : false)),
-    customDomain: config.customDomain !== undefined ? config.customDomain : (currentConfig.customDomain || ""),
-
-    domainVerificationToken: config.domainVerificationToken || currentConfig.domainVerificationToken || ("tlamatqui-verify-sec_" + crypto.randomBytes(6).toString("hex")),
-    domainVerified: Boolean(config.domainVerified !== undefined ? config.domainVerified : (currentConfig.domainVerified || false)),
-    domainVerifiedAt: config.domainVerifiedAt !== undefined ? config.domainVerifiedAt : (currentConfig.domainVerifiedAt || null),
+    customDomain: config.customDomain !== undefined ? config.customDomain : (currentConfig.customDomain || null),
+    domainVerificationToken: currentConfig.domainVerificationToken || `tlamatqui-verify-sec_${crypto.randomBytes(8).toString("hex")}`,
+    domainVerified: config.domainVerified !== undefined ? Boolean(config.domainVerified) : Boolean(currentConfig.domainVerified)
   };
 
-  invalidateApiQueryCache("config");
-
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const dbPayload = encryptData(cleanConfig);
-        const updated = await prisma.config.upsert({
-          where: { id: "default" },
-          update: {
-            ...dbPayload,
-            userRole: cleanConfig.userRole as any
-          },
-          create: {
-            id: "default",
-            ...dbPayload,
-            userRole: cleanConfig.userRole as any
-          }
-        });
-        const decryptedResult = decryptData(updated);
-        setCachedQueryResult("config", decryptedResult, 10000);
-        return decryptedResult;
-      } catch (err) {
-        console.error("Error writing config to database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.config.upsert({
+        where: { id: "default" },
+        update: {
+          ...cleanConfig,
+          userRole: cleanConfig.userRole as any
+        },
+        create: {
+          id: "default",
+          ...cleanConfig,
+          userRole: cleanConfig.userRole as any
+        }
+      });
+    } catch (err) {
+      console.error("Error saving config to database:", err);
     }
   }
 
-  // Save to local file as fallback/sync
-  await writeJsonAsync(CONFIG_FILE, cleanConfig);
+  invalidateApiQueryCache("config");
   setCachedQueryResult("config", cleanConfig, 10000);
   return cleanConfig;
 }
 
-
-/**
- * Consulta los registros TXT de DNS para verificar la propiedad del dominio personalizado.
- * 
- * @param {string} rawDomain - Nombre de dominio o subdominio a consultar.
- * @param {string} expectedToken - Token de verificación guardado en la configuración.
- * @returns {Promise<{ success: boolean; message: string; config?: any }>} Resultado de la verificación.
- */
 export async function verifyCustomDomainDNS(rawDomain: string, expectedToken: string): Promise<{ success: boolean; message: string; config?: any }> {
-  if (!rawDomain || typeof rawDomain !== "string") {
-    return { success: false, message: "Ingresa un nombre de dominio válido." };
+  const domain = rawDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  if (!domain || domain.length < 3 || !domain.includes(".")) {
+    return { success: false, message: "Dominio inválido. Ingresa un FQDN válido (ejemplo: portal.midominio.com)." };
   }
 
-  // Sanear el nombre de dominio
-  const cleanDomain = rawDomain.trim().toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "")
-    .replace(/:\d+$/, "");
+  const recordName = `_tlamatqui-challenge.${domain}`;
 
-  if (!cleanDomain || !cleanDomain.includes(".")) {
-    return { success: false, message: "El formato del dominio no es válido (ejemplo: reportes.miagencia.com)." };
-  }
+  try {
+    const txtRecords = await dns.resolveTxt(recordName);
+    const flatRecords = txtRecords.map(chunk => chunk.join(""));
+    const tokenFound = flatRecords.some(r => r.trim() === expectedToken.trim());
 
-  const hostsToQuery = [
-    `_tlamatqui-challenge.${cleanDomain}`,
-    cleanDomain
-  ];
+    if (tokenFound) {
+      const updatedConfig = await saveDbConfig({
+        customDomain: domain,
+        domainVerified: true
+      });
 
-  let foundToken = false;
-  let queriedHost = "";
-
-  for (const host of hostsToQuery) {
-    try {
-      const records = await dns.resolveTxt(host);
-      // records es un arreglo de arreglos de cadenas: string[][]
-      const flatRecords = records.map(r => r.join(""));
-      for (const rec of flatRecords) {
-        if (rec.includes(expectedToken) || rec.includes(expectedToken.replace("tlamatqui-verify-sec_", ""))) {
-          foundToken = true;
-          queriedHost = host;
-          break;
-        }
-      }
-      if (foundToken) break;
-    } catch (e) {
-      // Continuar al siguiente host si falla
+      return {
+        success: true,
+        message: `Dominio '${domain}' verificado exitosamente mediante registro TXT DNS.`,
+        config: updatedConfig
+      };
+    } else {
+      return {
+        success: false,
+        message: `Se encontró el registro TXT en '${recordName}', pero el valor no coincide con el token de verificación esperado.`
+      };
     }
-  }
-
-  if (foundToken) {
-    const config = await getDbConfig();
-    config.customDomain = `https://${cleanDomain}`;
-    config.domainVerified = true;
-    config.domainVerifiedAt = new Date().toISOString();
-    const updated = await saveDbConfig(config);
+  } catch (error: any) {
     return {
-      success: true,
-      message: `¡Dominio verificado con éxito en '${queriedHost}'!`,
-      config: updated
+      success: false,
+      message: `No se pudo encontrar el registro TXT en '${recordName}'. Verifica que esté propagado globalmente en tus servidores DNS.`
     };
   }
-
-  return {
-    success: false,
-    message: `No se encontró el registro TXT requerido en '${cleanDomain}' o '_tlamatqui-challenge.${cleanDomain}'. Verifica el valor e intenta nuevamente tras la propagación DNS.`
-  };
 }
 
-// ==========================================
-// TEAMS CRUD OPERATORS
-// ==========================================
+// ============================================================================
+// TEAMS CRUD OPERATORS (POSTGRESQL)
+// ============================================================================
 
-/**
- * Obtiene el listado de todos los equipos de trabajo registrados.
- * 
- * @returns {Promise<Team[]>} Arreglo de equipos con sus miembros asignados.
- */
 export async function getDbTeams(): Promise<Team[]> {
   const cachedTeams = getCachedQueryResult<Team[]>("teams");
   if (cachedTeams) return cachedTeams;
 
   let result: Team[] = [];
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const dbTeams = await withDbTimeout(
-          prisma.team.findMany({
-            include: {
-              members: true,
-              partners: { include: { members: true } },
-              config: {
-                include: {
-                  reportConfig: {
-                    include: {
-                      user: {
-                        select: { id: true, name: true, email: true }
-                      }
-                    }
-                  }
-                }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const teams = await withDbTimeout(
+        prisma.team.findMany({
+          include: {
+            members: true,
+            partners: {
+              include: { members: true }
+            },
+            config: {
+              include: {
+                reportConfig: true
               }
             }
-          }),
-          3500
-        );
-        result = dbTeams.map(t => ({
+          },
+          orderBy: { createdAt: "desc" }
+        }),
+        3500
+      );
+
+      result = teams.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        image: t.image || undefined,
+        ownerName: t.ownerName,
+        ownerEmail: t.ownerEmail,
+        contactEmail: t.contactEmail || undefined,
+        contactPhone: t.contactPhone || undefined,
+        inviteToken: t.inviteToken || undefined,
+        inviteRole: (t.inviteRole as any) || "Visor",
+        teamBrandName: t.teamBrandName || undefined,
+        teamBrandLogo: t.teamBrandLogo || undefined,
+        teamBrandWebsite: t.teamBrandWebsite || undefined,
+        members: (t.members || []).map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role as any,
+          avatar: m.avatar || undefined,
+          status: (m.status as any) || "approved",
+          isExternal: Boolean(m.isExternal),
+          partnerEmail: m.partnerEmail || undefined,
+          addedByAllyEmail: m.partnerEmail || undefined,
+          requestedAt: m.requestedAt ? m.requestedAt.toISOString() : undefined
+        })),
+        allies: (t.partners || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          logo: p.logo,
+          url: p.link || "",
+          description: p.description || undefined,
+          representativeEmail: p.representativeEmail || undefined,
+          teamId: p.teamId || undefined,
+          members: (p.members || []).map((pm: any) => ({
+            id: pm.id,
+            name: pm.name,
+            email: pm.email,
+            role: pm.role
+          }))
+        })),
+        config: t.config ? {
+          id: t.config.id,
+          teamId: t.config.teamId,
+          reportConfig: t.config.reportConfig ? {
+            id: t.config.reportConfig.id,
+            configId: t.config.reportConfig.configId,
+            emailReport: t.config.reportConfig.emailReport || undefined,
+            phoneReport: t.config.reportConfig.phoneReport !== null && t.config.reportConfig.phoneReport !== undefined ? Number(t.config.reportConfig.phoneReport) : undefined,
+            userId: t.config.reportConfig.userId || undefined,
+            reportLogos: Array.isArray(t.config.reportConfig.reportLogos) ? (t.config.reportConfig.reportLogos as any) : [],
+            createdAt: t.config.reportConfig.createdAt?.toISOString(),
+            updatedAt: t.config.reportConfig.updatedAt?.toISOString()
+          } : undefined,
+          createdAt: t.config.createdAt?.toISOString(),
+          updatedAt: t.config.updatedAt?.toISOString()
+        } : undefined,
+        createdAt: t.createdAt.toISOString()
+      }));
+    } catch (err) {
+      console.error("Error fetching teams from database:", err);
+    }
+  }
+
+  setCachedQueryResult("teams", result, 3000);
+  return result;
+}
+
+export async function getDbTeamById(id: string): Promise<Team | null> {
+  const cleanId = String(id).trim();
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const t: any = await prisma.team.findUnique({
+        where: { id: cleanId },
+        include: {
+          members: true,
+          partners: {
+            include: { members: true }
+          },
+          config: {
+            include: {
+              reportConfig: true
+            }
+          }
+        }
+      });
+
+      if (t) {
+        return {
           id: t.id,
           name: t.name,
           image: t.image || undefined,
           ownerName: t.ownerName,
           ownerEmail: t.ownerEmail,
-          contactEmail: (t as any).contactEmail || undefined,
-          contactPhone: (t as any).contactPhone || undefined,
-          members: t.members.map((m: any) => ({
+          contactEmail: t.contactEmail || undefined,
+          contactPhone: t.contactPhone || undefined,
+          inviteToken: t.inviteToken || undefined,
+          inviteRole: (t.inviteRole as any) || "Visor",
+          teamBrandName: t.teamBrandName || undefined,
+          teamBrandLogo: t.teamBrandLogo || undefined,
+          teamBrandWebsite: t.teamBrandWebsite || undefined,
+          members: (t.members || []).map((m: any) => ({
             id: m.id,
             name: m.name,
             email: m.email,
@@ -813,45 +712,24 @@ export async function getDbTeams(): Promise<Team[]> {
             avatar: m.avatar || undefined,
             status: (m.status as any) || "approved",
             isExternal: Boolean(m.isExternal),
-            addedByAllyEmail: m.partnerEmail || (m as any).addedByAllyEmail || undefined,
             partnerEmail: m.partnerEmail || undefined,
             requestedAt: m.requestedAt ? m.requestedAt.toISOString() : undefined
           })),
-          inviteToken: t.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
-          inviteRole: (t.inviteRole as any) || "Visor",
-          teamBrandName: t.teamBrandName || undefined,
-          teamBrandLogo: t.teamBrandLogo || undefined,
-          teamBrandWebsite: t.teamBrandWebsite || undefined,
-          allies: t.partners ? t.partners.map((p: any) => ({
+          allies: (t.partners || []).map((p: any) => ({
             id: p.id,
             name: p.name,
             logo: p.logo,
             url: p.link || "",
-            teamId: p.teamId || t.id,
-            representativeEmail: p.representativeEmail || undefined,
             description: p.description || undefined,
+            representativeEmail: p.representativeEmail || undefined,
+            teamId: p.teamId || undefined,
             members: (p.members || []).map((pm: any) => ({
               id: pm.id,
               name: pm.name,
               email: pm.email,
               role: pm.role
             }))
-          })) : [],
-          partners: t.partners ? t.partners.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            logo: p.logo,
-            description: p.description || undefined,
-            link: p.link || undefined,
-            representativeEmail: p.representativeEmail || undefined,
-            teamId: p.teamId,
-            members: (p.members || []).map((pm: any) => ({
-              id: pm.id,
-              name: pm.name,
-              email: pm.email,
-              role: pm.role
-            }))
-          })) : [],
+          })),
           config: t.config ? {
             id: t.config.id,
             teamId: t.config.teamId,
@@ -861,8 +739,7 @@ export async function getDbTeams(): Promise<Team[]> {
               emailReport: t.config.reportConfig.emailReport || undefined,
               phoneReport: t.config.reportConfig.phoneReport !== null && t.config.reportConfig.phoneReport !== undefined ? Number(t.config.reportConfig.phoneReport) : undefined,
               userId: t.config.reportConfig.userId || undefined,
-              user: t.config.reportConfig.user || undefined,
-              reportLogos: Array.isArray(t.config.reportConfig.reportLogos) ? t.config.reportConfig.reportLogos : [],
+              reportLogos: Array.isArray(t.config.reportConfig.reportLogos) ? (t.config.reportConfig.reportLogos as any) : [],
               createdAt: t.config.reportConfig.createdAt?.toISOString(),
               updatedAt: t.config.reportConfig.updatedAt?.toISOString()
             } : undefined,
@@ -870,28 +747,15 @@ export async function getDbTeams(): Promise<Team[]> {
             updatedAt: t.config.updatedAt?.toISOString()
           } : undefined,
           createdAt: t.createdAt.toISOString()
-        }));
-      } catch (err) {
-        console.error("Error fetching teams from database:", err);
+        };
       }
+    } catch (err) {
+      console.error("Error fetching team by ID from database:", err);
     }
   }
-
-  if (!result || result.length === 0) {
-    result = await readJsonAsync<Team[]>(TEAMS_FILE, []);
-  }
-
-  setCachedQueryResult("teams", result, 3000);
-  return result;
+  return null;
 }
 
-
-/**
- * Guarda o actualiza un equipo de trabajo con sus miembros, aliados y subtablas de configuración asociadas.
- * 
- * @param {Team} team - Instancia del equipo a guardar.
- * @returns {Promise<Team>} Equipo guardado en la base de datos o almacenamiento local.
- */
 export async function saveDbTeam(team: Team): Promise<Team> {
   const cleanTeam: Team = {
     ...team,
@@ -911,242 +775,180 @@ export async function saveDbTeam(team: Team): Promise<Team> {
     createdAt: team.createdAt || new Date().toISOString()
   };
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.$transaction(async (tx) => {
-          await tx.teamMember.deleteMany({ where: { teamId: cleanTeam.id } });
-          await tx.partner.deleteMany({ where: { teamId: cleanTeam.id } });
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.teamMember.deleteMany({ where: { teamId: cleanTeam.id } });
+        await tx.partner.deleteMany({ where: { teamId: cleanTeam.id } });
 
-          await tx.team.upsert({
-            where: { id: cleanTeam.id },
-            update: {
-              name: cleanTeam.name,
-              image: cleanTeam.image || null,
-              ownerName: cleanTeam.ownerName,
-              ownerEmail: cleanTeam.ownerEmail,
-              contactEmail: (cleanTeam as any).contactEmail || null,
-              contactPhone: (cleanTeam as any).contactPhone || null,
-              inviteToken: cleanTeam.inviteToken,
-              inviteRole: (cleanTeam.inviteRole as any) || "Visor",
-              teamBrandName: cleanTeam.teamBrandName || null,
-              teamBrandLogo: cleanTeam.teamBrandLogo || null,
-              teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
-              members: {
-                create: cleanTeam.members.map(m => ({
-                  id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                  name: m.name,
-                  email: m.email,
-                  role: m.role as any,
-                  avatar: m.avatar || null,
-                  status: m.status || "approved",
-                  isExternal: Boolean(m.isExternal),
-                  partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
-                  requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
-                }))
-              },
-              partners: {
-                create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
-                  id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                  name: a.name,
-                  logo: a.logo,
-                  link: a.url || (a as any).link || null,
-                  description: (a as any).description || null,
-                  representativeEmail: a.representativeEmail || null,
-                  members: {
-                    create: (a.members || []).map((pm: any) => ({
-                      id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                      name: pm.name,
-                      email: pm.email,
-                      role: pm.role || "Lector"
-                    }))
-                  }
-                }))
-              }
+        await tx.team.upsert({
+          where: { id: cleanTeam.id },
+          update: {
+            name: cleanTeam.name,
+            image: cleanTeam.image || null,
+            ownerName: cleanTeam.ownerName,
+            ownerEmail: cleanTeam.ownerEmail,
+            contactEmail: (cleanTeam as any).contactEmail || null,
+            contactPhone: (cleanTeam as any).contactPhone || null,
+            inviteToken: cleanTeam.inviteToken,
+            inviteRole: (cleanTeam.inviteRole as any) || "Visor",
+            teamBrandName: cleanTeam.teamBrandName || null,
+            teamBrandLogo: cleanTeam.teamBrandLogo || null,
+            teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
+            members: {
+              create: cleanTeam.members.map(m => ({
+                id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                name: m.name,
+                email: m.email,
+                role: m.role as any,
+                avatar: m.avatar || null,
+                status: m.status || "approved",
+                isExternal: Boolean(m.isExternal),
+                partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
+                requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
+              }))
             },
-            create: {
-              id: cleanTeam.id,
-              name: cleanTeam.name,
-              image: cleanTeam.image || null,
-              ownerName: cleanTeam.ownerName,
-              ownerEmail: cleanTeam.ownerEmail,
-              contactEmail: (cleanTeam as any).contactEmail || null,
-              contactPhone: (cleanTeam as any).contactPhone || null,
-              inviteToken: cleanTeam.inviteToken,
-              inviteRole: (cleanTeam.inviteRole as any) || "Visor",
-              teamBrandName: cleanTeam.teamBrandName || null,
-              teamBrandLogo: cleanTeam.teamBrandLogo || null,
-              teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
-              createdAt: cleanTeam.createdAt ? new Date(cleanTeam.createdAt) : new Date(),
-              members: {
-                create: cleanTeam.members.map(m => ({
-                  id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                  name: m.name,
-                  email: m.email,
-                  role: m.role as any,
-                  avatar: m.avatar || null,
-                  status: m.status || "approved",
-                  isExternal: Boolean(m.isExternal),
-                  partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
-                  requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
-                }))
-              },
-              partners: {
-                create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
-                  id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                  name: a.name,
-                  logo: a.logo,
-                  link: a.url || (a as any).link || null,
-                  description: (a as any).description || null,
-                  representativeEmail: a.representativeEmail || null,
-                  members: {
-                    create: (a.members || []).map((pm: any) => ({
-                      id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                      name: pm.name,
-                      email: pm.email,
-                      role: pm.role || "Lector"
-                    }))
-                  }
-                }))
-              }
-            }
-          });
-
-          // Handle TeamConfig & TeamReportConfig & TeamReportLogo
-          if (cleanTeam.config) {
-            const teamConfig = await tx.teamConfig.upsert({
-              where: { teamId: cleanTeam.id },
-              update: {},
-              create: {
-                id: cleanTeam.config.id || `tc-${cleanTeam.id}`,
-                teamId: cleanTeam.id
-              }
-            });
-
-            if (cleanTeam.config.reportConfig) {
-              const rc = cleanTeam.config.reportConfig;
-              await tx.teamReportConfig.upsert({
-                where: { configId: teamConfig.id },
-                update: {
-                  emailReport: rc.emailReport || null,
-                  phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
-                  userId: rc.userId || null,
-                  reportLogos: Array.isArray(rc.reportLogos) ? rc.reportLogos : []
-                },
-                create: {
-                  id: rc.id || `trc-${teamConfig.id}`,
-                  configId: teamConfig.id,
-                  emailReport: rc.emailReport || null,
-                  phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
-                  userId: rc.userId || null,
-                  reportLogos: Array.isArray(rc.reportLogos) ? rc.reportLogos : []
+            partners: {
+              create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
+                id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                name: a.name,
+                logo: a.logo,
+                link: a.url || (a as any).link || null,
+                description: (a as any).description || null,
+                representativeEmail: a.representativeEmail || null,
+                members: {
+                  create: (a.members || []).map((pm: any) => ({
+                    id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                    name: pm.name,
+                    email: pm.email,
+                    role: pm.role || "Lector"
+                  }))
                 }
-              });
+              }))
+            }
+          },
+          create: {
+            id: cleanTeam.id,
+            name: cleanTeam.name,
+            image: cleanTeam.image || null,
+            ownerName: cleanTeam.ownerName,
+            ownerEmail: cleanTeam.ownerEmail,
+            contactEmail: (cleanTeam as any).contactEmail || null,
+            contactPhone: (cleanTeam as any).contactPhone || null,
+            inviteToken: cleanTeam.inviteToken,
+            inviteRole: (cleanTeam.inviteRole as any) || "Visor",
+            teamBrandName: cleanTeam.teamBrandName || null,
+            teamBrandLogo: cleanTeam.teamBrandLogo || null,
+            teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
+            createdAt: cleanTeam.createdAt ? new Date(cleanTeam.createdAt) : new Date(),
+            members: {
+              create: cleanTeam.members.map(m => ({
+                id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                name: m.name,
+                email: m.email,
+                role: m.role as any,
+                avatar: m.avatar || null,
+                status: m.status || "approved",
+                isExternal: Boolean(m.isExternal),
+                partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
+                requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
+              }))
+            },
+            partners: {
+              create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
+                id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                name: a.name,
+                logo: a.logo,
+                link: a.url || (a as any).link || null,
+                description: (a as any).description || null,
+                representativeEmail: a.representativeEmail || null,
+                members: {
+                  create: (a.members || []).map((pm: any) => ({
+                    id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                    name: pm.name,
+                    email: pm.email,
+                    role: pm.role || "Lector"
+                  }))
+                }
+              }))
             }
           }
         });
 
-        invalidateApiQueryCache("teams");
-        return cleanTeam;
-      } catch (err) {
-        console.error("Error saving team to database:", err);
-      }
+        // Configuración y subtabla ReportConfig del equipo
+        if (cleanTeam.config) {
+          const teamConfig = await tx.teamConfig.upsert({
+            where: { teamId: cleanTeam.id },
+            update: {},
+            create: {
+              id: cleanTeam.config.id || `tc-${cleanTeam.id}`,
+              teamId: cleanTeam.id
+            }
+          });
+
+          if (cleanTeam.config.reportConfig) {
+            const rc = cleanTeam.config.reportConfig;
+            await tx.teamReportConfig.upsert({
+              where: { configId: teamConfig.id },
+              update: {
+                emailReport: rc.emailReport || null,
+                phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
+                userId: rc.userId || null,
+                reportLogos: Array.isArray(rc.reportLogos) ? rc.reportLogos : []
+              },
+              create: {
+                id: rc.id || `trc-${teamConfig.id}`,
+                configId: teamConfig.id,
+                emailReport: rc.emailReport || null,
+                phoneReport: rc.phoneReport !== undefined && rc.phoneReport !== null ? Number(rc.phoneReport) : null,
+                userId: rc.userId || null,
+                reportLogos: Array.isArray(rc.reportLogos) ? rc.reportLogos : []
+              }
+            });
+          }
+        }
+      });
+
+      invalidateApiQueryCache("teams");
+      return cleanTeam;
+    } catch (err) {
+      console.error("Error saving team to database:", err);
     }
-  }
-
-  // Local fallback
-  const teams = await getDbTeams();
-  const index = teams.findIndex(t => t.id === cleanTeam.id);
-
-  if (index === -1) {
-    teams.push(cleanTeam);
-  } else {
-    teams[index] = cleanTeam;
-  }
-
-  try {
-    fs.writeFileSync(TEAMS_FILE, JSON.stringify(teams, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error writing team to local file:", err);
   }
 
   invalidateApiQueryCache("teams");
   return cleanTeam;
 }
 
-/**
- * Elimina un equipo de trabajo por su identificador único.
- * 
- * @param {string} id - ID del equipo a eliminar.
- * @returns {Promise<boolean>} Retorna verdadero si la eliminación fue exitosa.
- */
 export async function deleteDbTeam(id: string): Promise<boolean> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.team.delete({ where: { id } });
-        invalidateApiQueryCache("teams");
-        return true;
-      } catch (err) {
-        console.error("Error deleting team from database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.team.delete({ where: { id } });
+      invalidateApiQueryCache("teams");
+      return true;
+    } catch (err) {
+      console.error("Error deleting team from database:", err);
     }
   }
-
-  // Local fallback
-  const teams = await getDbTeams();
-  const filtered = teams.filter(t => t.id !== id);
-  if (teams.length === filtered.length) {
-    return false;
-  }
-  try {
-    fs.writeFileSync(TEAMS_FILE, JSON.stringify(filtered, null, 2), "utf-8");
-    invalidateApiQueryCache("teams");
-    return true;
-  } catch (err) {
-    console.error("Error deleting team from local file:", err);
-    return false;
-  }
+  return false;
 }
 
-/**
- * Busca un equipo de trabajo por su token de invitación.
- * 
- * @param {string} token - Token de invitación del equipo.
- * @returns {Promise<Team | null>} Objeto del equipo o null si no existe.
- */
 export async function getTeamByInviteToken(token: string): Promise<Team | null> {
-  if (!token || typeof token !== "string") return null;
+  if (!token || token.trim() === "") return null;
   const teams = await getDbTeams();
   return teams.find(t => t.inviteToken === token.trim()) || null;
 }
 
-/**
- * Regenera un nuevo token de invitación para el equipo dado.
- * 
- * @param {string} teamId - ID del equipo.
- * @returns {Promise<Team | null>} Equipo con el nuevo token generado.
- */
 export async function resetTeamInviteToken(teamId: string): Promise<Team | null> {
-  const teams = await getDbTeams();
-  const team = teams.find(t => t.id === teamId);
+  const team = await getDbTeamById(teamId);
   if (!team) return null;
+
   team.inviteToken = `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`;
-  return saveDbTeam(team);
+  return await saveDbTeam(team);
 }
 
-/**
- * Incorpora a un usuario a un equipo mediante su token de invitación.
- * Si el usuario NO estaba en el listado previo del equipo, se registra con status 'pending' (En espera de aprobación).
- * 
- * @param {string} token - Token de invitación.
- * @param {string} name - Nombre del usuario.
- * @param {string} email - Correo del usuario.
- * @param {string} [avatar] - Avatar opcional.
- * @returns {Promise<{ success: boolean; message: string; pendingApproval?: boolean; team?: Team; member?: any }>} Resultado.
- */
 export async function joinTeamViaInviteToken(
   token: string,
   name: string,
@@ -1185,7 +987,6 @@ export async function joinTeamViaInviteToken(
     };
   }
 
-  // Si no figura en el listado previo, queda en espera de aprobación (status: 'pending')
   const newMember = {
     id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     name: name.trim() || cleanEmail.split("@")[0],
@@ -1209,19 +1010,11 @@ export async function joinTeamViaInviteToken(
   };
 }
 
-/**
- * Aprueba el ingreso de un miembro pendiente en el equipo.
- * 
- * @param {string} teamId - ID del equipo.
- * @param {string} memberId - ID del miembro.
- * @returns {Promise<{ success: boolean; message: string; team?: Team }>}
- */
 export async function approveTeamMember(
   teamId: string,
   memberId: string
 ): Promise<{ success: boolean; message: string; team?: Team }> {
-  const teams = await getDbTeams();
-  const team = teams.find(t => t.id === teamId);
+  const team = await getDbTeamById(teamId);
   if (!team) {
     return { success: false, message: "Equipo no encontrado" };
   }
@@ -1234,16 +1027,20 @@ export async function approveTeamMember(
   member.status = "approved";
   const updatedTeam = await saveDbTeam(team);
 
-  // Sincronizar el rol de la cuenta de usuario en el sistema
-  try {
-    const users = await getDbUsers();
-    const targetUserIndex = users.findIndex(u => u.email.toLowerCase() === member.email.toLowerCase());
-    if (targetUserIndex >= 0 && (users[targetUserIndex].role === "Visor" || !users[targetUserIndex].role)) {
-      users[targetUserIndex].role = (member.role || "Agente") as UserRole;
-      await writeJsonAsync(USERS_FILE, users);
+  // Sincronizar el rol del usuario en la base de datos
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const dbUser = await prisma.user.findFirst({ where: { email: { equals: member.email, mode: "insensitive" } } });
+      if (dbUser && (dbUser.role === "Visor" || !dbUser.role)) {
+        await prisma.user.update({
+          where: { id: dbUser.id },
+          data: { role: (member.role || "Agente") as any }
+        });
+      }
+    } catch (e) {
+      console.warn("No se pudo actualizar el rol de la cuenta del usuario en BD:", e);
     }
-  } catch (e) {
-    console.warn("No se pudo actualizar el rol de la cuenta del usuario:", e);
   }
 
   return {
@@ -1253,19 +1050,11 @@ export async function approveTeamMember(
   };
 }
 
-/**
- * Rechaza y remueve la solicitud de un miembro pendiente en el equipo.
- * 
- * @param {string} teamId - ID del equipo.
- * @param {string} memberId - ID del miembro.
- * @returns {Promise<{ success: boolean; message: string; team?: Team }>}
- */
 export async function rejectTeamMember(
   teamId: string,
   memberId: string
 ): Promise<{ success: boolean; message: string; team?: Team }> {
-  const teams = await getDbTeams();
-  const team = teams.find(t => t.id === teamId);
+  const team = await getDbTeamById(teamId);
   if (!team) {
     return { success: false, message: "Equipo no encontrado" };
   }
@@ -1285,21 +1074,12 @@ export async function rejectTeamMember(
   };
 }
 
-/**
- * Permite a un representante de aliado invitar y registrar nuevos miembros como visores externos.
- * 
- * @param {string} teamId - ID del equipo.
- * @param {string} allyId - ID del aliado.
- * @param {{ name: string; email: string }} memberData - Datos del nuevo colaborador externo.
- * @returns {Promise<{ success: boolean; message: string; team?: Team }>}
- */
 export async function addExternalAllyMember(
   teamId: string,
   allyId: string,
   memberData: { name: string; email: string }
 ): Promise<{ success: boolean; message: string; team?: Team }> {
-  const teams = await getDbTeams();
-  const team = teams.find(t => t.id === teamId);
+  const team = await getDbTeamById(teamId);
   if (!team) {
     return { success: false, message: "Equipo no encontrado" };
   }
@@ -1314,7 +1094,6 @@ export async function addExternalAllyMember(
     return { success: false, message: "Correo no válido" };
   }
 
-  // Verificar si ya existe en el equipo
   if (team.members.some(m => m.email.toLowerCase() === cleanEmail)) {
     return { success: false, message: "Este correo ya está registrado en el equipo" };
   }
@@ -1342,14 +1121,10 @@ export async function addExternalAllyMember(
   };
 }
 
+// ============================================================================
+// REPORTS CRUD OPERATORS (POSTGRESQL)
+// ============================================================================
 
-// ==========================================
-// REPORTS CRUD OPERATORS
-// ==========================================
-
-/**
- * Transforma un registro de Prisma Report y sus relaciones en el objeto de dominio Report.
- */
 function mapPrismaReportToDomain(r: any): Report {
   const m = r.metrics || {};
   const pc = r.platformConfig || {};
@@ -1467,22 +1242,40 @@ function mapPrismaReportToDomain(r: any): Report {
   };
 }
 
-/**
- * Obtiene el listado completo de reportes de diagnóstico.
- * 
- * @returns {Promise<Report[]>} Arreglo de reportes con herramientas, comparativas e interacciones.
- */
 export async function getDbReports(): Promise<Report[]> {
   const cachedReports = getCachedQueryResult<Report[]>("reports");
   if (cachedReports) return cachedReports;
 
   let result: Report[] = [];
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const dbReports = await withDbTimeout(
-          prisma.report.findMany({
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const dbReports = await withDbTimeout(
+        prisma.report.findMany({
+          include: {
+            tools: true,
+            comparisonRows: true,
+            interactions: true,
+            metrics: true,
+            platformConfig: true,
+            analytics: true,
+            pageSpeed: true,
+            team: {
+              include: { partners: true }
+            }
+          },
+          orderBy: { createdAt: "desc" }
+        }),
+        4500
+      );
+
+      result = dbReports.map(r => mapPrismaReportToDomain(r));
+    } catch (err: any) {
+      if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+        console.warn("[Prisma Auto-Repair] Column mismatch in getDbReports, reparando columnas automáticamente...", err.message);
+        try {
+          await ensureDatabaseSchema(prisma);
+          const retryReports = await prisma.report.findMany({
             include: {
               tools: true,
               comparisonRows: true,
@@ -1494,51 +1287,17 @@ export async function getDbReports(): Promise<Report[]> {
               team: {
                 include: { partners: true }
               }
-            }
-          }),
-          3500
-        );
-        result = dbReports.map(r => mapPrismaReportToDomain(r));
-        if (result.length > 0) {
-          setCachedQueryResult("reports", result, 3000);
-          return result;
+            },
+            orderBy: { createdAt: "desc" }
+          });
+          result = retryReports.map(r => mapPrismaReportToDomain(r));
+        } catch (retryErr) {
+          console.error("[Prisma Auto-Repair Error in getDbReports]:", retryErr);
         }
-      } catch (err: any) {
-        if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
-          console.warn("[Prisma Auto-Repair] Column mismatch in getDbReports, reparando columnas automáticamente...", err.message);
-          try {
-            await ensureDatabaseSchema(prisma);
-            const retryReports = await prisma.report.findMany({
-              include: {
-                tools: true,
-                comparisonRows: true,
-                interactions: true,
-                metrics: true,
-                platformConfig: true,
-                analytics: true,
-                pageSpeed: true,
-                team: {
-                  include: { partners: true }
-                }
-              }
-            });
-            result = retryReports.map(r => mapPrismaReportToDomain(r));
-            if (result.length > 0) {
-              setCachedQueryResult("reports", result, 3000);
-              return result;
-            }
-          } catch (retryErr) {
-            console.error("[Prisma Auto-Repair Error in getDbReports]:", retryErr);
-          }
-        } else {
-          console.error("Error fetching reports from database:", err);
-        }
+      } else {
+        console.error("Error fetching reports from database:", err);
       }
     }
-  }
-
-  if (!result || result.length === 0) {
-    result = await readJsonAsync<Report[]>(REPORTS_FILE, []);
   }
 
   result = result.map(report => ({
@@ -1553,12 +1312,6 @@ export async function getDbReports(): Promise<Report[]> {
   return result;
 }
 
-/**
- * Obtiene un reporte de diagnóstico por su identificador único.
- * 
- * @param {string} id - ID del reporte.
- * @returns {Promise<Report | null>} Instancia del reporte o `null` si no existe.
- */
 export async function getDbReportById(id: string): Promise<Report | null> {
   if (!id) return null;
   const cleanId = String(id).trim();
@@ -1566,196 +1319,76 @@ export async function getDbReportById(id: string): Promise<Report | null> {
   const cachedReport = getCachedQueryResult<Report>(`report_${cleanId}`);
   if (cachedReport) return cachedReport;
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const r = await prisma.report.findFirst({
-          where: {
-            OR: [
-              { id: cleanId },
-              { id: { equals: cleanId, mode: "insensitive" } }
-            ]
-          },
-          include: {
-            tools: true,
-            comparisonRows: true,
-            interactions: true,
-            metrics: true,
-            platformConfig: true,
-            analytics: true,
-            pageSpeed: true,
-            team: {
-              include: { partners: true }
-            }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const r = await prisma.report.findFirst({
+        where: {
+          OR: [
+            { id: cleanId },
+            { id: { equals: cleanId, mode: "insensitive" } }
+          ]
+        },
+        include: {
+          tools: true,
+          comparisonRows: true,
+          interactions: true,
+          metrics: true,
+          platformConfig: true,
+          analytics: true,
+          pageSpeed: true,
+          team: {
+            include: { partners: true }
           }
-        });
-        if (r) {
-          const mappedReport = mapPrismaReportToDomain(r);
-          setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
-          return mappedReport;
         }
-      } catch (err: any) {
-        if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
-          console.warn(`[Prisma Auto-Repair] Column mismatch in getDbReportById(${cleanId}), reparando columnas automáticamente...`, err.message);
-          try {
-            await ensureDatabaseSchema(prisma);
-            const retryReport = await prisma.report.findFirst({
-              where: {
-                OR: [
-                  { id: cleanId },
-                  { id: { equals: cleanId, mode: "insensitive" } }
-                ]
-              },
-              include: {
-                tools: true,
-                comparisonRows: true,
-                interactions: true,
-                metrics: true,
-                platformConfig: true,
-                analytics: true,
-                pageSpeed: true,
-                team: {
-                  include: { partners: true }
-                }
+      });
+      if (r) {
+        const mappedReport = mapPrismaReportToDomain(r);
+        setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
+        return mappedReport;
+      }
+    } catch (err: any) {
+      if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+        console.warn(`[Prisma Auto-Repair] Column mismatch in getDbReportById(${cleanId}), reparando columnas automáticamente...`, err.message);
+        try {
+          await ensureDatabaseSchema(prisma);
+          const retryReport = await prisma.report.findFirst({
+            where: {
+              OR: [
+                { id: cleanId },
+                { id: { equals: cleanId, mode: "insensitive" } }
+              ]
+            },
+            include: {
+              tools: true,
+              comparisonRows: true,
+              interactions: true,
+              metrics: true,
+              platformConfig: true,
+              analytics: true,
+              pageSpeed: true,
+              team: {
+                include: { partners: true }
               }
-            });
-            if (retryReport) {
-              const mappedReport = mapPrismaReportToDomain(retryReport);
-              setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
-              return mappedReport;
             }
-          } catch (retryErr) {
-            console.error(`[Prisma Auto-Repair Error in getDbReportById for ${cleanId}]:`, retryErr);
+          });
+          if (retryReport) {
+            const mappedReport = mapPrismaReportToDomain(retryReport);
+            setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
+            return mappedReport;
           }
-        } else {
-          console.error("Error fetching report by ID from database:", err);
+        } catch (retryErr) {
+          console.error(`[Prisma Auto-Repair Error in getDbReportById for ${cleanId}]:`, retryErr);
         }
+      } else {
+        console.error("Error fetching report by ID from database:", err);
       }
     }
-  }
-
-  // Local fallback: Consultar directamente el archivo JSON para máxima resiliencia
-  try {
-    const localReports = await readJsonAsync<Report[]>(REPORTS_FILE, []);
-    const localFound = localReports.find(
-      r => r.id === cleanId || r.id?.toLowerCase() === cleanId.toLowerCase()
-    );
-    if (localFound) {
-      const clean = {
-        ...localFound,
-        tools: (localFound.tools || []).map(t => ({
-          ...t,
-          logo: resolveTechnologyLogo(t.name, t.url, t.logo)
-        }))
-      };
-      setCachedQueryResult(`report_${cleanId}`, clean, 3000);
-      return clean;
-    }
-  } catch (err) {
-    console.error("Error reading local reports fallback:", err);
   }
 
   return null;
 }
 
-/**
- * Guarda o actualiza un reporte de diagnóstico financiero con sus herramientas e interacciones.
- * 
- * @param {Report} report - Datos completos del reporte de diagnóstico.
- * @returns {Promise<Report>} Reporte guardado.
- */
-const VALID_SHOPIFY_PLANS = ["basic", "grow", "advanced", "plus", "custom"] as const;
-const VALID_TIENDANUBE_PLANS = ["basic", "tiendanube", "advanced", "evolution"] as const;
-
-function sanitizeShopifyPlan(raw?: string | null): "basic" | "grow" | "advanced" | "plus" | "custom" {
-  const norm = String(raw || "").toLowerCase().trim();
-  if (norm === "grow" || norm === "growth" || norm === "standard") return "grow";
-  if (norm === "basic" || norm === "starter") return "basic";
-  if (norm === "advanced" || norm === "pro") return "advanced";
-  if (norm === "plus" || norm === "enterprise") return "plus";
-  if (norm === "custom") return "custom";
-  return "grow";
-}
-
-function sanitizeTiendanubePlan(raw?: string | null): "basic" | "tiendanube" | "advanced" | "evolution" {
-  const norm = String(raw || "").toLowerCase().trim();
-  if (norm === "evolution" || norm === "evolucion") return "evolution";
-  if (norm === "tiendanube" || norm === "nube" || norm === "standard") return "tiendanube";
-  if (norm === "advanced" || norm === "avanzado") return "advanced";
-  if (norm === "basic" || norm === "basico") return "basic";
-  return "evolution";
-}
-
-function sanitizeCostType(raw?: string | null): "exact" | "range" {
-  const norm = String(raw || "").toLowerCase().trim();
-  return norm === "range" ? "range" : "exact";
-}
-
-function sanitizeCurrency(raw?: string | null): "MXN" | "USD" {
-  const norm = String(raw || "").toUpperCase().trim();
-  return norm === "MXN" ? "MXN" : "USD";
-}
-
-function sanitizeSemaphore(raw?: string | null): "green" | "yellow" | "red" {
-  const norm = String(raw || "").toLowerCase().trim();
-  if (norm === "green" || norm === "verde") return "green";
-  if (norm === "red" || norm === "rojo") return "red";
-  return "yellow";
-}
-
-function sanitizeInt(val: any, fallback = 0): number {
-  if (typeof val === "number" && Number.isFinite(val)) return Math.round(val);
-  if (typeof val === "string") {
-    const parsed = parseFloat(val.replace(/[^0-9.-]/g, ""));
-    if (Number.isFinite(parsed)) return Math.round(parsed);
-  }
-  return fallback;
-}
-
-function sanitizeFloat(val: any, fallback = 0): number {
-  if (typeof val === "number" && Number.isFinite(val)) return val;
-  if (typeof val === "string") {
-    const parsed = parseFloat(val.replace(/[^0-9.-]/g, ""));
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-}
-
-function sanitizePageSpeed(ps: any) {
-  if (!ps || typeof ps !== "object") return null;
-  const rawPerf = ps.performanceScore ?? ps.performance ?? ps.scores?.performance ?? 0;
-  const perfNum = typeof rawPerf === "number" ? rawPerf : parseFloat(String(rawPerf)) || 0;
-  const performanceScore = Math.min(100, Math.max(0, Math.round(perfNum <= 1 && perfNum > 0 ? perfNum * 100 : perfNum)));
-
-  const rawAcc = ps.accessibilityScore ?? ps.accessibility ?? ps.scores?.accessibility ?? 0;
-  const accNum = typeof rawAcc === "number" ? rawAcc : parseFloat(String(rawAcc)) || 0;
-  const accessibilityScore = Math.min(100, Math.max(0, Math.round(accNum <= 1 && accNum > 0 ? accNum * 100 : accNum)));
-
-  const rawSeo = ps.seoScore ?? ps.seo ?? ps.scores?.seo ?? 0;
-  const seoNum = typeof rawSeo === "number" ? rawSeo : parseFloat(String(rawSeo)) || 0;
-  const seoScore = Math.min(100, Math.max(0, Math.round(seoNum <= 1 && seoNum > 0 ? seoNum * 100 : seoNum)));
-
-  return {
-    performanceScore,
-    accessibilityScore,
-    seoScore,
-    fcp: ps.fcp ? String(ps.fcp) : (ps.metrics?.fcp ? String(ps.metrics.fcp) : null),
-    lcp: ps.lcp ? String(ps.lcp) : (ps.metrics?.lcp ? String(ps.metrics.lcp) : null),
-    tbt: ps.tbt ? String(ps.tbt) : (ps.metrics?.tbt ? String(ps.metrics.tbt) : null),
-    cls: ps.cls ? String(ps.cls) : (ps.metrics?.cls ? String(ps.metrics.cls) : null),
-    speedIndex: ps.speedIndex ? String(ps.speedIndex) : (ps.metrics?.speedIndex ? String(ps.metrics.speedIndex) : null),
-    interactive: ps.interactive ? String(ps.interactive) : (ps.metrics?.interactive ? String(ps.metrics.interactive) : null),
-    isDemo: Boolean(ps.isDemo)
-  };
-}
-
-/**
- * Guarda o actualiza un reporte de diagnóstico financiero con sus herramientas e interacciones.
- * 
- * @param {Report} report - Datos completos del reporte de diagnóstico.
- * @returns {Promise<Report>} Reporte guardado.
- */
 export async function saveDbReport(report: Report): Promise<Report> {
   const cleanReport: Report = {
     ...report,
@@ -1767,16 +1400,6 @@ export async function saveDbReport(report: Report): Promise<Report> {
     contactWhatsapp: report.contactWhatsapp ? String(report.contactWhatsapp).trim() : undefined,
     createdAt: report.createdAt || new Date().toISOString()
   };
-
-  const DEFAULT_LOGOS_FALLBACK = [
-    "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
-    "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
-  ];
-
-  const sanitizedAdminLogos = Array.isArray(cleanReport.adminLogos) && cleanReport.adminLogos.length > 0
-    ? cleanReport.adminLogos.map(l => String(l))
-    : DEFAULT_LOGOS_FALLBACK;
 
   const sanitizedPaymentGateways = Array.isArray(cleanReport.paymentGateways)
     ? cleanReport.paymentGateways.map(p => String(p))
@@ -1860,402 +1483,265 @@ export async function saveDbReport(report: Report): Promise<Report> {
     variable: String(row.variable || ""),
     shopify: String(row.shopify || ""),
     tiendanube: String(row.tiendanube || ""),
-    pillText: String(row.pillText || "")
+    pillText: row.pillText ? String(row.pillText).trim() : null
   }));
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        // Validar que teamId exista para evitar errores de Foreign Key en PostgreSQL
-        let safeTeamId: string | null = cleanReport.teamId || null;
-        if (safeTeamId) {
-          const teamExists = await prisma.team.findUnique({ where: { id: safeTeamId } }).catch(() => null);
-          if (!teamExists) {
-            if (safeTeamId === "team-default") {
-              const created = await prisma.team.create({
-                data: {
-                  id: "team-default",
-                  name: "Equipo Evolución",
-                  ownerName: "César Ayar",
-                  ownerEmail: "cesar.ayar19@gmail.com"
-                }
-              }).catch(() => null);
-              if (!created) {
-                safeTeamId = null;
-              }
-            } else {
-              safeTeamId = null;
-            }
-          }
-        }
-
-        // 1. Upsert registro maestro del reporte
-        await prisma.report.upsert({
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.report.upsert({
           where: { id: cleanReport.id },
           update: {
             ...prismaReportData,
-            teamId: safeTeamId
+            teamId: cleanReport.teamId || null,
+            creatorId: cleanReport.createdBy || null
           },
           create: {
             id: cleanReport.id,
             ...prismaReportData,
-            teamId: safeTeamId,
+            teamId: cleanReport.teamId || null,
+            creatorId: cleanReport.createdBy || null,
             createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
           }
         });
 
-        // 2. Limpiar e insertar herramientas hijas
-        await prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
-        if (sanitizedTools.length > 0) {
-          await prisma.reportTool.createMany({
-            data: sanitizedTools
-          });
-        }
-
-        // 3. Limpiar e insertar filas comparativas
-        await prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
-        if (sanitizedComparisonRows.length > 0) {
-          await prisma.reportComparisonRow.createMany({
-            data: sanitizedComparisonRows
-          });
-        }
-
-        // 4. Upsert subtabla de Métricas
-        await prisma.reportMetrics.upsert({
+        await tx.reportMetrics.upsert({
           where: { reportId: cleanReport.id },
-          create: {
-            reportId: cleanReport.id,
-            ...metricsData
-          },
-          update: metricsData
+          update: metricsData,
+          create: { ...metricsData, report: { connect: { id: cleanReport.id } } }
         });
 
-        // 5. Upsert subtabla de Configuración de Plataforma
-        await prisma.reportPlatformConfig.upsert({
+        await tx.reportPlatformConfig.upsert({
           where: { reportId: cleanReport.id },
-          create: {
-            reportId: cleanReport.id,
-            ...platformConfigData
-          },
-          update: platformConfigData
+          update: platformConfigData,
+          create: { ...platformConfigData, report: { connect: { id: cleanReport.id } } }
         });
 
-        // 6. Upsert subtabla de Analítica
-        await prisma.reportAnalytics.upsert({
+        await tx.reportAnalytics.upsert({
           where: { reportId: cleanReport.id },
-          create: {
-            reportId: cleanReport.id,
-            ...analyticsData
-          },
-          update: analyticsData
+          update: analyticsData,
+          create: { ...analyticsData, report: { connect: { id: cleanReport.id } } }
         });
 
-        // 7. Upsert subtabla de Rendimiento PageSpeed
         if (sanitizedPageSpeed) {
-          await prisma.reportPageSpeed.upsert({
+          await tx.reportPageSpeed.upsert({
             where: { reportId: cleanReport.id },
-            create: {
-              reportId: cleanReport.id,
-              ...sanitizedPageSpeed
-            },
-            update: sanitizedPageSpeed
+            update: sanitizedPageSpeed,
+            create: { ...sanitizedPageSpeed, report: { connect: { id: cleanReport.id } } }
           });
         }
 
-        // 8. Upsert subtabla de Interacciones
         if (cleanReport.interactions) {
-          await prisma.reportInteraction.upsert({
+          await tx.reportInteraction.upsert({
             where: { reportId: cleanReport.id },
-            create: {
-              reportId: cleanReport.id,
-              slideViews: (cleanReport.interactions.slideViews as any) || {},
+            update: {
+              slideViews: (cleanReport.interactions.slideViews || {}) as any,
               whatsappClicks: sanitizeInt(cleanReport.interactions.whatsappClicks, 0),
               toolClicks: sanitizeInt(cleanReport.interactions.toolClicks, 0),
               calculatorInteractions: sanitizeInt(cleanReport.interactions.calculatorInteractions, 0),
               timeSpentSeconds: sanitizeInt(cleanReport.interactions.timeSpentSeconds, 0)
             },
-            update: {
-              slideViews: (cleanReport.interactions.slideViews as any) || {},
+            create: {
+              slideViews: (cleanReport.interactions.slideViews || {}) as any,
               whatsappClicks: sanitizeInt(cleanReport.interactions.whatsappClicks, 0),
               toolClicks: sanitizeInt(cleanReport.interactions.toolClicks, 0),
               calculatorInteractions: sanitizeInt(cleanReport.interactions.calculatorInteractions, 0),
-              timeSpentSeconds: sanitizeInt(cleanReport.interactions.timeSpentSeconds, 0)
+              timeSpentSeconds: sanitizeInt(cleanReport.interactions.timeSpentSeconds, 0),
+              report: { connect: { id: cleanReport.id } }
             }
           });
         }
-      } catch (err: any) {
-        if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
-          console.warn(`[Prisma Auto-Repair] Column mismatch in saveDbReport(${cleanReport.id}), reparando columnas automáticamente...`, err.message);
-          try {
-            await ensureDatabaseSchema(prisma);
-            // Reintentar upsert de reporte tras reparación
-            let retrySafeTeamId: string | null = cleanReport.teamId || null;
-            if (retrySafeTeamId) {
-              const teamExists = await prisma.team.findUnique({ where: { id: retrySafeTeamId } }).catch(() => null);
-              if (!teamExists) retrySafeTeamId = null;
-            }
-            await prisma.report.upsert({
-              where: { id: cleanReport.id },
-              update: { ...prismaReportData, teamId: retrySafeTeamId },
-              create: {
-                id: cleanReport.id,
-                ...prismaReportData,
-                teamId: retrySafeTeamId,
-                createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
-              }
-            });
-            await prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
-            if (sanitizedTools.length > 0) {
-              await prisma.reportTool.createMany({ data: sanitizedTools });
-            }
-            await prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
-            if (sanitizedComparisonRows.length > 0) {
-              await prisma.reportComparisonRow.createMany({ data: sanitizedComparisonRows });
-            }
-          } catch (retryErr) {
-            console.error(`[Prisma Auto-Repair Error in saveDbReport for ${cleanReport.id}]:`, retryErr);
-          }
-        } else {
-          console.error("Error saving report to database:", err);
+
+        await tx.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
+        if (sanitizedTools.length > 0) {
+          await tx.reportTool.createMany({ data: sanitizedTools as any });
         }
+
+        await tx.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
+        if (sanitizedComparisonRows.length > 0) {
+          await tx.reportComparisonRow.createMany({ data: sanitizedComparisonRows });
+        }
+      });
+    } catch (err: any) {
+      if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+        console.warn(`[Prisma Auto-Repair] Column mismatch in saveDbReport(${cleanReport.id}), reparando columnas automáticamente...`, err.message);
+        try {
+          await ensureDatabaseSchema(prisma);
+          await prisma.report.upsert({
+            where: { id: cleanReport.id },
+            update: {
+              ...prismaReportData,
+              teamId: cleanReport.teamId || null,
+              creatorId: cleanReport.createdBy || null
+            },
+            create: {
+              id: cleanReport.id,
+              ...prismaReportData,
+              teamId: cleanReport.teamId || null,
+              creatorId: cleanReport.createdBy || null,
+              createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
+            }
+          });
+          await prisma.reportMetrics.upsert({
+            where: { reportId: cleanReport.id },
+            update: metricsData,
+            create: { ...metricsData, report: { connect: { id: cleanReport.id } } }
+          });
+          await prisma.reportPlatformConfig.upsert({
+            where: { reportId: cleanReport.id },
+            update: platformConfigData,
+            create: { ...platformConfigData, report: { connect: { id: cleanReport.id } } }
+          });
+          await prisma.reportAnalytics.upsert({
+            where: { reportId: cleanReport.id },
+            update: analyticsData,
+            create: { ...analyticsData, report: { connect: { id: cleanReport.id } } }
+          });
+          await prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
+          if (sanitizedTools.length > 0) {
+            await prisma.reportTool.createMany({ data: sanitizedTools as any });
+          }
+          await prisma.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
+          if (sanitizedComparisonRows.length > 0) {
+            await prisma.reportComparisonRow.createMany({ data: sanitizedComparisonRows });
+          }
+        } catch (retryErr) {
+          console.error(`[Prisma Auto-Repair Error in saveDbReport for ${cleanReport.id}]:`, retryErr);
+        }
+      } else {
+        console.error("Error saving report to database:", err);
       }
     }
-  }
-
-  // Sincronización persistente en archivo local siempre para redundancia
-  try {
-    const localReports = await readJsonAsync<Report[]>(REPORTS_FILE, []);
-    const index = localReports.findIndex(r => r.id === cleanReport.id);
-    if (index === -1) {
-      localReports.push(cleanReport);
-    } else {
-      localReports[index] = cleanReport;
-    }
-    fs.writeFileSync(REPORTS_FILE, JSON.stringify(localReports, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error writing report to local file:", err);
   }
 
   invalidateApiQueryCache("reports");
   invalidateApiQueryCache(`report_${cleanReport.id}`);
   invalidateApiQueryCache(`report_${cleanReport.id.toLowerCase()}`);
-  invalidateApiQueryCache(`report_${cleanReport.id}`);
   return cleanReport;
 }
 
-
-/**
- * Elimina un reporte de diagnóstico por su ID.
- * 
- * @param {string} id - Identificador del reporte a eliminar.
- * @returns {Promise<boolean>} Verdadero si el reporte fue eliminado.
- */
 export async function deleteDbReport(id: string): Promise<boolean> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.report.delete({ where: { id } });
-        invalidateApiQueryCache("reports");
-        return true;
-      } catch (err) {
-        console.error("Error deleting report from database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.report.delete({ where: { id } });
+      invalidateApiQueryCache("reports");
+      invalidateApiQueryCache(`report_${id}`);
+      return true;
+    } catch (err) {
+      console.error("Error deleting report from database:", err);
     }
   }
-
-  // Local fallback
-  const reports = await getDbReports();
-  const filtered = reports.filter(r => r.id !== id);
-  if (reports.length === filtered.length) {
-    return false;
-  }
-  try {
-    fs.writeFileSync(REPORTS_FILE, JSON.stringify(filtered, null, 2), "utf-8");
-    invalidateApiQueryCache("reports");
-    return true;
-
-  } catch (err) {
-    console.error("Error deleting report from local file:", err);
-    return false;
-  }
+  return false;
 }
 
-// ==========================================
-// TEMPLATES CRUD OPERATORS
-// ==========================================
+// ============================================================================
+// TEMPLATES CRUD OPERATORS (POSTGRESQL)
+// ============================================================================
 
-/**
- * Obtiene todas las plantillas comparativas registradas.
- * 
- * @returns {Promise<ComparisonTemplate[]>} Arreglo de plantillas con sus filas de comparación.
- */
 export async function getDbTemplates(): Promise<ComparisonTemplate[]> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const dbTemplates = await prisma.comparisonTemplate.findMany({
-          include: { rows: true }
-        });
-        return dbTemplates.map(t => ({
-          id: t.id,
-          name: t.name,
-          rows: t.rows.map(row => ({
-            id: row.id,
-            variable: row.variable,
-            shopify: row.shopify,
-            tiendanube: row.tiendanube,
-            pillText: row.pillText
-          }))
-        }));
-      } catch (err) {
-        console.error("Error fetching templates from database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const dbTemplates = await prisma.comparisonTemplate.findMany({
+        include: { rows: true }
+      });
+      return dbTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        rows: t.rows.map(row => ({
+          id: row.id,
+          variable: row.variable,
+          shopify: row.shopify,
+          tiendanube: row.tiendanube,
+          pillText: row.pillText || undefined
+        }))
+      }));
+    } catch (err) {
+      console.error("Error fetching templates from database:", err);
     }
-  }
-
-  // Local fallback
-  try {
-    if (fs.existsSync(TEMPLATES_FILE)) {
-      return JSON.parse(fs.readFileSync(TEMPLATES_FILE, "utf-8"));
-    }
-  } catch (error) {
-    console.error("Error reading local templates file:", error);
   }
   return [];
 }
 
-/**
- * Guarda o actualiza una plantilla comparativa reutilizable.
- * 
- * @param {ComparisonTemplate} template - Datos de la plantilla comparativa.
- * @returns {Promise<ComparisonTemplate>} Plantilla guardada.
- */
 export async function saveDbTemplate(template: ComparisonTemplate): Promise<ComparisonTemplate> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.$transaction([
-          prisma.comparisonTemplateRow.deleteMany({ where: { templateId: template.id } }),
-          prisma.comparisonTemplate.upsert({
-            where: { id: template.id },
-            update: {
-              name: template.name,
-              rows: {
-                create: template.rows.map(r => ({
-                  id: r.id,
-                  variable: r.variable,
-                  shopify: r.shopify,
-                  tiendanube: r.tiendanube,
-                  pillText: r.pillText
-                }))
-              }
-            },
-            create: {
-              id: template.id,
-              name: template.name,
-              rows: {
-                create: template.rows.map(r => ({
-                  id: r.id,
-                  variable: r.variable,
-                  shopify: r.shopify,
-                  tiendanube: r.tiendanube,
-                  pillText: r.pillText
-                }))
-              }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.$transaction([
+        prisma.comparisonTemplateRow.deleteMany({ where: { templateId: template.id } }),
+        prisma.comparisonTemplate.upsert({
+          where: { id: template.id },
+          update: {
+            name: template.name,
+            rows: {
+              create: template.rows.map(r => ({
+                id: r.id,
+                variable: r.variable,
+                shopify: r.shopify,
+                tiendanube: r.tiendanube,
+                pillText: r.pillText || null
+              }))
             }
-          })
-        ]);
+          },
+          create: {
+            id: template.id,
+            name: template.name,
+            rows: {
+              create: template.rows.map(r => ({
+                id: r.id,
+                variable: r.variable,
+                shopify: r.shopify,
+                tiendanube: r.tiendanube,
+                pillText: r.pillText || null
+              }))
+            }
+          }
+        })
+      ]);
 
-        return template;
-      } catch (err) {
-        console.error("Error saving template to database:", err);
-      }
+      return template;
+    } catch (err) {
+      console.error("Error saving template to database:", err);
     }
   }
-
-  // Local fallback
-  const templates = await getDbTemplates();
-  const index = templates.findIndex(t => t.id === template.id);
-  const cleanTemplate = { ...template };
-
-  if (index === -1) {
-    templates.push(cleanTemplate);
-  } else {
-    templates[index] = cleanTemplate;
-  }
-
-  await writeJsonAsync(TEMPLATES_FILE, templates);
-  return cleanTemplate;
+  return template;
 }
 
-/**
- * Elimina una plantilla comparativa por su ID.
- * 
- * @param {string} id - ID de la plantilla a eliminar.
- * @returns {Promise<boolean>} Verdadero si se eliminó correctamente.
- */
 export async function deleteDbTemplate(id: string): Promise<boolean> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.comparisonTemplate.delete({ where: { id } });
-        return true;
-      } catch (err) {
-        console.error("Error deleting template from database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.comparisonTemplate.delete({ where: { id } });
+      return true;
+    } catch (err) {
+      console.error("Error deleting template from database:", err);
     }
   }
-
-  // Local fallback
-  const templates = await getDbTemplates();
-  const filtered = templates.filter(t => t.id !== id);
-  if (templates.length === filtered.length) {
-    return false;
-  }
-  await writeJsonAsync(TEMPLATES_FILE, filtered);
-  return true;
+  return false;
 }
 
-// ==========================================
-// PARTNERS CRUD OPERATORS
-// ==========================================
+// ============================================================================
+// PARTNERS CRUD OPERATORS (POSTGRESQL)
+// ============================================================================
 
-/**
- * Obtiene los datos del socio/partner consultor autorizado.
- * 
- * @returns {Promise<any>} Objeto con la información del socio.
- */
 export async function getDbPartner(): Promise<any> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const partner = await prisma.partner.findUnique({
-          where: { id: "default" },
-          include: { members: true }
-        });
-        if (partner) return partner;
-      } catch (err) {
-        console.error("Error reading partner from database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const partner = await prisma.partner.findUnique({
+        where: { id: "default" },
+        include: { members: true }
+      });
+      if (partner) return partner;
+    } catch (err) {
+      console.error("Error reading partner from database:", err);
     }
   }
-
-  // Fallback to local files
-  return readJsonAsync(PARTNERS_FILE, DEFAULT_PARTNER);
+  return DEFAULT_PARTNER;
 }
 
-/**
- * Guarda o actualiza la configuración del socio/partner consultor.
- * 
- * @param {any} partner - Datos del socio a guardar.
- * @returns {Promise<any>} Socio guardado.
- */
 export async function saveDbPartner(partner: any): Promise<any> {
   const cleanPartner = {
     name: partner.name || DEFAULT_PARTNER.name,
@@ -2264,95 +1750,64 @@ export async function saveDbPartner(partner: any): Promise<any> {
     link: partner.link || DEFAULT_PARTNER.link,
   };
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.$transaction([
-          prisma.partnerMember.deleteMany({ where: { partnerId: "default" } }),
-          prisma.partner.upsert({
-            where: { id: "default" },
-            update: {
-              ...cleanPartner,
-              members: {
-                create: (partner.members || []).map((m: any) => ({
-                  id: m.id || "m-" + Math.random().toString(36).substring(2, 11),
-                  name: m.name,
-                  email: m.email,
-                  role: m.role || "Lector"
-                }))
-              }
-            },
-            create: {
-              id: "default",
-              ...cleanPartner,
-              members: {
-                create: (partner.members || []).map((m: any) => ({
-                  id: m.id || "m-" + Math.random().toString(36).substring(2, 11),
-                  name: m.name,
-                  email: m.email,
-                  role: m.role || "Lector"
-                }))
-              }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.$transaction([
+        prisma.partnerMember.deleteMany({ where: { partnerId: "default" } }),
+        prisma.partner.upsert({
+          where: { id: "default" },
+          update: {
+            ...cleanPartner,
+            members: {
+              create: (partner.members || []).map((m: any) => ({
+                id: m.id || "m-" + Math.random().toString(36).substring(2, 11),
+                name: m.name,
+                email: m.email,
+                role: m.role || "Lector"
+              }))
             }
-          })
-        ]);
-        return await getDbPartner();
-      } catch (err) {
-        console.error("Error writing partner to database:", err);
-      }
+          },
+          create: {
+            id: "default",
+            ...cleanPartner,
+            members: {
+              create: (partner.members || []).map((m: any) => ({
+                id: m.id || "m-" + Math.random().toString(36).substring(2, 11),
+                name: m.name,
+                email: m.email,
+                role: m.role || "Lector"
+              }))
+            }
+          }
+        })
+      ]);
+      return await getDbPartner();
+    } catch (err) {
+      console.error("Error writing partner to database:", err);
     }
   }
 
-  // Save to local file
-  const fullPartner = {
-    id: "default",
-    ...cleanPartner,
-    members: (partner.members || []).map((m: any) => ({
-      id: m.id || "m-" + Math.random().toString(36).substring(2, 11),
-      name: m.name,
-      email: m.email,
-      role: m.role || "Lector",
-      partnerId: "default"
-    }))
-  };
-
-  await writeJsonAsync(PARTNERS_FILE, fullPartner);
-  return fullPartner;
+  return { id: "default", ...cleanPartner, members: partner.members || [] };
 }
 
-// ==========================================
-// LOGO CONFIG CRUD OPERATORS
-// ==========================================
+// ============================================================================
+// LOGO CONFIG CRUD OPERATORS (POSTGRESQL)
+// ============================================================================
 
-/**
- * Obtiene la configuración del tipo de logo (texto o logo), texto/archivo de logo y correo global.
- * 
- * @returns {Promise<any>} Objeto de configuración de logo y correo global.
- */
 export async function getDbLogoConfig(): Promise<any> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const logoConfig = await prisma.logoConfig.findUnique({ where: { id: "default" } });
-        if (logoConfig) return logoConfig;
-      } catch (err) {
-        console.error("Error reading logo config from database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const logoConfig = await prisma.logoConfig.findUnique({ where: { id: "default" } });
+      if (logoConfig) return logoConfig;
+    } catch (err) {
+      console.error("Error reading logo config from database:", err);
     }
   }
-
-  // Fallback to local files
-  return readJsonAsync(LOGO_CONFIG_FILE, DEFAULT_LOGO_CONFIG);
+  return DEFAULT_LOGO_CONFIG;
 }
 
-/**
- * Guarda o actualiza la configuración del logo (tipo de logo, texto, archivo) y correo global.
- * 
- * @param {any} logoConfig - Objeto con la configuración del logo a actualizar.
- * @returns {Promise<any>} Configuración guardada.
- */
 export async function saveDbLogoConfig(logoConfig: any): Promise<any> {
   const cleanConfig = {
     logoType: logoConfig.logoType === "logo" ? "logo" : "text",
@@ -2361,83 +1816,65 @@ export async function saveDbLogoConfig(logoConfig: any): Promise<any> {
     globalEmail: logoConfig.globalEmail !== undefined ? logoConfig.globalEmail : DEFAULT_LOGO_CONFIG.globalEmail
   };
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const updated = await prisma.logoConfig.upsert({
-          where: { id: "default" },
-          update: {
-            ...cleanConfig,
-            logoType: cleanConfig.logoType as any
-          },
-          create: {
-            id: "default",
-            ...cleanConfig,
-            logoType: cleanConfig.logoType as any
-          }
-        });
-        return updated;
-      } catch (err) {
-        console.error("Error writing logo config to database:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const updated = await prisma.logoConfig.upsert({
+        where: { id: "default" },
+        update: {
+          ...cleanConfig,
+          logoType: cleanConfig.logoType as any
+        },
+        create: {
+          id: "default",
+          ...cleanConfig,
+          logoType: cleanConfig.logoType as any
+        }
+      });
+      return updated;
+    } catch (err) {
+      console.error("Error writing logo config to database:", err);
     }
   }
 
-  const result = { id: "default", ...cleanConfig };
-  await writeJsonAsync(LOGO_CONFIG_FILE, result);
-  return result;
+  return { id: "default", ...cleanConfig };
 }
 
 // ============================================================================
-// GESTIÓN Y PERSISTENCIA MULTI-USUARIO (REGLA: PRIMER USUARIO = SUPERUSUARIO)
+// GESTIÓN Y PERSISTENCIA DE USUARIOS Y SUPERADMINS (POSTGRESQL)
 // ============================================================================
 
-/**
- * Obtiene el listado completo de usuarios registrados en el sistema.
- */
 export async function getDbUsers(): Promise<UserAccount[]> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const users = await withDbTimeout(
-          prisma.user.findMany({
-            orderBy: { createdAt: "asc" }
-          }),
-          3500
-        );
-        return users.map((u: any) => ({
-
-          id: u.id,
-          email: u.email,
-          name: u.name,
-          role: u.role as any,
-          avatar: u.avatar || undefined,
-          sub: u.sub || undefined,
-          accessToken: u.accessToken ? decryptText(u.accessToken) : undefined,
-          idToken: u.idToken ? decryptText(u.idToken) : undefined,
-          tokenExpiresAt: u.tokenExpiresAt ? u.tokenExpiresAt.toISOString() : undefined,
-          lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : undefined,
-          createdAt: u.createdAt.toISOString(),
-          updatedAt: u.updatedAt.toISOString()
-        }));
-      } catch (err) {
-        console.error("Error al obtener usuarios con Prisma:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const users = await withDbTimeout(
+        prisma.user.findMany({
+          orderBy: { createdAt: "asc" }
+        }),
+        3500
+      );
+      return users.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role as any,
+        avatar: u.avatar || undefined,
+        sub: u.sub || undefined,
+        accessToken: u.accessToken ? decryptText(u.accessToken) : undefined,
+        idToken: u.idToken ? decryptText(u.idToken) : undefined,
+        tokenExpiresAt: u.tokenExpiresAt ? u.tokenExpiresAt.toISOString() : undefined,
+        lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : undefined,
+        createdAt: u.createdAt.toISOString(),
+        updatedAt: u.updatedAt.toISOString()
+      }));
+    } catch (err) {
+      console.error("Error al obtener usuarios con Prisma:", err);
     }
   }
-  const rawUsers = await readJsonAsync<UserAccount[]>(USERS_FILE, []);
-  return rawUsers.map((u) => ({
-    ...u,
-    accessToken: u.accessToken ? decryptText(u.accessToken) : undefined,
-    idToken: u.idToken ? decryptText(u.idToken) : undefined
-  }));
+  return [];
 }
 
-/**
- * Retorna la dirección de correo configurada en variables de entorno como Superusuario Inicial.
- */
 export function getConfiguredSuperAdminEmail(): string {
   return (
     process.env.SUPERADMIN_EMAIL ||
@@ -2447,39 +1884,51 @@ export function getConfiguredSuperAdminEmail(): string {
   ).trim().toLowerCase();
 }
 
-/**
- * Obtiene la lista persistente de correos con rol de Superusuario preservados entre actualizaciones.
- */
 export async function getPersistentSuperAdminEmails(): Promise<string[]> {
   const envEmail = getConfiguredSuperAdminEmail();
-  const fileEmails = await readJsonAsync<string[]>(SUPERADMIN_EMAILS_FILE, []);
   const list = new Set<string>();
   if (envEmail) list.add(envEmail.toLowerCase());
-  fileEmails.forEach((e) => {
-    if (e && typeof e === "string") list.add(e.trim().toLowerCase());
-  });
+
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const superAdmins = await prisma.user.findMany({
+        where: { role: "Superusuario" },
+        select: { email: true }
+      });
+      superAdmins.forEach(u => {
+        if (u.email) list.add(u.email.trim().toLowerCase());
+      });
+    } catch (err) {
+      console.error("Error al obtener superadmin emails desde BD:", err);
+    }
+  }
+
   return Array.from(list);
 }
 
-/**
- * Registra y preserva un correo en el listado de Superusuarios permanentes.
- */
 export async function addPersistentSuperAdminEmail(email: string): Promise<void> {
   if (!email || typeof email !== "string" || !email.includes("@")) return;
   const clean = email.trim().toLowerCase();
-  const current = await readJsonAsync<string[]>(SUPERADMIN_EMAILS_FILE, []);
-  const normalized = current.map((e) => e.trim().toLowerCase());
-  if (!normalized.includes(clean)) {
-    normalized.push(clean);
-    await writeJsonAsync(SUPERADMIN_EMAILS_FILE, normalized);
+
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const existing = await prisma.user.findFirst({
+        where: { email: { equals: clean, mode: "insensitive" } }
+      });
+      if (existing) {
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: { role: "Superusuario" }
+        });
+      }
+    } catch (err) {
+      console.error("Error al persistir superadmin en BD:", err);
+    }
   }
 }
 
-/**
- * Registra un nuevo usuario o sincroniza su perfil y tokens Auth0 cifrados en cada inicio de sesión.
- * REGLA OBLIGATORIA: Si el usuario ya era Superusuario, su correo está registrado como Superusuario o es el 1er usuario, 
- * CONSERVA permanentemente el rol de "Superusuario" sin importar actualizaciones o inicios de sesión posteriores.
- */
 export async function registerOrSyncUser(userData: {
   email: string;
   name?: string;
@@ -2491,11 +1940,10 @@ export async function registerOrSyncUser(userData: {
   tokenExpiresAt?: string | Date;
   lastLoginAt?: string | Date;
 }): Promise<UserAccount> {
-  const users = await getDbUsers();
   const cleanEmail = userData.email.trim().toLowerCase();
-  
-  const persistentSuperAdmins = await getPersistentSuperAdminEmails();
   const configuredSuperAdminEmail = getConfiguredSuperAdminEmail();
+  const persistentSuperAdmins = await getPersistentSuperAdminEmails();
+
   const isSuperAdminEmail = Boolean(
     cleanEmail && (
       (configuredSuperAdminEmail && cleanEmail === configuredSuperAdminEmail) ||
@@ -2510,222 +1958,181 @@ export async function registerOrSyncUser(userData: {
     ? new Date(userData.lastLoginAt).toISOString()
     : new Date().toISOString();
 
-  // Cifrado transparente AES-256-GCM para tokens Auth0
   const encryptedAccessToken = userData.accessToken ? encryptText(userData.accessToken) : undefined;
   const encryptedIdToken = userData.idToken ? encryptText(userData.idToken) : undefined;
 
-  // Buscar si el usuario ya existe por email o sub de Auth0
-  const existingUserIndex = users.findIndex(
-    (u) => (cleanEmail && u.email.toLowerCase() === cleanEmail) || (userData.sub && u.sub === userData.sub)
-  );
-
-  // 1. SI EL USUARIO YA EXISTE: Actualizar datos de perfil y tokens de sesión cifrados (PRESERVANDO SUPERUSUARIO)
-  if (existingUserIndex >= 0) {
-    const existingUser = users[existingUserIndex];
-    const isSuperUser = existingUser.role === "Superusuario" || isSuperAdminEmail || userData.role === "Superusuario";
-    const targetRole = isSuperUser ? "Superusuario" : existingUser.role;
-
-    if (isSuperUser && cleanEmail) {
-      await addPersistentSuperAdminEmail(cleanEmail).catch(() => {});
-    }
-
-    const updatedUser: UserAccount = {
-      ...existingUser,
-      name: userData.name || existingUser.name,
-      avatar: userData.avatar || existingUser.avatar,
-      sub: userData.sub || existingUser.sub,
-      role: targetRole,
-      accessToken: userData.accessToken || existingUser.accessToken,
-      idToken: userData.idToken || existingUser.idToken,
-      tokenExpiresAt: formattedExpiresAt || existingUser.tokenExpiresAt,
-      lastLoginAt: formattedLastLoginAt,
-      updatedAt: new Date().toISOString()
-    };
-
-    // Para la lista en memoria/JSON guardamos la versión cifrada
-    const updatedUserForStorage = {
-      ...updatedUser,
-      accessToken: encryptedAccessToken || (existingUser.accessToken ? encryptText(existingUser.accessToken) : undefined),
-      idToken: encryptedIdToken || (existingUser.idToken ? encryptText(existingUser.idToken) : undefined)
-    };
-
-    users[existingUserIndex] = updatedUserForStorage;
-
-    if (isPrismaEnabled()) {
-      const prisma = getPrisma();
-      if (prisma) {
-        try {
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-              name: updatedUser.name,
-              avatar: updatedUser.avatar,
-              sub: updatedUser.sub,
-              role: targetRole,
-              accessToken: updatedUserForStorage.accessToken,
-              idToken: updatedUserForStorage.idToken,
-              tokenExpiresAt: updatedUser.tokenExpiresAt ? new Date(updatedUser.tokenExpiresAt) : null,
-              lastLoginAt: new Date(updatedUser.lastLoginAt || new Date())
-            }
-          });
-        } catch (err) {
-          console.error("Error al actualizar usuario en Prisma:", err);
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: { equals: cleanEmail, mode: "insensitive" } },
+            ...(userData.sub ? [{ sub: userData.sub }] : [])
+          ]
         }
+      });
+
+      if (existingUser) {
+        const isSuperUser = existingUser.role === "Superusuario" || isSuperAdminEmail || userData.role === "Superusuario";
+        const targetRole = isSuperUser ? "Superusuario" : (existingUser.role as any);
+
+        const updated = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: userData.name || existingUser.name,
+            avatar: userData.avatar || existingUser.avatar,
+            sub: userData.sub || existingUser.sub,
+            role: targetRole,
+            accessToken: encryptedAccessToken || existingUser.accessToken,
+            idToken: encryptedIdToken || existingUser.idToken,
+            tokenExpiresAt: formattedExpiresAt ? new Date(formattedExpiresAt) : existingUser.tokenExpiresAt,
+            lastLoginAt: new Date(formattedLastLoginAt)
+          }
+        });
+
+        return {
+          id: updated.id,
+          email: updated.email,
+          name: updated.name,
+          role: updated.role as any,
+          avatar: updated.avatar || undefined,
+          sub: updated.sub || undefined,
+          accessToken: userData.accessToken || (updated.accessToken ? decryptText(updated.accessToken) : undefined),
+          idToken: userData.idToken || (updated.idToken ? decryptText(updated.idToken) : undefined),
+          tokenExpiresAt: updated.tokenExpiresAt ? updated.tokenExpiresAt.toISOString() : undefined,
+          lastLoginAt: updated.lastLoginAt ? updated.lastLoginAt.toISOString() : undefined,
+          createdAt: updated.createdAt.toISOString(),
+          updatedAt: updated.updatedAt.toISOString()
+        };
       }
+
+      // Usuario Nuevo
+      const userCount = await prisma.user.count();
+      const isFirstUserInSystem = userCount === 0;
+      const assignedRole: "Superusuario" | "Administrador" | "Agente" | "Visor" = (isFirstUserInSystem || isSuperAdminEmail || userData.role === "Superusuario")
+        ? "Superusuario"
+        : (userData.role || "Visor");
+
+      const newId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const created = await prisma.user.create({
+        data: {
+          id: newId,
+          email: cleanEmail,
+          name: userData.name || cleanEmail.split("@")[0] || "Usuario",
+          role: assignedRole,
+          avatar: userData.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+          sub: userData.sub || null,
+          accessToken: encryptedAccessToken || null,
+          idToken: encryptedIdToken || null,
+          tokenExpiresAt: formattedExpiresAt ? new Date(formattedExpiresAt) : null,
+          lastLoginAt: new Date(formattedLastLoginAt)
+        }
+      });
+
+      return {
+        id: created.id,
+        email: created.email,
+        name: created.name,
+        role: created.role as any,
+        avatar: created.avatar || undefined,
+        sub: created.sub || undefined,
+        accessToken: userData.accessToken,
+        idToken: userData.idToken,
+        tokenExpiresAt: created.tokenExpiresAt ? created.tokenExpiresAt.toISOString() : undefined,
+        lastLoginAt: created.lastLoginAt ? created.lastLoginAt.toISOString() : undefined,
+        createdAt: created.createdAt.toISOString(),
+        updatedAt: created.updatedAt.toISOString()
+      };
+    } catch (err) {
+      console.error("Error al registrar o sincronizar usuario en Prisma:", err);
     }
-    await writeJsonAsync(USERS_FILE, users);
-    return updatedUser;
   }
 
-  // 2. SI ES UN USUARIO NUEVO:
-  const isFirstUserInSystem = users.length === 0;
-  const assignedRole: "Superusuario" | "Administrador" | "Agente" | "Visor" = (isFirstUserInSystem || isSuperAdminEmail || userData.role === "Superusuario")
-    ? "Superusuario"
-    : (userData.role || "Visor");
-
-  if (assignedRole === "Superusuario" && cleanEmail) {
-    await addPersistentSuperAdminEmail(cleanEmail).catch(() => {});
-  }
-
-  if (isFirstUserInSystem || isSuperAdminEmail) {
-    console.log(`\x1b[33m[User Manager]\x1b[0m Otorgando rol de Superusuario a: ${cleanEmail} (Motivo: ${isFirstUserInSystem ? "Primer usuario registrado en el sistema" : "Superusuario Persistente / Env SUPERADMIN_EMAIL"})`);
-  }
-
-  const newUser: UserAccount = {
-    id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+  return {
+    id: `user_${Date.now()}`,
     email: cleanEmail,
-    name: userData.name || cleanEmail.split("@")[0] || "Usuario",
-    role: assignedRole,
-    avatar: userData.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-    sub: userData.sub || undefined,
-    accessToken: userData.accessToken || undefined,
-    idToken: userData.idToken || undefined,
-    tokenExpiresAt: formattedExpiresAt || undefined,
-    lastLoginAt: formattedLastLoginAt,
+    name: userData.name || "Usuario",
+    role: isSuperAdminEmail ? "Superusuario" : (userData.role || "Visor"),
+    avatar: userData.avatar,
+    sub: userData.sub,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-
-  const newUserForStorage = {
-    ...newUser,
-    accessToken: encryptedAccessToken,
-    idToken: encryptedIdToken
-  };
-
-  users.push(newUserForStorage);
-
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.user.create({
-          data: {
-            id: newUser.id,
-            email: newUser.email,
-            name: newUser.name,
-            role: newUser.role as any,
-            avatar: newUser.avatar,
-            sub: newUser.sub,
-            accessToken: encryptedAccessToken,
-            idToken: encryptedIdToken,
-            tokenExpiresAt: newUser.tokenExpiresAt ? new Date(newUser.tokenExpiresAt) : null,
-            lastLoginAt: newUser.lastLoginAt ? new Date(newUser.lastLoginAt) : new Date()
-          }
-        });
-      } catch (err) {
-        console.error("Error al crear usuario en Prisma:", err);
-      }
-    }
-  }
-
-  await writeJsonAsync(USERS_FILE, users);
-  return newUser;
 }
 
-/**
- * Actualiza el rol de un usuario existente (Requiere permisos de Superusuario o Administrador).
- * Preserva automáticamente la dirección de correo en la lista persistente de Superusuarios si se le asigna dicho rol.
- */
 export async function updateUserRole(userId: string, newRole: "Superusuario" | "Administrador" | "Agente" | "Visor"): Promise<UserAccount | null> {
-  const users = await getDbUsers();
-  const userIndex = users.findIndex((u) => u.id === userId || u.email === userId);
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const existing = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: userId },
+            { email: { equals: userId, mode: "insensitive" } }
+          ]
+        }
+      });
 
-  if (userIndex < 0) return null;
+      if (!existing) return null;
 
-  users[userIndex].role = newRole;
-  users[userIndex].updatedAt = new Date().toISOString();
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: { role: newRole as any }
+      });
 
-  if (newRole === "Superusuario" && users[userIndex].email) {
-    await addPersistentSuperAdminEmail(users[userIndex].email).catch(() => {});
-  }
-
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.user.update({
-          where: { id: users[userIndex].id },
-          data: { role: newRole as any }
-        });
-      } catch (err) {
-        console.error("Error al actualizar rol en Prisma:", err);
-      }
+      return {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        role: updated.role as any,
+        avatar: updated.avatar || undefined,
+        sub: updated.sub || undefined,
+        accessToken: updated.accessToken ? decryptText(updated.accessToken) : undefined,
+        idToken: updated.idToken ? decryptText(updated.idToken) : undefined,
+        tokenExpiresAt: updated.tokenExpiresAt ? updated.tokenExpiresAt.toISOString() : undefined,
+        lastLoginAt: updated.lastLoginAt ? updated.lastLoginAt.toISOString() : undefined,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString()
+      };
+    } catch (err) {
+      console.error("Error al actualizar rol de usuario en Prisma:", err);
     }
   }
-
-  await writeJsonAsync(USERS_FILE, users);
-  return users[userIndex];
+  return null;
 }
 
 // ============================================================================
-// FUNCIONALIDADES EXCLUSIVAS DE SUPERUSUARIO: SALUD, MONITOREO Y ACCESO API
+// SYSTEM HEALTH, API KEYS & API LOCK (POSTGRESQL)
 // ============================================================================
 
-/**
- * Obtiene las métricas en tiempo real del estado de salud del sistema y la base de datos.
- */
 export async function getSystemHealthStatus(): Promise<SystemHealthData> {
   const startTime = Date.now();
-  let dbStatus: "connected" | "disconnected" | "fallback_json" = "fallback_json";
-  let dbProvider = "JSON Encrypted Storage Bridge";
+  let dbStatus: "connected" | "disconnected" | "fallback_json" = "disconnected";
+  let dbProvider = "PostgreSQL (Prisma ORM)";
   let dbLatencyMs = 0;
   let reportCount = 0;
   let teamCount = 0;
   let userCount = 0;
   let templateCount = 0;
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const pingStart = Date.now();
-        await prisma.$queryRaw`SELECT 1`;
-        dbLatencyMs = Date.now() - pingStart;
-        dbStatus = "connected";
-        dbProvider = "PostgreSQL (Prisma ORM)";
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const pingStart = Date.now();
+      await prisma.$queryRaw`SELECT 1`;
+      dbLatencyMs = Date.now() - pingStart;
+      dbStatus = "connected";
 
-        reportCount = await prisma.report.count();
-        teamCount = await prisma.team.count();
-        userCount = await prisma.user.count();
-        templateCount = await prisma.comparisonTemplate.count();
-      } catch (err) {
-        console.error("Prisma health check failed:", err);
-        dbStatus = "disconnected";
-        dbLatencyMs = Date.now() - startTime;
-      }
+      reportCount = await prisma.report.count();
+      teamCount = await prisma.team.count();
+      userCount = await prisma.user.count();
+      templateCount = await prisma.comparisonTemplate.count();
+    } catch (err) {
+      console.error("Prisma health check failed:", err);
+      dbStatus = "disconnected";
+      dbLatencyMs = Date.now() - startTime;
     }
-  }
-
-  if (dbStatus !== "connected") {
-    const reports = await readJsonAsync<any[]>(REPORTS_FILE, []);
-    const teams = await readJsonAsync<any[]>(TEAMS_FILE, []);
-    const users = await getDbUsers();
-    const templates = await readJsonAsync<any[]>(TEMPLATES_FILE, []);
-    reportCount = reports.length;
-    teamCount = teams.length;
-    userCount = users.length;
-    templateCount = templates.length;
-    dbLatencyMs = Date.now() - startTime;
   }
 
   const mem = process.memoryUsage();
@@ -2761,37 +2168,29 @@ export async function getSystemHealthStatus(): Promise<SystemHealthData> {
   };
 }
 
-/**
- * Obtiene el listado de API Keys registradas.
- */
 export async function getDbApiKeys(): Promise<ApiKeyItem[]> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const keys = await prisma.apiKey.findMany({
-          orderBy: { createdAt: "desc" }
-        });
-        return keys.map((k: any) => ({
-          id: k.id,
-          name: k.name,
-          maskedKey: k.maskedKey,
-          status: k.status as any,
-          createdByName: k.createdByName || undefined,
-          lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : undefined,
-          createdAt: k.createdAt.toISOString()
-        }));
-      } catch (err) {
-        console.error("Error al leer API keys en Prisma:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const keys = await prisma.apiKey.findMany({
+        orderBy: { createdAt: "desc" }
+      });
+      return keys.map((k: any) => ({
+        id: k.id,
+        name: k.name,
+        maskedKey: k.maskedKey,
+        status: k.status as any,
+        createdByName: k.createdByName || undefined,
+        lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : undefined,
+        createdAt: k.createdAt.toISOString()
+      }));
+    } catch (err) {
+      console.error("Error al leer API keys en Prisma:", err);
     }
   }
-  return await readJsonAsync<ApiKeyItem[]>(API_KEYS_FILE, []);
+  return [];
 }
 
-/**
- * Crea una nueva API Key para integraciones externas.
- */
 export async function createDbApiKey(name: string, createdByName?: string): Promise<{ apiKey: ApiKeyItem; rawToken: string }> {
   const rawToken = `tlm_live_${crypto.randomBytes(24).toString("hex")}`;
   const maskedKey = `${rawToken.substring(0, 12)}...${rawToken.substring(rawToken.length - 4)}`;
@@ -2808,161 +2207,125 @@ export async function createDbApiKey(name: string, createdByName?: string): Prom
     createdAt: new Date().toISOString()
   };
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.apiKey.create({
-          data: {
-            id: newId,
-            name: newKey.name,
-            keyHash,
-            maskedKey,
-            status: "active",
-            createdByName: newKey.createdByName
-          }
-        });
-      } catch (err) {
-        console.error("Error al crear API Key en Prisma:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.apiKey.create({
+        data: {
+          id: newId,
+          name: newKey.name,
+          keyHash,
+          maskedKey,
+          status: "active",
+          createdByName: newKey.createdByName
+        }
+      });
+    } catch (err) {
+      console.error("Error al crear API Key en Prisma:", err);
     }
   }
-
-  const existing = await readJsonAsync<ApiKeyItem[]>(API_KEYS_FILE, []);
-  existing.unshift(newKey);
-  await writeJsonAsync(API_KEYS_FILE, existing);
 
   return { apiKey: newKey, rawToken };
 }
 
-/**
- * Elimina o revoca una API Key existente.
- */
 export async function deleteDbApiKey(id: string): Promise<boolean> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.apiKey.delete({ where: { id } });
-      } catch (err) {
-        console.error("Error al eliminar API key en Prisma:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.apiKey.delete({ where: { id } });
+      return true;
+    } catch (err) {
+      console.error("Error al eliminar API key en Prisma:", err);
     }
   }
-
-  const existing = await readJsonAsync<ApiKeyItem[]>(API_KEYS_FILE, []);
-  const filtered = existing.filter((k) => k.id !== id);
-  await writeJsonAsync(API_KEYS_FILE, filtered);
-  return true;
+  return false;
 }
 
-/**
- * Obtiene el estado actual del bloqueo global de la API.
- */
 export async function getApiLockStatus(): Promise<{ apiLocked: boolean; lockReason: string }> {
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        const setting = await prisma.systemSetting.findUnique({ where: { id: "default" } });
-        if (setting) {
-          return {
-            apiLocked: setting.apiLocked,
-            lockReason: setting.lockReason || "Mantenimiento programado de la API"
-          };
-        }
-      } catch (err) {
-        console.error("Error al leer SystemSetting en Prisma:", err);
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      const setting = await prisma.systemSetting.findUnique({ where: { id: "default" } });
+      if (setting) {
+        return {
+          apiLocked: setting.apiLocked,
+          lockReason: setting.lockReason || "Mantenimiento programado de la API"
+        };
       }
+    } catch (err) {
+      console.error("Error al leer SystemSetting en Prisma:", err);
     }
   }
 
-  const fallback = await readJsonAsync<{ apiLocked: boolean; lockReason: string }>(SYSTEM_SETTINGS_FILE, {
+  return {
     apiLocked: false,
     lockReason: "Mantenimiento programado de la API"
-  });
-  return fallback;
+  };
 }
 
-/**
- * Bloquea o desbloquea el acceso global a la API REST.
- */
 export async function toggleApiLock(apiLocked: boolean, lockReason?: string): Promise<{ apiLocked: boolean; lockReason: string }> {
   const cleanReason = lockReason?.trim() || "Mantenimiento programado de la API";
   const result = { apiLocked, lockReason: cleanReason };
 
-  if (isPrismaEnabled()) {
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.systemSetting.upsert({
-          where: { id: "default" },
-          update: { apiLocked, lockReason: cleanReason },
-          create: { id: "default", apiLocked, lockReason: cleanReason }
-        });
-      } catch (err) {
-        console.error("Error al actualizar SystemSetting en Prisma:", err);
-      }
+  const prisma = getPrisma();
+  if (prisma) {
+    try {
+      await prisma.systemSetting.upsert({
+        where: { id: "default" },
+        update: { apiLocked, lockReason: cleanReason },
+        create: { id: "default", apiLocked, lockReason: cleanReason }
+      });
+    } catch (err) {
+      console.error("Error al actualizar SystemSetting en Prisma:", err);
     }
   }
 
-  await writeJsonAsync(SYSTEM_SETTINGS_FILE, result);
   return result;
 }
 
-/**
- * Restablece la instancia completa a su configuración de fábrica (Factory Reset).
- * Elimina reportes, usuarios, equipos, llaves de API, reinicia bloqueos de API y restaura la semilla inicial.
- */
 export async function resetInstanceToFactorySettings(): Promise<{ success: boolean; message: string }> {
   try {
-    // 1. Limpieza de archivos JSON locales (Fallback Bridge)
-    await writeJsonAsync(REPORTS_FILE, DEFAULT_REPORTS);
-    await writeJsonAsync(TEAMS_FILE, DEFAULT_TEAMS);
-    await writeJsonAsync(CONFIG_FILE, DEFAULT_CONFIG);
-    await writeJsonAsync(TEMPLATES_FILE, DEFAULT_TEMPLATES);
-    await writeJsonAsync(PARTNERS_FILE, DEFAULT_PARTNER);
-    await writeJsonAsync(LOGO_CONFIG_FILE, DEFAULT_LOGO_CONFIG);
-    await writeJsonAsync(USERS_FILE, []);
-    await writeJsonAsync(API_KEYS_FILE, []);
-    await writeJsonAsync(SYSTEM_SETTINGS_FILE, { id: "default", apiLocked: false, lockReason: "Mantenimiento programado de la API" });
+    const prisma = getPrisma();
+    if (prisma) {
+      await prisma.$transaction([
+        prisma.reportTool.deleteMany({}),
+        prisma.reportComparisonRow.deleteMany({}),
+        prisma.reportInteraction.deleteMany({}),
+        prisma.reportPageSpeed.deleteMany({}),
+        prisma.reportMetrics.deleteMany({}),
+        prisma.reportPlatformConfig.deleteMany({}),
+        prisma.reportAnalytics.deleteMany({}),
+        prisma.report.deleteMany({}),
+        prisma.teamReportConfig.deleteMany({}),
+        prisma.teamConfig.deleteMany({}),
+        prisma.teamMember.deleteMany({}),
+        prisma.team.deleteMany({}),
+        prisma.partnerMember.deleteMany({}),
+        prisma.partner.deleteMany({}),
+        prisma.comparisonTemplateRow.deleteMany({}),
+        prisma.comparisonTemplate.deleteMany({}),
+        prisma.apiKey.deleteMany({}),
+        prisma.user.deleteMany({}),
+        prisma.config.deleteMany({}),
+        prisma.logoConfig.deleteMany({}),
+        prisma.systemSetting.deleteMany({})
+      ]);
 
-    // 2. Limpieza y re-sembrado en PostgreSQL Prisma ORM
-    if (isPrismaEnabled()) {
-      const prisma = getPrisma();
-      if (prisma) {
-        await prisma.$transaction([
-          prisma.reportTool.deleteMany({}),
-          prisma.reportComparisonRow.deleteMany({}),
-          prisma.reportInteraction.deleteMany({}),
-          prisma.report.deleteMany({}),
-          prisma.teamMember.deleteMany({}),
-          prisma.team.deleteMany({}),
-          prisma.partnerMember.deleteMany({}),
-          prisma.partner.deleteMany({}),
-          prisma.comparisonTemplateRow.deleteMany({}),
-          prisma.comparisonTemplate.deleteMany({}),
-          prisma.apiKey.deleteMany({}),
-          prisma.user.deleteMany({}),
-          prisma.config.deleteMany({}),
-          prisma.logoConfig.deleteMany({}),
-          prisma.systemSetting.deleteMany({})
-        ]);
-
-        await initializeDatabase();
-      }
+      isDatabaseInitialized = false;
+      await initializeDatabase();
     }
+
+    invalidateApiQueryCache();
 
     return {
       success: true,
-      message: "🟢 La instancia ha sido restablecida exitosamente a su configuración de fábrica."
+      message: "🟢 La instancia ha sido restablecida exitosamente a su configuración de fábrica en PostgreSQL."
     };
   } catch (error: any) {
     console.error("Error al ejecutar restablecimiento a configuración de fábrica:", error);
     return {
       success: false,
-      message: `Error al restablecer la instancia: ${error?.message || "Fallo interno de almacenamiento"}`
+      message: `Error al restablecer la instancia: ${error?.message || "Fallo interno de almacenamiento en base de datos"}`
     };
   }
 }
-
