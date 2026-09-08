@@ -3,7 +3,7 @@ import { detectStoreWithChismografo, scrapeShopifyStoreNative, resolveTechnology
 import { saveDbReport, getDbConfig } from "../dbBridge.js";
 import { Report, Tool, ComparisonRow, ReportPageSpeed } from "../types.js";
 import { sendWorkflowEmail } from "./emailWorkflow.js";
-import { isS3Configured, uploadBase64ToStorage } from "../storageService.js";
+import { isS3Configured, uploadBase64ToStorage, buildStorageKey } from "../storageService.js";
 
 export interface AuditWorkflowInput {
   url: string;
@@ -116,7 +116,7 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
       if (screenshotDesktop && screenshotDesktop.startsWith("data:")) {
         const uploadedDesktop = await uploadBase64ToStorage(
           screenshotDesktop,
-          `screenshots/${reportId}_desktop.webp`,
+          buildStorageKey("screenshots", `${reportId}_desktop.webp`),
           "image/webp"
         );
         screenshotDesktop = uploadedDesktop.cdnUrl;
@@ -125,7 +125,7 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
       if (screenshotMobile && screenshotMobile.startsWith("data:")) {
         const uploadedMobile = await uploadBase64ToStorage(
           screenshotMobile,
-          `screenshots/${reportId}_mobile.webp`,
+          buildStorageKey("screenshots", `${reportId}_mobile.webp`),
           "image/webp"
         );
         screenshotMobile = uploadedMobile.cdnUrl;

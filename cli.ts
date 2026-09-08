@@ -242,7 +242,17 @@ Teléfono Whatsapp: ${report.contactWhatsapp}
     console.log(`- \x1b[1mRegión:\x1b[0m                 ${status.region}`);
     console.log(`- \x1b[1mEndpoint S3:\x1b[0m            ${status.endpoint}`);
     console.log(`- \x1b[1mHostname Bunny CDN:\x1b[0m     ${status.cdnHostname}`);
-    console.log(`- \x1b[1mEjemplo URL CDN:\x1b[0m        ${getPublicCdnUrl("demo/screenshot.webp")}`);
+    console.log(`- \x1b[1mPrefijo Base (Namespace):\x1b[0m ${status.paths.basePath || "(Raíz del bucket)"}`);
+    console.log(`- \x1b[1mRutas Configuradas:\x1b[0m`);
+    console.log(`    • Capturas (Screenshots):  \x1b[33m${status.paths.screenshots}\x1b[0m`);
+    console.log(`    • Logos Aliados (Allies):  \x1b[33m${status.paths.allies}\x1b[0m`);
+    console.log(`    • Logos Equipos (Teams):   \x1b[33m${status.paths.teams}\x1b[0m`);
+    console.log(`    • Fotos Perfil (Avatars):  \x1b[33m${status.paths.avatars}\x1b[0m`);
+    console.log(`- \x1b[1mPolíticas RBAC:\x1b[0m`);
+    status.policies.forEach(p => {
+      console.log(`    • \x1b[32m[${p.category.toUpperCase()}]\x1b[0m Lectura: ${p.isPublicRead ? "Pública (CDN)" : "Privada"} | Subida: ${p.allowedUploadRoles.join(", ")} | Borrado: ${p.allowedDeleteRoles.join(", ")}`);
+    });
+    console.log(`- \x1b[1mEjemplo URL CDN:\x1b[0m        ${getPublicCdnUrl("screenshots/sample_audit.webp")}`);
     console.log(`- \x1b[1mRegiones S3 Soportadas:\x1b[0m ${status.supportedRegions.join(", ")}`);
     console.log("");
     break;

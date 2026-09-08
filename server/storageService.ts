@@ -8,12 +8,14 @@
  * - Endpoints regionales: https://[region]-s3.storage.bunnycdn.com (de, ny, sg, uk, se, la, jh, syd).
  * - Operaciones soportadas: PutObject, GetObject, DeleteObject, HeadObject, ListObjectsV2, Presign.
  * - Sin encabezados no soportados en PutObject (sin Cache-Control ni ACLs en S3; la caché se gestiona en Bunny CDN).
- * - Distribución y purga perimetral instantánea mediante Bunny CDN Pull Zone.
+ * - Control de acceso granular (RBAC) y distribución pública de contenido para screenshots, logos y perfiles.
+ * - Rutas de almacenamiento modulares y configurables mediante variables de entorno en un espacio unificado.
  */
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
+import type { StorageFolderCategory, StoragePathsConfig, StorageAccessPolicy } from "../src/schemas/storage.js";
 
 dotenv.config();
 
@@ -27,6 +29,180 @@ const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || process.env.BUNNY_STORAGE_Z
 const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || process.env.BUNNY_STORAGE_ACCESS_KEY || S3_BUCKET_NAME;
 const S3_SECRET_KEY = process.env.S3_SECRET_KEY || process.env.BUNNY_STORAGE_SECRET_KEY || "";
 const S3_FORCE_PATH_STYLE = process.env.S3_FORCE_PATH_STYLE !== "false"; // Soportado por Bunny Storage
+
+// Configuración de rutas destino para unificación de espacios de almacenamiento
+export const STORAGE_BASE_PATH = (process.env.STORAGE_BASE_PATH || "").trim().replace(/^\/+|\/+$/g, "");
+export const STORAGE_PATH_SCREENSHOTS = (process.env.STORAGE_PATH_SCREENSHOTS || "screenshots").trim().replace(/^\/+|\/+$/g, "");
+export const STORAGE_PATH_ALLIES = (process.env.STORAGE_PATH_ALLIES || process.env.STORAGE_PATH_PARTNER_LOGOS || "allies").trim().replace(/^\/+|\/+$/g, "");
+export const STORAGE_PATH_TEAMS = (process.env.STORAGE_PATH_TEAMS || process.env.STORAGE_PATH_TEAM_LOGOS || "teams").trim().replace(/^\/+|\/+$/g, "");
+export const STORAGE_PATH_AVATARS = (process.env.STORAGE_PATH_AVATARS || process.env.STORAGE_PATH_PROFILES || "avatars").trim().replace(/^\/+|\/+$/g, "");
+
+/**
+ * Retorna la configuración de rutas activas de almacenamiento.
+ */
+export function getStoragePathsConfig(): StoragePathsConfig {
+  return {
+    basePath: STORAGE_BASE_PATH,
+    screenshots: STORAGE_PATH_SCREENSHOTS,
+    allies: STORAGE_PATH_ALLIES,
+    teams: STORAGE_PATH_TEAMS,
+    avatars: STORAGE_PATH_AVATARS,
+  };
+}
+
+/**
+ * Obtiene la subcarpeta correspondiente a una categoría de almacenamiento.
+ */
+export function getStorageFolder(category: StorageFolderCategory): string {
+  switch (category) {
+    case "screenshots":
+      return STORAGE_PATH_SCREENSHOTS;
+    case "allies":
+      return STORAGE_PATH_ALLIES;
+    case "teams":
+      return STORAGE_PATH_TEAMS;
+    case "avatars":
+      return STORAGE_PATH_AVATARS;
+    case "general":
+    default:
+      return "uploads";
+  }
+}
+
+/**
+ * Construye una clave (key) canónica para S3, aplicando el espacio base (STORAGE_BASE_PATH) y la categoría.
+ * 
+ * @param category Categoría del recurso (screenshots, allies, teams, avatars, general).
+ * @param filename Nombre del archivo.
+ * @returns Ruta completa y normalizada dentro del bucket (ej. "tlamatqui/screenshots/audit_123.webp").
+ */
+export function buildStorageKey(category: StorageFolderCategory, filename: string): string {
+  const folder = getStorageFolder(category);
+  const cleanFilename = filename.replace(/^\/+/, "");
+  
+  if (STORAGE_BASE_PATH) {
+    return `${STORAGE_BASE_PATH}/${folder}/${cleanFilename}`;
+  }
+  return `${folder}/${cleanFilename}`;
+}
+
+/**
+ * Detecta la categoría de un archivo a partir de su clave de almacenamiento o ruta.
+ */
+export function detectCategoryFromKey(key: string): StorageFolderCategory {
+  const normalized = key.toLowerCase();
+  if (normalized.includes(`/${STORAGE_PATH_SCREENSHOTS}/`) || normalized.startsWith(`${STORAGE_PATH_SCREENSHOTS}/`)) {
+    return "screenshots";
+  }
+  if (normalized.includes(`/${STORAGE_PATH_ALLIES}/`) || normalized.startsWith(`${STORAGE_PATH_ALLIES}/`)) {
+    return "allies";
+  }
+  if (normalized.includes(`/${STORAGE_PATH_TEAMS}/`) || normalized.startsWith(`${STORAGE_PATH_TEAMS}/`)) {
+    return "teams";
+  }
+  if (normalized.includes(`/${STORAGE_PATH_AVATARS}/`) || normalized.startsWith(`${STORAGE_PATH_AVATARS}/`)) {
+    return "avatars";
+  }
+  return "general";
+}
+
+/**
+ * Matriz de políticas de control de acceso (RBAC) y definición de contenido público.
+ */
+export function getStorageAccessPolicies(): StorageAccessPolicy[] {
+  return [
+    {
+      category: "screenshots",
+      configuredPath: buildStorageKey("screenshots", ""),
+      isPublicRead: true,
+      allowedUploadRoles: ["Superusuario", "Administrador", "Agente", "PublicWorkflow"],
+      allowedDeleteRoles: ["Superusuario", "Administrador"],
+      description: "Capturas de pantalla de tiendas y diagnósticos. Lectura pública global mediante Bunny CDN."
+    },
+    {
+      category: "allies",
+      configuredPath: buildStorageKey("allies", ""),
+      isPublicRead: true,
+      allowedUploadRoles: ["Superusuario", "Administrador"],
+      allowedDeleteRoles: ["Superusuario", "Administrador"],
+      description: "Logos oficiales de aliados, pasarelas de pago y proveedores. Lectura pública global."
+    },
+    {
+      category: "teams",
+      configuredPath: buildStorageKey("teams", ""),
+      isPublicRead: true,
+      allowedUploadRoles: ["Superusuario", "Administrador", "Agente"],
+      allowedDeleteRoles: ["Superusuario", "Administrador"],
+      description: "Logos e identidades visuales de agencias y equipos de trabajo. Lectura pública global."
+    },
+    {
+      category: "avatars",
+      configuredPath: buildStorageKey("avatars", ""),
+      isPublicRead: true,
+      allowedUploadRoles: ["Superusuario", "Administrador", "Agente", "Visor", "Invitado"],
+      allowedDeleteRoles: ["Superusuario", "Administrador"],
+      description: "Fotos de perfil y avatares de usuarios. Lectura pública acelerada por CDN."
+    },
+    {
+      category: "general",
+      configuredPath: buildStorageKey("general", ""),
+      isPublicRead: true,
+      allowedUploadRoles: ["Superusuario", "Administrador", "Agente"],
+      allowedDeleteRoles: ["Superusuario", "Administrador"],
+      description: "Archivos generales y multimedia administrativa."
+    }
+  ];
+}
+
+/**
+ * Valida si un rol tiene autorización para ejecutar una acción en la categoría especificada.
+ */
+export function isStorageActionAllowed(
+  userRole: string | undefined,
+  category: StorageFolderCategory,
+  action: "read" | "upload" | "delete"
+): { allowed: boolean; reason?: string } {
+  // Lectura pública permitida para todos los contenidos de la suite
+  if (action === "read") {
+    return { allowed: true };
+  }
+
+  const role = userRole || "Invitado";
+
+  // El Superusuario siempre tiene acceso total
+  if (role === "Superusuario") {
+    return { allowed: true };
+  }
+
+  const policies = getStorageAccessPolicies();
+  const policy = policies.find(p => p.category === category);
+
+  if (!policy) {
+    return { allowed: false, reason: `Categoría '${category}' no reconocida.` };
+  }
+
+  if (action === "upload") {
+    if (policy.allowedUploadRoles.includes(role)) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `El rol '${role}' no tiene permisos de subida en la categoría '${category}'. Requerido: ${policy.allowedUploadRoles.join(", ")}.`
+    };
+  }
+
+  if (action === "delete") {
+    if (policy.allowedDeleteRoles.includes(role)) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `El rol '${role}' no tiene permisos de eliminación en la categoría '${category}'. Requerido: ${policy.allowedDeleteRoles.join(", ")}.`
+    };
+  }
+
+  return { allowed: false, reason: "Acción no permitida." };
+}
 
 // Resolver endpoint regional de Bunny S3 automáticamente si no se especifica uno explícito
 function resolveS3Endpoint(): string | undefined {
@@ -318,7 +494,7 @@ export async function purgeBunnyCdnCache(urlOrKey?: string): Promise<{ success: 
 }
 
 /**
- * Retorna el estado consolidado de la infraestructura de almacenamiento S3 y Bunny CDN.
+ * Retorna el estado consolidado de la infraestructura de almacenamiento S3, rutas activas y políticas RBAC.
  */
 export function getStorageStatus() {
   return {
@@ -329,6 +505,8 @@ export function getStorageStatus() {
     endpoint: S3_ENDPOINT || "AWS S3 Default",
     cdnHostname: BUNNY_CDN_HOSTNAME || "Sin CDN configurada (Directo a S3)",
     forcePathStyle: S3_FORCE_PATH_STYLE,
-    supportedRegions: BUNNY_S3_REGIONS,
+    paths: getStoragePathsConfig(),
+    policies: getStorageAccessPolicies(),
+    supportedRegions: [...BUNNY_S3_REGIONS],
   };
 }

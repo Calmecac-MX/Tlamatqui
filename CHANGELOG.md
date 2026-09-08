@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.91 (Frontend) / v2.5.82 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **cli:** add storage and bunny cdn verification commands to CLI tool (`0c9e29d`)
+
 ## [v2.5.90 (Frontend) / v2.5.81 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades

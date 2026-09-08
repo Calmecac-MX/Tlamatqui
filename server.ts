@@ -55,7 +55,18 @@ import { scrapeShopifyStoreNative, detectStoreWithChismografo } from "./server/s
 import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail, sendTeamInviteEmail, verifySmtpConnection } from "./server/emailService.js";
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
-import { getStorageStatus, uploadBase64ToStorage, purgeBunnyCdnCache, deleteFileFromStorage, getPresignedUploadUrl, getPresignedDownloadUrl, getPublicCdnUrl } from "./server/storageService.js";
+import {
+  getStorageStatus,
+  uploadBase64ToStorage,
+  purgeBunnyCdnCache,
+  deleteFileFromStorage,
+  getPresignedUploadUrl,
+  getPresignedDownloadUrl,
+  getPublicCdnUrl,
+  buildStorageKey,
+  detectCategoryFromKey,
+  isStorageActionAllowed
+} from "./server/storageService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 import {
   runAuditWorkflow,
@@ -1449,11 +1460,12 @@ app.get("/api/storage/status", async (req: Request, res: Response) => {
 
 /**
  * @route POST /api/storage/upload
- * @description Sube un archivo o imagen base64 a S3 / Bunny Storage con distribución en Bunny CDN.
+ * @description Sube un archivo o imagen base64 a S3 / Bunny Storage con distribución en Bunny CDN y control RBAC.
  */
-app.post("/api/storage/upload", requireRole(["Superusuario", "Administrador", "Agente"]), async (req: Request, res: Response) => {
+app.post("/api/storage/upload", async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { data, filename, folder, contentType } = req.body;
+    const { data, filename, category = "general", contentType } = req.body;
+    const userRole = (req.headers["x-user-role"] as string) || req.userRole || "Invitado";
 
     if (!data || !filename) {
       return res.status(400).json({
@@ -1461,14 +1473,23 @@ app.post("/api/storage/upload", requireRole(["Superusuario", "Administrador", "A
       });
     }
 
-    const cleanFolder = (folder || "uploads").replace(/^\/+|\/+$/g, "");
+    // Validar autorización RBAC según categoría de destino
+    const check = isStorageActionAllowed(userRole, category, "upload");
+    if (!check.allowed) {
+      return res.status(403).json({
+        error: "Acceso denegado a almacenamiento",
+        message: check.reason || `El rol '${userRole}' no tiene permisos para subir recursos en '${category}'.`
+      });
+    }
+
     const cleanFilename = filename.replace(/^\/+/, "");
-    const key = `${cleanFolder}/${Date.now()}_${cleanFilename}`;
+    const key = buildStorageKey(category, `${Date.now()}_${cleanFilename}`);
 
     const uploadResult = await uploadBase64ToStorage(data, key, contentType || "image/webp");
 
     res.json({
       success: true,
+      category,
       ...uploadResult
     });
   } catch (error: any) {
@@ -1483,28 +1504,40 @@ app.post("/api/storage/upload", requireRole(["Superusuario", "Administrador", "A
  * @route POST /api/storage/presign
  * @description Genera URLs prefirmadas (Presigned URLs) para subida directa o descarga segura con expiración configurable (1s a 7 días).
  */
-app.post("/api/storage/presign", requireRole(["Superusuario", "Administrador", "Agente"]), async (req: Request, res: Response) => {
+app.post("/api/storage/presign", async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { key, type, contentType, expiresInSeconds } = req.body;
-    if (!key) {
-      return res.status(400).json({ error: "El parámetro 'key' es requerido para generar la URL prefirmada." });
+    const { key, filename, category = "general", type = "download", contentType, expiresInSeconds } = req.body;
+    const userRole = (req.headers["x-user-role"] as string) || req.userRole || "Invitado";
+
+    // Validar autorización RBAC
+    const targetCategory = key ? detectCategoryFromKey(key) : category;
+    const action = type === "upload" ? "upload" : "read";
+    const check = isStorageActionAllowed(userRole, targetCategory, action);
+
+    if (!check.allowed) {
+      return res.status(403).json({
+        error: "Acceso denegado a URL prefirmada",
+        message: check.reason || `El rol '${userRole}' no tiene permisos de ${action} en '${targetCategory}'.`
+      });
     }
 
+    const targetKey = key || buildStorageKey(targetCategory, filename ? `${Date.now()}_${filename.replace(/^\/+/, "")}` : `${Date.now()}_file.bin`);
     const expires = Number(expiresInSeconds) || 3600;
     let presignedUrl = "";
 
     if (type === "upload") {
-      presignedUrl = await getPresignedUploadUrl(key, contentType || "application/octet-stream", expires);
+      presignedUrl = await getPresignedUploadUrl(targetKey, contentType || "application/octet-stream", expires);
     } else {
-      presignedUrl = await getPresignedDownloadUrl(key, expires);
+      presignedUrl = await getPresignedDownloadUrl(targetKey, expires);
     }
 
-    const publicCdnUrl = getPublicCdnUrl(key);
+    const publicCdnUrl = getPublicCdnUrl(targetKey);
 
     res.json({
       success: true,
-      key,
-      type: type || "download",
+      key: targetKey,
+      category: targetCategory,
+      type,
       presignedUrl,
       publicCdnUrl,
       expiresInSeconds: expires
@@ -1519,13 +1552,25 @@ app.post("/api/storage/presign", requireRole(["Superusuario", "Administrador", "
 
 /**
  * @route DELETE /api/storage/file
- * @description Elimina un objeto de S3 / Bunny Storage de forma atómica y purga la URL en Bunny CDN.
+ * @description Elimina un objeto de S3 / Bunny Storage de forma atómica y purga la URL en Bunny CDN con control RBAC.
  */
-app.delete("/api/storage/file", requireRole(["Superusuario", "Administrador"]), async (req: Request, res: Response) => {
+app.delete("/api/storage/file", async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { key } = req.body;
+    const userRole = (req.headers["x-user-role"] as string) || req.userRole || "Invitado";
+
     if (!key) {
       return res.status(400).json({ error: "El parámetro 'key' es obligatorio para eliminar el archivo." });
+    }
+
+    const category = detectCategoryFromKey(key);
+    const check = isStorageActionAllowed(userRole, category, "delete");
+
+    if (!check.allowed) {
+      return res.status(403).json({
+        error: "Acceso denegado a eliminación de almacenamiento",
+        message: check.reason || `El rol '${userRole}' no tiene permisos para eliminar recursos en '${category}'.`
+      });
     }
 
     const deleted = await deleteFileFromStorage(key);
@@ -1534,6 +1579,7 @@ app.delete("/api/storage/file", requireRole(["Superusuario", "Administrador"]), 
 
     res.json({
       success: deleted,
+      category,
       message: deleted ? `Archivo '${key}' eliminado exitosamente de S3 y purgado en Bunny CDN.` : `No se pudo eliminar el archivo '${key}'.`
     });
   } catch (error: any) {

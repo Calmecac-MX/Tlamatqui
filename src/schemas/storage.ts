@@ -1,6 +1,46 @@
 import { z } from "zod";
 
 /**
+ * Categorías estándar de carpetas de almacenamiento en el sistema.
+ */
+export const StorageFolderCategorySchema = z.enum([
+  "screenshots",
+  "allies",
+  "teams",
+  "avatars",
+  "general"
+]);
+
+export type StorageFolderCategory = z.infer<typeof StorageFolderCategorySchema>;
+
+/**
+ * Esquema de configuración de rutas destino en S3 / Bunny Storage.
+ */
+export const StoragePathsConfigSchema = z.object({
+  basePath: z.string(),
+  screenshots: z.string(),
+  allies: z.string(),
+  teams: z.string(),
+  avatars: z.string(),
+});
+
+export type StoragePathsConfig = z.infer<typeof StoragePathsConfigSchema>;
+
+/**
+ * Esquema de políticas de control de acceso (RBAC) por carpeta/categoría de almacenamiento.
+ */
+export const StorageAccessPolicySchema = z.object({
+  category: StorageFolderCategorySchema,
+  configuredPath: z.string(),
+  isPublicRead: z.boolean(),
+  allowedUploadRoles: z.array(z.string()),
+  allowedDeleteRoles: z.array(z.string()),
+  description: z.string(),
+});
+
+export type StorageAccessPolicy = z.infer<typeof StorageAccessPolicySchema>;
+
+/**
  * Esquema de validación Zod para el estado del almacenamiento S3 y Bunny CDN.
  */
 export const StorageStatusSchema = z.object({
@@ -11,6 +51,9 @@ export const StorageStatusSchema = z.object({
   endpoint: z.string(),
   cdnHostname: z.string(),
   forcePathStyle: z.boolean(),
+  paths: StoragePathsConfigSchema,
+  policies: z.array(StorageAccessPolicySchema),
+  supportedRegions: z.array(z.string()),
 });
 
 export type StorageStatus = z.infer<typeof StorageStatusSchema>;
@@ -21,7 +64,8 @@ export type StorageStatus = z.infer<typeof StorageStatusSchema>;
 export const UploadFileRequestSchema = z.object({
   data: z.string().min(1, "El contenido del archivo es requerido"),
   filename: z.string().min(1, "El nombre del archivo es requerido"),
-  folder: z.string().default("uploads"),
+  category: StorageFolderCategorySchema.optional().default("general"),
+  folder: z.string().optional(),
   contentType: z.string().optional(),
 });
 
@@ -36,6 +80,7 @@ export const UploadFileResponseSchema = z.object({
   url: z.string().url(),
   cdnUrl: z.string().url(),
   size: z.number(),
+  category: StorageFolderCategorySchema.optional(),
 });
 
 export type UploadFileResponse = z.infer<typeof UploadFileResponseSchema>;
@@ -55,6 +100,7 @@ export type PurgeCdnRequest = z.infer<typeof PurgeCdnRequestSchema>;
 export const PresignUrlRequestSchema = z.object({
   key: z.string().min(1, "La clave del archivo es requerida"),
   type: z.enum(["upload", "download"]).default("download"),
+  category: StorageFolderCategorySchema.optional(),
   contentType: z.string().optional(),
   expiresInSeconds: z.number().min(1).max(604800).default(3600),
 });
@@ -67,6 +113,7 @@ export const PresignUrlResponseSchema = z.object({
   presignedUrl: z.string().url(),
   publicCdnUrl: z.string().url(),
   expiresInSeconds: z.number(),
+  category: StorageFolderCategorySchema.optional(),
 });
 
 export type PresignUrlResponse = z.infer<typeof PresignUrlResponseSchema>;
