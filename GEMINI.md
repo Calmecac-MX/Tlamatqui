@@ -10,6 +10,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 ## 1. Contexto Rápido del Repositorio
 - **Nombre:** Tlamatqui
 - **Arquitectura:** Desacoplada (Backend API REST en Express/TypeScript en puerto `4000`, Frontend React 19/Vite 6/Tailwind CSS v4 en puerto `3000`).
+- **Arquitectura de Workflows (`server/workflows/`):** Patrón *Thin Controller* con pipelines modulares para `auditWorkflow`, `emailWorkflow`, `domainWorkflow`, `teamWorkflow` y `engagementWorkflow`.
 - **Base de Datos:** Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`).
 - **Autenticación:** Auth0 (`@auth0/auth0-react` en Frontend y validación JWT en Backend).
 
@@ -20,11 +21,11 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 - `investigate-first`: Diagnóstico con evidencia previa.
 - `surgical-patch`: Correcciones quirúrgicas de bugs.
 - `safe-refactor`: Refactorización con garantía de comportamiento.
-- `lean-build`: Construcción delgada de nuevas características.
+- `lean-build`: Construcción delgada de nuevas características y orquestación en workflows.
 - `migration` / `prisma`: Migraciones seguras, esquemas de Prisma ORM 8 y despliegue de DB.
 - `verify-and-stop`: Verificación con linters y pruebas antes de concluir.
 - `author-auth0-skill`: Patrones y guías de Auth0.
-- `commit-writer`: Guía para redacción de commits estructurados bajo Conventional Commits y Release Please.
+- `commit-writer`: Guía para redacción de commits estructurados bajo Conventional Commits, Atomic Commits y Release Please.
 - Ecosistema `caveman` & `cavecrew`: Optimización de tokens, subagentes y monitoreo de gateway LLM.
 
 ---
@@ -36,7 +37,7 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 
 ---
 
-## 4. Conventional Commits, Ramas & Google Release Please
+## 4. Conventional Commits, Atomic Commits, Ramas & Google Release Please
 - **Estrategia de Ramas:**
   - `calpilli` (Desarrollo): [`.github/workflows/calpilli.yml`](.github/workflows/calpilli.yml)
   - `tlamatini` (Preview / Staging): [`.github/workflows/tlamatini.yml`](.github/workflows/tlamatini.yml)
@@ -44,7 +45,10 @@ Consulta [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) pa
 - **Acción Centralizada:** [`.github/actions/setup-tlamatqui/action.yml`](.github/actions/setup-tlamatqui/action.yml)
 - **Configuración Release Please:** [`release-please-config.json`](file:///Users/cesarayar/Documents/tlamatqui/release-please-config.json) | [`.release-please-manifest.json`](file:///Users/cesarayar/Documents/tlamatqui/.release-please-manifest.json)
 - **Script Local & CLI:** `npm run changelog` | `npm run cli changelog`
-- **Regla Obligatoria:** Todo cambio o entregable DEBE culminar con un `git commit` siguiendo la estructura Conventional Commits `<tipo>(<ámbito>): <descripción>` (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`, `BREAKING CHANGE`) incluyendo versiones y changelogs para nutrir el historial continuo del proyecto.
+- **Política Obligatoria de Commits Atómicos (Atomic Commits):**
+  - Todo commit debe ser indivisible, auto-contenido y reversible, solucionando un único objetivo lógico.
+  - El repositorio DEBE compilar limpiamente (`npm run lint` / `npm run build`) en cada commit individual.
+  - Todo cambio o entregable DEBE culminar con un `git commit` siguiendo la estructura Conventional Commits `<tipo>(<ámbito>): <descripción>` (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`, `BREAKING CHANGE`) incluyendo versiones y changelogs para nutrir el historial continuo del proyecto.
 - **Política de Pull Requests y Aprobaciones:** Prohibido realizar `push` directos a `omeyocan`. Todo cambio debe enviarse vía Pull Request y contar con aprobación previa para integrarse.
 
 ---

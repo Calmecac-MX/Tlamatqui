@@ -44,6 +44,7 @@ Esta skill instructa al Agente de IA para la generación y redacción de mensaje
 
 Usa siempre el ámbito que identifique con precisión el componente modificado:
 
+- `workflows`: Creación o modificación de pipelines de negocio en `server/workflows/`.
 - `frontend`: Cambios en la app React 19 (`src/`, UI, componentes, Zustand, Tailwind).
 - `backend`: Cambios en la API Express/TypeScript (`server.ts`, `server/`, endpoints REST).
 - `prisma` o `db`: Cambios en esquemas de base de datos o migraciones de Prisma.
@@ -55,7 +56,25 @@ Usa siempre el ámbito que identifique con precisión el componente modificado:
 
 ---
 
-## 4. 📝 Reglas de Formato y Estilo
+## 4. ⚛️ Principios de Commits Atómicos (Atomic Commits)
+
+Cada commit realizado en el proyecto DEBE cumplir con los 4 principios de atomicidad:
+
+1. **Unidad Lógica Indivisible (Single Responsibility):**
+   - Un commit debe resolver un único objetivo (ej. una feature, un bugfix, o una refactorización de workflow).
+   - Prohibido mezclar en el mismo commit cambios de lógica de negocio con ajustes de formato cosméticos no relacionados.
+2. **Estado Siempre Verde (Always Green & Verified):**
+   - Antes de confirmar el commit, el proyecto DEBE compilar limpiamente (`npm run lint` y `npm run build`).
+   - Queda prohibido comitear estados rotos que dependan de futuros commits para compilar.
+3. **Auto-contenido y Reversible:**
+   - Debe incluir tanto la lógica como sus tipos, interfaces o adaptadores de transporte correspondientes.
+   - Si se ejecuta `git revert <hash>`, el repositorio debe volver a un estado completamente funcional y consistente.
+4. **Sincronización de Versión:**
+   - Siempre invocar `npm run auto-version` antes de comitear para mantener sincronizados los hashes y metadatos de versión.
+
+---
+
+## 5. 📝 Reglas de Formato y Estilo
 
 1. **Primera Línea (Subject):**
    - Usar modo imperativo (ej. `add`, `fix`, `update` o en español `añadir`, `corregir`, `actualizar`).

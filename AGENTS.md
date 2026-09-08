@@ -24,7 +24,15 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
   - **Puerto Dev:** `http://localhost:3000`.
   - **Build Output:** `dist/`.
 
-### 1.3 Comandos Principales de Desarrollo
+### 1.3 Arquitectura de Workflows (`server/workflows/`)
+El backend implementa el patrón **Thin Controller + Modular Workflows** desacoplando la lógica de negocio multi-paso en pipelines testeables e independientes:
+- **`auditWorkflow.ts`:** Orquestador de auditorías de e-commerce (Scraping de tienda, Chismógrafo de apps/tecnologías, Lighthouse CWV, resolución de logos, simulación financiera Shopify vs Tiendanube y persistencia transaccional en PostgreSQL).
+- **`emailWorkflow.ts`:** Motor de correo transaccional y notificaciones con fallback dual automático (Brevo API -> Nodemailer SMTP) y plantillas HTML dinámicas.
+- **`domainWorkflow.ts`:** Verificación y aprovisionamiento de dominios personalizados (Sanitización, validación DNS TXT challenge, diagnósticos y vinculación con Vercel Domains API).
+- **`teamWorkflow.ts`:** Gestión del ciclo de vida de membresías y equipos (Generación y canje de tokens de invitación, solicitudes de unión, flujos de aprobación/rechazo y sincronización de roles).
+- **`engagementWorkflow.ts`:** Telemetría de interacción con reportes (Cálculo de visitantes únicos, vistas de slides, telemetría de sliders/calculadora y recálculo reactivo de ROI).
+
+### 1.4 Comandos Principales de Desarrollo
 - **Desarrollo Simultáneo (Backend + Frontend):** `npm run dev`
 - **Desarrollo Backend:** `npm run dev:backend`
 - **Desarrollo Frontend:** `npm run dev:frontend`
@@ -40,8 +48,12 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 1. **Nunca Asumir ni Adivinar:** Consulta el código fuente existente antes de proponer cambios en rutas, tipos de datos o funciones.
 2. **Cero Parches Superficiales:** No silencies excepciones ni uses fallbacks vacíos. Soluciona el problema de raíz según la evidencia.
 3. **Tipado Estricto con TypeScript:** Mantén los tipos definidos en `src/types.ts` y las validaciones de Zod sincronizados entre Backend y Frontend.
-4. **Verificación Obligatoria:** No des por terminada una tarea sin ejecutar la verificación (`npm run lint` / `npm run build`).
-5. **Commit Obligatorio con Conventional Commits:** Tras realizar cualquier cambio funcional o corrección, se DEBE ejecutar la sincronización de versión (`npm run auto-version`) y realizar un `git commit` estructurado siguiendo Conventional Commits (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`), incluyendo la versión y changelogs (`CHANGELOG.md` y `changelog/CHANGELOG-vx.x.md`), para nutrir continuamente el historial de cambios.
+4. **Adopción de Workflows para Lógica Multi-Paso:** Toda operación de negocio compuesta (auditoría, envíos de correo, DNS, aprobaciones o métricas) DEBE orquestarse dentro de `server/workflows/`, manteniendo los controladores de Express (`server.ts`) delgados y desacoplados.
+5. **Política Obligatoria de Commits Atómicos (Atomic Commits):**
+   - **Indivisible y de Propósito Único:** Cada commit debe representar un cambio lógico único y enfocado. Queda prohibido mezclar refactorizaciones no relacionadas, cambios de estilos y lógica de negocio en un mismo commit.
+   - **Siempre Verde (Always Green):** El código DEBE compilar y pasar la verificación de tipos (`npm run lint` / `npm run build`) en cada commit individual. Nunca crear commits con estado roto o intermedio.
+   - **Auto-contenido y Reversible:** Cada commit debe poder ser revertido (`git revert`) o portado (`git cherry-pick`) sin afectar subsistemas no relacionados.
+   - **Sincronización con Conventional Commits & Auto-Version:** Tras cada cambio funcional o corrección, se DEBE ejecutar `npm run auto-version` e incluir los archivos de versión en el commit estructurado (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`).
 6. **Sincronización Obligatoria en Cerebros y Documentación IA:** Todo cambio, modificación de comportamiento, ajuste de configuración, variable de entorno o refactorización DEBE quedar registrado de forma explícita en los archivos de contexto e inteligencia del sistema (`AGENTS.md`, `GEMINI.md`, `.agents/rules/` y `changelog/`). Prohibido concluir una tarea sin reflejar las modificaciones en los cerebros de IA del repositorio.
 7. **Política Estricta de Ramas y Despliegue por Etapas (Branching Model):**
    - **`calpilli` (Desarrollo):** Rama de integración continua de features y correcciones ([`.github/workflows/calpilli.yml`](.github/workflows/calpilli.yml)).

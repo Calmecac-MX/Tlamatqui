@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.85 (Frontend) / v2.5.76 (Backend)] - 2026-09-08
+
+### 🚀 Features & Nuevas Funcionalidades
+- **db:** generate baseline migration 0_init and sync migration history (`c4def27`)
+
 ## [v2.5.85 (Frontend) / v2.5.75 (Backend)] - 2026-09-08
 
 ### ♻️ Refactorización de Código

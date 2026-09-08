@@ -55,6 +55,15 @@ import { isSmtpConfigured, isBrevoConfigured, isEmailConfigured, sendReportEmail
 import { getFullDNSDiagnostics, provisionDomainOnVercel, sanitizeDomain } from "./server/dnsIntegrationService.js";
 import { isEncryptionConfigured } from "./server/encryptionService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
+import {
+  runAuditWorkflow,
+  sendWorkflowEmail,
+  runDomainOnboardingWorkflow,
+  runTeamJoinWorkflow,
+  runTeamMembershipDecisionWorkflow,
+  runAddExternalAllyWorkflow,
+  runEngagementWorkflow
+} from "./server/workflows/index.js";
 
 // Cargar variables de entorno desde archivo .env
 dotenv.config();
@@ -663,7 +672,12 @@ app.post("/api/teams", async (req: Request, res: Response) => {
  */
 app.post("/api/teams/:id/members/:memberId/approve", async (req: Request, res: Response) => {
   try {
-    const result = await approveTeamMember(req.params.id, req.params.memberId);
+    const result = await runTeamMembershipDecisionWorkflow({
+      action: "approve",
+      teamId: req.params.id,
+      memberId: req.params.memberId,
+      notifyMember: true
+    });
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -679,7 +693,11 @@ app.post("/api/teams/:id/members/:memberId/approve", async (req: Request, res: R
  */
 app.post("/api/teams/:id/members/:memberId/reject", async (req: Request, res: Response) => {
   try {
-    const result = await rejectTeamMember(req.params.id, req.params.memberId);
+    const result = await runTeamMembershipDecisionWorkflow({
+      action: "reject",
+      teamId: req.params.id,
+      memberId: req.params.memberId
+    });
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -699,7 +717,7 @@ app.post("/api/teams/:id/allies/:allyId/members", async (req: Request, res: Resp
     if (!email) {
       return res.status(400).json({ success: false, message: "El correo es obligatorio" });
     }
-    const result = await addExternalAllyMember(req.params.id, req.params.allyId, { name: name || "", email });
+    const result = await runAddExternalAllyWorkflow(req.params.id, req.params.allyId, { name: name || "", email });
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -774,7 +792,13 @@ app.get("/api/teams/invite/:token", async (req: Request, res: Response) => {
 app.post("/api/teams/invite/join", async (req: Request, res: Response) => {
   try {
     const { token, name, email, avatar } = req.body;
-    const result = await joinTeamViaInviteToken(token, name, email, avatar);
+    const result = await runTeamJoinWorkflow({
+      token,
+      name,
+      email,
+      avatar,
+      notifyOwner: true
+    });
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -983,75 +1007,23 @@ app.post("/api/reports/:id/open", async (req: Request, res: Response) => {
  */
 app.post("/api/reports/:id/interaction", async (req: Request, res: Response) => {
   try {
-    const report = await getDbReportById(req.params.id);
-    if (!report) {
-      return res.status(404).json({ error: "Reporte no encontrado" });
-    }
-
     const { visitorId, type, details } = req.body;
+    const result = await runEngagementWorkflow({
+      reportId: req.params.id,
+      visitorId,
+      type,
+      details
+    });
 
-    // 1. Rastreo de usuario único
-    if (visitorId) {
-      if (!report.uniqueVisitorIds) {
-        report.uniqueVisitorIds = [];
-      }
-      if (!report.uniqueVisitorIds.includes(visitorId)) {
-        report.uniqueVisitorIds.push(visitorId);
-      }
-      report.uniqueVisitors = report.uniqueVisitorIds.length;
-    }
-
-    // Inicializar estructura de interacciones
-    if (!report.interactions) {
-      report.interactions = {
-        slideViews: {},
-        whatsappClicks: 0,
-        toolClicks: 0,
-        calculatorInteractions: 0,
-        timeSpentSeconds: 0,
-      };
-    }
-
-    if (!report.interactions.slideViews) {
-      report.interactions.slideViews = {};
-    }
-
-    // 2. Procesar tipo específico de evento
-    if (type === "slide_view") {
-      const slide = details?.slideName || "unknown";
-      report.interactions.slideViews[slide] = (report.interactions.slideViews[slide] || 0) + 1;
-    } else if (type === "whatsapp_click") {
-      report.interactions.whatsappClicks = (report.interactions.whatsappClicks || 0) + 1;
-    } else if (type === "tool_click") {
-      report.interactions.toolClicks = (report.interactions.toolClicks || 0) + 1;
-    } else if (type === "calculator_change") {
-      report.interactions.calculatorInteractions = (report.interactions.calculatorInteractions || 0) + 1;
-      if (details) {
-        if (typeof details.gmv === "number") {
-          report.gmv = details.gmv;
-        }
-        if (typeof details.shopifyPlan === "string") {
-          report.shopifyPlan = details.shopifyPlan as any;
-        }
-        if (typeof details.appsCostUSD === "number") {
-          (report as any).shopifyAppsCostUSD = details.appsCostUSD;
-        }
-        if (typeof details.appsCostMXN === "number") {
-          (report as any).shopifyAppsCostMXN = details.appsCostMXN;
-        }
-      }
-    } else if (type === "heartbeat") {
-      const seconds = details?.seconds || 5;
-      report.interactions.timeSpentSeconds = (report.interactions.timeSpentSeconds || 0) + seconds;
-    }
-
-    const saved = await saveDbReport(report);
-    res.json({ 
-      success: true, 
-      uniqueVisitors: saved.uniqueVisitors || 0, 
-      interactions: saved.interactions 
+    res.json({
+      success: true,
+      uniqueVisitors: result.uniqueVisitors,
+      interactions: result.interactions
     });
   } catch (error: any) {
+    if (error.message?.includes("no encontrado")) {
+      return res.status(404).json({ error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
