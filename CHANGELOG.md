@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.85 (Frontend) / v2.5.75 (Backend)] - 2026-09-08
+
+### ♻️ Refactorización de Código
+- **db:** remove local json file storage fallbacks and enforce 100% prisma postgresql persistence (`0d25ac4`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- **deps:** upgrade prisma orm to version 8 (`f1a3450`)
+
 ## [v2.5.85 (Frontend) / v2.5.74 (Backend)] - 2026-09-08
 
 ### 🐛 Corregido & Bug Fixes
