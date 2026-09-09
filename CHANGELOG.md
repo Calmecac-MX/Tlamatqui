@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.97 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
+
+### 🚀 Features & Nuevas Funcionalidades
+- implement Gravatar integration and update database status dashboard component with version bump to v2.5.96 (`c32f43a`)
+
 ## [v2.5.96 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
 
 ### 🚀 Features & Nuevas Funcionalidades

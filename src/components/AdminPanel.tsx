@@ -116,6 +116,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   // Teams States
   const [teams, setTeams] = useState<Team[]>([]);
+  const [isTeamsLoading, setIsTeamsLoading] = useState<boolean>(true);
   const [selectedTeamId, setSelectedTeamId] = useState<string>("team-default");
   const [isTeamSelectorOpen, setIsTeamSelectorOpen] = useState<boolean>(false);
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState<boolean>(false);
@@ -143,19 +144,27 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   }, []);
 
   const fetchTeams = async () => {
+    setIsTeamsLoading(true);
     try {
       const res = await fetch("/api/teams");
       if (res.ok) {
         const data = await res.json();
-        setTeams(data);
-        if (data.length > 0 && !data.some((t: any) => t.id === selectedTeamId)) {
-          setSelectedTeamId(data[0].id);
-        } else if (data.length === 0) {
+        const teamsList = Array.isArray(data) ? data : [];
+        setTeams(teamsList);
+        if (teamsList.length > 0) {
+          if (!teamsList.some((t: any) => t.id === selectedTeamId)) {
+            setSelectedTeamId(teamsList[0].id);
+          }
+          setIsOnboardingModalOpen(false);
+        } else {
+          // Solo cuando se confirma que no existe ningún equipo
           setIsOnboardingModalOpen(true);
         }
       }
     } catch (e) {
       console.error("Error fetching teams", e);
+    } finally {
+      setIsTeamsLoading(false);
     }
   };
 
@@ -1386,7 +1395,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       <Users className="w-3.5 h-3.5 text-accent-theme" />
                     )}
                   </div>
-                  <span className="text-xs font-bold text-white truncate">{activeTeam?.name || "Cargando..."}</span>
+                  <span className="text-xs font-bold text-white truncate">{isTeamsLoading ? "Cargando..." : (activeTeam?.name || "Sin equipo")}</span>
                 </div>
                 <ChevronDown className={`w-3.5 h-3.5 text-text-dim-theme group-hover:text-white transition-transform shrink-0 ${isTeamSelectorOpen ? "rotate-180" : ""}`} />
               </button>
@@ -4838,10 +4847,10 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         isDarkMode={isDarkMode}
       />
 
-      {/* Modal de Onboarding y Creación Guiada de Espacio de Trabajo */}
+      {/* Modal de Onboarding y Creación Guiada de Espacio de Trabajo (Solo cuando no exista ningún equipo o al crearlo manualmente) */}
       <TeamOnboardingModal
-        isOpen={isOnboardingModalOpen || (!loading && teams.length === 0)}
-        isFirstTeam={!loading && teams.length === 0}
+        isOpen={!isTeamsLoading && (teams.length === 0 || isOnboardingModalOpen)}
+        isFirstTeam={teams.length === 0}
         onClose={() => setIsOnboardingModalOpen(false)}
         onSaveTeam={handleSaveOnboardingTeam}
         currentUserEmail={userEmail || authUser?.email || "cesar.ayar19@gmail.com"}
