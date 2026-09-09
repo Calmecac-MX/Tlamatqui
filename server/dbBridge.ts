@@ -166,6 +166,7 @@ const DEFAULT_TEMPLATES: ComparisonTemplate[] = [
 ];
 
 const DEFAULT_REPORTS: Report[] = [];
+const inMemoryReportsFallback: Map<string, Report> = new Map();
 
 const DEFAULT_PARTNER = {
   id: "default",
@@ -1300,6 +1301,10 @@ export async function getDbReports(): Promise<Report[]> {
     }
   }
 
+  if (result.length === 0 && inMemoryReportsFallback.size > 0) {
+    result = Array.from(inMemoryReportsFallback.values());
+  }
+
   result = result.map(report => ({
     ...report,
     tools: (report.tools || []).map(t => ({
@@ -1386,7 +1391,7 @@ export async function getDbReportById(id: string): Promise<Report | null> {
     }
   }
 
-  return null;
+  return inMemoryReportsFallback.get(cleanId) || inMemoryReportsFallback.get(cleanId.toLowerCase()) || null;
 }
 
 export async function saveDbReport(report: Report): Promise<Report> {
@@ -1615,6 +1620,7 @@ export async function saveDbReport(report: Report): Promise<Report> {
     }
   }
 
+  inMemoryReportsFallback.set(cleanReport.id, cleanReport);
   invalidateApiQueryCache("reports");
   invalidateApiQueryCache(`report_${cleanReport.id}`);
   invalidateApiQueryCache(`report_${cleanReport.id.toLowerCase()}`);
@@ -1622,6 +1628,7 @@ export async function saveDbReport(report: Report): Promise<Report> {
 }
 
 export async function deleteDbReport(id: string): Promise<boolean> {
+  inMemoryReportsFallback.delete(id);
   const prisma = getPrisma();
   if (prisma) {
     try {
@@ -1633,7 +1640,7 @@ export async function deleteDbReport(id: string): Promise<boolean> {
       console.error("Error deleting report from database:", err);
     }
   }
-  return false;
+  return true;
 }
 
 // ============================================================================

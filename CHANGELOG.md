@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.92 (Frontend) / v2.5.84 (Backend)] - 2026-09-09
+
+### 🚀 Features & Nuevas Funcionalidades
+- **cdn:** implement Bunny CDN Advanced Token Authentication with HMAC-SHA256 (`47dc82f`)
+
 ## [v2.5.92 (Frontend) / v2.5.83 (Backend)] - 2026-09-08
 
 ### 🚀 Features & Nuevas Funcionalidades
