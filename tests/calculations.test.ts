@@ -51,7 +51,10 @@ test("calculateAppCostsMXN - Conversión y cálculo de costos de aplicaciones", 
       name: "Klaviyo",
       costType: "exact",
       costExact: 100,
+      costMin: 0,
+      costMax: 0,
       currency: "USD",
+      semaphore: "green",
       category: "Marketing"
     }
   ];
@@ -64,7 +67,10 @@ test("calculateAppCostsMXN - Conversión y cálculo de costos de aplicaciones", 
       name: "Facturación Local",
       costType: "exact",
       costExact: 500,
+      costMin: 0,
+      costMax: 0,
       currency: "MXN",
+      semaphore: "green",
       category: "Facturación"
     }
   ];
@@ -77,7 +83,10 @@ test("calculateAppCostsMXN - Conversión y cálculo de costos de aplicaciones", 
       name: "Judge.me",
       costType: "exact",
       costExact: "29.99" as any,
+      costMin: 0,
+      costMax: 0,
       currency: "USD",
+      semaphore: "green",
       category: "Reviews"
     }
   ];
@@ -89,9 +98,11 @@ test("calculateAppCostsMXN - Conversión y cálculo de costos de aplicaciones", 
       id: "t4",
       name: "Gorgias",
       costType: "range",
+      costExact: 0,
       costMin: 50,
       costMax: 150,
       currency: "USD",
+      semaphore: "yellow",
       category: "Atención al Cliente"
     }
   ];
@@ -105,7 +116,10 @@ test("calculateAppCostsMXN - Conversión y cálculo de costos de aplicaciones", 
       name: "App 1",
       costType: "exact",
       costExact: 50,
+      costMin: 0,
+      costMax: 0,
       currency: "USD",
+      semaphore: "green",
       category: "Apps"
     }, // 50 * 20 = 1000 MXN
     {
@@ -113,16 +127,21 @@ test("calculateAppCostsMXN - Conversión y cálculo de costos de aplicaciones", 
       name: "App 2",
       costType: "exact",
       costExact: 300,
+      costMin: 0,
+      costMax: 0,
       currency: "MXN",
+      semaphore: "green",
       category: "Apps"
     }, // 300 MXN
     {
       id: "t3",
       name: "App 3",
       costType: "range",
+      costExact: 0,
       costMin: 20,
       costMax: 40,
       currency: "USD",
+      semaphore: "yellow",
       category: "Apps"
     } // (20+40)/2 = 30 * 20 = 600 MXN
   ];
@@ -156,7 +175,10 @@ test("calculateSavingsProjection - Proyección integral de fugas y ahorro Tienda
       name: "App A",
       costType: "exact",
       costExact: 100, // 100 * 20 = 2000 MXN
+      costMin: 0,
+      costMax: 0,
       currency: "USD",
+      semaphore: "green",
       category: "Test"
     },
     {
@@ -164,7 +186,10 @@ test("calculateSavingsProjection - Proyección integral de fugas y ahorro Tienda
       name: "App B",
       costType: "exact",
       costExact: 150, // 150 * 20 = 3000 MXN
+      costMin: 0,
+      costMax: 0,
       currency: "USD",
+      semaphore: "green",
       category: "Test"
     }
   ];
