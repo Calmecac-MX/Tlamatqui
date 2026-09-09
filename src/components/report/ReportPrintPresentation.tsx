@@ -87,11 +87,13 @@ export const ReportPrintPresentation: React.FC<ReportPrintPresentationProps> = (
             {report.logo ? (
               <div className="relative group">
                 <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 opacity-40 blur"></div>
-                <img
-                  src={report.logo}
-                  alt={report.name}
-                  className="relative w-16 h-16 rounded-full object-cover border-2 border-white/20 shadow-2xl bg-[#161618]"
-                />
+                <div className="relative w-16 h-16 rounded-full border-2 border-white/20 shadow-2xl bg-[#161618] flex items-center justify-center p-2 overflow-hidden">
+                  <img
+                    src={report.logo}
+                    alt={report.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               </div>
             ) : (
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center font-bold text-2xl text-indigo-400 shadow-xl">

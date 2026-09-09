@@ -861,9 +861,11 @@ export default function TeamDashboard({
                         <div key={report.id} className="pt-3 first:pt-0 flex items-center justify-between gap-4">
                           <div className="flex items-center gap-3 min-w-0">
                             {report.logo ? (
-                              <img src={report.logo} alt={report.name} className="w-9 h-9 rounded-lg object-cover border border-border-theme" />
+                              <div className="w-9 h-9 rounded-lg border border-border-theme bg-bg-theme flex items-center justify-center overflow-hidden p-1 shrink-0">
+                                <img src={report.logo} alt={report.name} className="w-full h-full object-contain" />
+                              </div>
                             ) : (
-                              <div className="w-9 h-9 rounded-lg bg-accent-theme/10 flex items-center justify-center font-bold text-accent-theme text-xs border border-accent-theme/20">
+                              <div className="w-9 h-9 rounded-lg bg-accent-theme/10 flex items-center justify-center font-bold text-accent-theme text-xs border border-accent-theme/20 shrink-0">
                                 {report.name.charAt(0).toUpperCase()}
                               </div>
                             )}

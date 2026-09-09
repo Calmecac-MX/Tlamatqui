@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.95 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
+
+### 🚀 Features & Nuevas Funcionalidades
+- implement Gravatar integration for real-time team member avatar detection and fallback management (`b0740cd`)
+
 ## [v2.5.94 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
 
 ### 🚀 Features & Nuevas Funcionalidades

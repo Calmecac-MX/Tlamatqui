@@ -425,9 +425,11 @@ export default function GlobalDashboard({
                       {/* Name / Logo */}
                       <td className="py-4 px-4 font-bold text-white flex items-center gap-2.5">
                         {report.logo ? (
-                          <img src={report.logo} alt={report.name} className="w-6 h-6 object-cover rounded border border-border-theme bg-bg-theme shrink-0" />
+                          <div className="w-7 h-7 rounded border border-border-theme bg-bg-theme flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                            <img src={report.logo} alt={report.name} className="w-full h-full object-contain" />
+                          </div>
                         ) : (
-                          <div className="w-6 h-6 rounded bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center font-bold text-accent-theme text-[10px] shrink-0">
+                          <div className="w-7 h-7 rounded bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center font-bold text-accent-theme text-[10px] shrink-0">
                             {report.name.charAt(0).toUpperCase()}
                           </div>
                         )}

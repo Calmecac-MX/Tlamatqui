@@ -2365,9 +2365,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               <div>
                                 <div className="flex items-center gap-3 mb-4">
                                   {report.logo ? (
-                                    <img src={report.logo} alt={report.name} className="w-10 h-10 object-cover rounded-lg border border-border-theme bg-bg-theme" />
+                                    <div className="w-10 h-10 rounded-lg border border-border-theme bg-bg-theme flex items-center justify-center overflow-hidden p-1 shrink-0">
+                                      <img src={report.logo} alt={report.name} className="w-full h-full object-contain" />
+                                    </div>
                                   ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center font-bold text-accent-theme text-sm">
+                                    <div className="w-10 h-10 rounded-lg bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center font-bold text-accent-theme text-sm shrink-0">
                                       {report.name.charAt(0).toUpperCase()}
                                     </div>
                                   )}
@@ -2493,7 +2495,9 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                   <td className="py-4 px-4">
                                     <div className="flex items-center gap-3">
                                       {report.logo ? (
-                                        <img src={report.logo} alt={report.name} className="w-9 h-9 object-cover rounded-lg border border-border-theme bg-bg-theme shrink-0" />
+                                        <div className="w-9 h-9 rounded-lg border border-border-theme bg-bg-theme flex items-center justify-center overflow-hidden p-1 shrink-0">
+                                          <img src={report.logo} alt={report.name} className="w-full h-full object-contain" />
+                                        </div>
                                       ) : (
                                         <div className="w-9 h-9 rounded-lg bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center font-bold text-accent-theme text-sm shrink-0">
                                           {report.name.charAt(0).toUpperCase()}
@@ -4232,12 +4236,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                 <td className="p-3 font-semibold text-slate-200">
                                   <div className="flex items-center gap-2.5">
                                     {t.logo ? (
-                                      <img 
-                                        src={t.logo} 
-                                        alt={t.name} 
-                                        className="w-7 h-7 rounded object-cover bg-surface-theme border border-border-theme shrink-0" 
-                                        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                                      />
+                                      <div className="w-7 h-7 rounded bg-surface-theme border border-border-theme flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                                        <img 
+                                          src={t.logo} 
+                                          alt={t.name} 
+                                          className="w-full h-full object-contain" 
+                                          onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                                        />
+                                      </div>
                                     ) : (
                                       <div className="w-7 h-7 rounded bg-surface-theme border border-border-theme flex items-center justify-center font-bold text-[10px] text-text-dim-theme shrink-0">
                                         {t.name.charAt(0).toUpperCase()}
