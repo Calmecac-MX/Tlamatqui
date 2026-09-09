@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Team, TeamMember, Report, Ally } from "../types";
 import { useAlertPopup } from "../context/AlertPopupContext";
+import { lookupGravatar, getInitialsAvatarUrl } from "../lib/gravatar";
 
 /**
  * Propiedades del componente TeamDashboard.
@@ -67,6 +68,38 @@ export default function TeamDashboard({
   const [newMemberRole, setNewMemberRole] = useState<"Administrador" | "Agente" | "Visor">("Visor");
   const [newMemberAvatar, setNewMemberAvatar] = useState("");
   const [memberError, setMemberError] = useState<string | null>(null);
+  const [isCheckingMemberGravatar, setIsCheckingMemberGravatar] = useState(false);
+  const [hasMemberGravatar, setHasMemberGravatar] = useState(false);
+
+  // Auto-detección de Gravatar al escribir el correo electrónico del nuevo miembro
+  useEffect(() => {
+    const cleanEmail = newMemberEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@") || cleanEmail.length < 5) {
+      setHasMemberGravatar(false);
+      setNewMemberAvatar("");
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsCheckingMemberGravatar(true);
+      try {
+        const result = await lookupGravatar(cleanEmail);
+        if (result.hasGravatar && result.gravatarUrl) {
+          setNewMemberAvatar(result.gravatarUrl);
+          setHasMemberGravatar(true);
+        } else {
+          setHasMemberGravatar(false);
+          setNewMemberAvatar(getInitialsAvatarUrl(newMemberName, cleanEmail));
+        }
+      } catch (e) {
+        setHasMemberGravatar(false);
+      } finally {
+        setIsCheckingMemberGravatar(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [newMemberEmail, newMemberName]);
 
   // Config Form State
   const [teamName, setTeamName] = useState("");
@@ -432,10 +465,10 @@ export default function TeamDashboard({
 
     const newMember: TeamMember = {
       id: "member-" + Math.random().toString(36).substring(2, 11),
-      name: newMemberName,
-      email: newMemberEmail,
+      name: newMemberName.trim(),
+      email: newMemberEmail.trim().toLowerCase(),
       role: newMemberRole,
-      avatar: newMemberAvatar || `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 900000)}?auto=format&fit=crop&w=80&q=80`
+      avatar: newMemberAvatar || getInitialsAvatarUrl(newMemberName, newMemberEmail)
     };
 
     const updatedTeam = {
@@ -947,8 +980,30 @@ export default function TeamDashboard({
                   Agregar Nuevo Miembro al Equipo
                 </h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  <div className="md:col-span-1 flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-accent-theme/40 bg-surface-theme relative flex items-center justify-center">
+                      {newMemberAvatar ? (
+                        <img 
+                          src={newMemberAvatar} 
+                          alt="Avatar Preview" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <span className="text-xs font-bold text-accent-theme">
+                          {newMemberName ? newMemberName.substring(0, 2).toUpperCase() : "?"}
+                        </span>
+                      )}
+                      {isCheckingMemberGravatar && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <RefreshCw className="w-3.5 h-3.5 text-accent-theme animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-4">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1">Nombre Completo</label>
                     <input 
                       type="text"
@@ -960,8 +1015,15 @@ export default function TeamDashboard({
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1">Correo Electrónico</label>
+                  <div className="md:col-span-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme">Correo Electrónico</label>
+                      {hasMemberGravatar && (
+                        <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                          ✓ Gravatar Detectado
+                        </span>
+                      )}
+                    </div>
                     <input 
                       type="email"
                       required
@@ -972,7 +1034,7 @@ export default function TeamDashboard({
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-3">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-text-dim-theme mb-1">Rol de Permiso</label>
                     <select
                       value={newMemberRole}
@@ -980,11 +1042,11 @@ export default function TeamDashboard({
                       className="w-full text-xs px-3 py-2 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme text-white cursor-pointer"
                     >
                       {currentUserRole === "Superusuario" && (
-                        <option value="Superusuario">Superusuario (Control Total del Sistema)</option>
+                        <option value="Superusuario">Superusuario (Control Total)</option>
                       )}
-                      <option value="Administrador">Administrador (Control total del equipo)</option>
-                      <option value="Agente">Agente (Gestiona sus diagnósticos)</option>
-                      <option value="Visor">Visor (Sólo lectura)</option>
+                      <option value="Administrador">Administrador</option>
+                      <option value="Agente">Agente</option>
+                      <option value="Visor">Visor</option>
                     </select>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.93 (Frontend) / v2.5.86 (Backend)  
+> **Versión:** v2.5.94 (Frontend) / v2.5.91 (Backend)  
 > **Archivo de Configuración Principal:** [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md)
 
 Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para garantizar la compatibilidad completa con Antigravity, Gemini y otros agentes de IA.
@@ -10,6 +10,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 ## 1. Contexto Rápido del Repositorio
 - **Nombre:** Tlamatqui
 - **Arquitectura:** Desacoplada (Backend API REST en Express/TypeScript en puerto `4000`, Frontend React 19/Vite 6/Tailwind CSS v4 en puerto `3000`).
+- **Servicio Gravatar:** Resolución automática y en tiempo real de fotos de perfil (`server/gravatarService.ts`, `src/lib/gravatar.ts`) en Auth Context, Registro/Sincronización de Usuarios, Panel de Administración e Invitación de Miembros del Equipo.
 - **Sistema Global de Popups & Avisos:** `AlertPopupProvider`, `AlertPopupModal` y `AlertToastContainer` para unificar avisos, errores, confirmaciones y toasts en popups modales reactivos.
 - **Arquitectura de Workflows (`server/workflows/`):** Patrón *Thin Controller* con pipelines modulares para `auditWorkflow`, `emailWorkflow`, `domainWorkflow`, `teamWorkflow` y `engagementWorkflow`.
 - **Base de Datos:** Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`).

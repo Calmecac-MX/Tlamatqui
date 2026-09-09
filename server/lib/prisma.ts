@@ -1,10 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import pkgPrismaClient from "@prisma/client";
-const { PrismaClient } = (pkgPrismaClient as any)?.PrismaClient ? pkgPrismaClient : { PrismaClient: (pkgPrismaClient as any) };
 type PrismaClient = any;
-import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
 let prisma: PrismaClient | null = null;
@@ -127,9 +124,23 @@ export function getPrisma(): PrismaClient | null {
 
   if (!prisma) {
     try {
+      let PrismaClientPkg: any = null;
+      let PrismaPgPkg: any = null;
+      try {
+        PrismaClientPkg = require("@prisma/client");
+        PrismaPgPkg = require("@prisma/adapter-pg");
+      } catch (e) {
+        // Fallback si no está generado el cliente en el entorno
+      }
+      const PrismaClientClass = PrismaClientPkg?.PrismaClient || PrismaClientPkg;
+      const PrismaPgClass = PrismaPgPkg?.PrismaPg || PrismaPgPkg;
+      if (!PrismaClientClass) {
+        return null;
+      }
+      
       const normalizedUrl = normalizeDatabaseUrl(dbUrl);
       if (normalizedUrl.startsWith("prisma://") || normalizedUrl.startsWith("prisma+postgres://")) {
-        prisma = new PrismaClient({ accelerateUrl: normalizedUrl });
+        prisma = new PrismaClientClass({ accelerateUrl: normalizedUrl });
       } else {
         const isSslNeeded = normalizedUrl.includes("sslmode=require") || 
                             normalizedUrl.includes("supabase.co") || 
@@ -147,8 +158,8 @@ export function getPrisma(): PrismaClient | null {
           idleTimeoutMillis: 30000
         });
 
-        const adapter = new PrismaPg(pool);
-        prisma = new PrismaClient({ adapter });
+        const adapter = PrismaPgClass ? new PrismaPgClass(pool) : undefined;
+        prisma = new PrismaClientClass(adapter ? { adapter } : { datasourceUrl: normalizedUrl });
       }
 
       // Disparar auto-reparación en segundo plano al conectar

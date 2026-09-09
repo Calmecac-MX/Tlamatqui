@@ -27,6 +27,7 @@ import { ShareReportModal } from "./ShareReportModal";
 import { CreateDiagnosticModal } from "./CreateDiagnosticModal";
 import TeamOnboardingModal from "./TeamOnboardingModal";
 import { useAlertPopup } from "../context/AlertPopupContext";
+import { lookupGravatar, isDefaultPlaceholderAvatar } from "../lib/gravatar";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -296,6 +297,39 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
     role: (authUser?.role === "Superusuario" || (typeof window !== "undefined" && localStorage.getItem("tlamatqui_persisted_role") === "Superusuario")) ? "Superusuario" : (authUser?.role || "Administrador"),
     avatar: authUser?.picture || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
   });
+
+  const [isCheckingGravatar, setIsCheckingGravatar] = useState<boolean>(false);
+
+  const handleFetchGravatar = async (targetEmail?: string) => {
+    const emailToLookup = targetEmail || userEmail;
+    if (!emailToLookup || !emailToLookup.includes("@")) {
+      setAvatarError("Ingresa un correo electrónico válido para consultar Gravatar.");
+      return;
+    }
+    setIsCheckingGravatar(true);
+    setAvatarError(null);
+    try {
+      const result = await lookupGravatar(emailToLookup);
+      if (result.hasGravatar && result.gravatarUrl) {
+        setUserAvatar(result.gravatarUrl);
+        showAlert({
+          type: "success",
+          title: "¡Gravatar Recuperado!",
+          message: `Se recuperó exitosamente la foto de perfil vinculada al correo ${emailToLookup}.`
+        });
+      } else {
+        showAlert({
+          type: "info",
+          title: "Sin foto en Gravatar",
+          message: `No se encontró una foto de perfil personalizada en Gravatar para ${emailToLookup}. Puedes subir tu propia imagen.`
+        });
+      }
+    } catch (err: any) {
+      setAvatarError("No se pudo consultar el servicio de Gravatar.");
+    } finally {
+      setIsCheckingGravatar(false);
+    }
+  };
 
   // Sincronizar dinámicamente los datos del perfil cuando el usuario autenticado en Auth0 cambie (PRESERVANDO ROL SUPERUSUARIO)
   useEffect(() => {
@@ -2766,6 +2800,29 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                   Formatos soportados: JPG, PNG, GIF, WEBP (Máx. 2MB)
                                 </p>
                               </div>
+                            </div>
+
+                            {/* Gravatar Quick Action */}
+                            <div className="mt-3 flex items-center justify-between p-2.5 rounded-xl border border-border-theme/60 bg-bg-theme/40">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-xs">
+                                  G
+                                </div>
+                                <div className="text-left">
+                                  <p className="text-[11px] font-bold text-white leading-tight">Gravatar Global</p>
+                                  <p className="text-[9px] text-text-dim-theme">Sincroniza la foto vinculada a {userEmail || "tu correo"}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                id="gravatar-sync-btn"
+                                onClick={() => handleFetchGravatar()}
+                                disabled={isCheckingGravatar || !userEmail}
+                                className="px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${isCheckingGravatar ? "animate-spin text-blue-400" : ""}`} />
+                                <span>{isCheckingGravatar ? "Consultando..." : "Recuperar de Gravatar"}</span>
+                              </button>
                             </div>
                           </div>
                         </div>

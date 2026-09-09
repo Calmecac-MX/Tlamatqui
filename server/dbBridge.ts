@@ -17,6 +17,7 @@ import {
 } from "./types.js";
 import { resolveTechnologyLogo } from "./scrapper.js";
 import { encryptData, decryptData, encryptText, decryptText } from "./encryptionService.js";
+import { resolveUserAvatar } from "./gravatarService.js";
 
 // Caché ultra-rápido en RAM con TTL para acelerar lecturas frecuentes y evitar sobrecarga en la base de datos
 const apiQueryCache = new Map<string, { data: any; expiresAt: number }>();
@@ -1052,12 +1053,14 @@ export async function joinTeamViaInviteToken(
     };
   }
 
+  const memberAvatar = await resolveUserAvatar(cleanEmail, avatar, name);
+
   const newMember = {
     id: `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     name: name.trim() || cleanEmail.split("@")[0],
     email: cleanEmail,
     role: team.inviteRole || "Visor",
-    avatar: avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80`,
+    avatar: memberAvatar,
     status: "pending" as const,
     isExternal: false,
     requestedAt: new Date().toISOString()
@@ -2123,6 +2126,8 @@ export async function registerOrSyncUser(userData: {
   const encryptedAccessToken = userData.accessToken ? encryptText(userData.accessToken) : undefined;
   const encryptedIdToken = userData.idToken ? encryptText(userData.idToken) : undefined;
 
+  const resolvedAvatar = await resolveUserAvatar(cleanEmail, userData.avatar, userData.name);
+
   const prisma = getPrisma();
   if (prisma) {
     try {
@@ -2143,7 +2148,9 @@ export async function registerOrSyncUser(userData: {
           where: { id: existingUser.id },
           data: {
             name: userData.name || existingUser.name,
-            avatar: userData.avatar || existingUser.avatar,
+            avatar: (userData.avatar && !userData.avatar.includes("photo-1535713875002-d1d0cf377fde")) 
+              ? userData.avatar 
+              : (existingUser.avatar && !existingUser.avatar.includes("photo-1535713875002-d1d0cf377fde") ? existingUser.avatar : resolvedAvatar),
             sub: userData.sub || existingUser.sub,
             role: targetRole,
             accessToken: encryptedAccessToken || existingUser.accessToken,
@@ -2183,7 +2190,7 @@ export async function registerOrSyncUser(userData: {
           email: cleanEmail,
           name: userData.name || cleanEmail.split("@")[0] || "Usuario",
           role: assignedRole,
-          avatar: userData.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+          avatar: resolvedAvatar,
           sub: userData.sub || null,
           accessToken: encryptedAccessToken || null,
           idToken: encryptedIdToken || null,
@@ -2216,7 +2223,7 @@ export async function registerOrSyncUser(userData: {
     email: cleanEmail,
     name: userData.name || "Usuario",
     role: isSuperAdminEmail ? "Superusuario" : (userData.role || "Visor"),
-    avatar: userData.avatar,
+    avatar: resolvedAvatar,
     sub: userData.sub,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

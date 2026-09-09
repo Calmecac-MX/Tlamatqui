@@ -72,6 +72,7 @@ import {
   isBunnyTokenAuthEnabled
 } from "./server/storageService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
+import { checkGravatarExists, getGravatarUrl, resolveUserAvatar, computeGravatarHash } from "./server/gravatarService.js";
 import {
   runAuditWorkflow,
   sendWorkflowEmail,
@@ -455,6 +456,42 @@ app.post("/api/users/sync", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error interno al sincronizar el usuario." });
   }
 });
+
+/**
+ * @route GET /api/gravatar/lookup
+ * @route GET /api/users/gravatar
+ * @description Comprueba y obtiene la foto de perfil en Gravatar para un correo electrónico dado.
+ */
+const handleGravatarLookup = async (req: Request, res: Response) => {
+  try {
+    const email = (req.query.email as string || "").trim();
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({
+        success: false,
+        error: "Se requiere un parámetro de correo electrónico válido (?email=...)."
+      });
+    }
+
+    const result = await checkGravatarExists(email);
+    res.json({
+      success: true,
+      email: result.email,
+      hasGravatar: result.exists,
+      gravatarUrl: result.gravatarUrl,
+      hash: computeGravatarHash(result.email)
+    });
+  } catch (err: any) {
+    console.error("Error al consultar Gravatar:", err);
+    res.status(500).json({
+      success: false,
+      error: "Error interno al consultar el servicio de Gravatar.",
+      details: err.message
+    });
+  }
+};
+
+app.get("/api/gravatar/lookup", handleGravatarLookup);
+app.get("/api/users/gravatar", handleGravatarLookup);
 
 /**
  * @route GET /api/users

@@ -10,6 +10,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 
 import { showAuth0Lock, hideAuth0Lock, LockOptions } from "./auth0LockService";
+import { lookupGravatar, isDefaultPlaceholderAvatar, getInitialsAvatarUrl, DEFAULT_AVATAR_PLACEHOLDER } from "./gravatar";
 
 export interface AuthUser {
   name: string;
@@ -143,6 +144,17 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
       credentials: "include",
       body: JSON.stringify(userToSave)
     }).catch((err) => console.warn("No se pudo establecer cookie de sesión demo:", err));
+
+    // Si no tiene foto personalizada explícita, comprobar si su correo existe en Gravatar
+    if (userToSave.email && isDefaultPlaceholderAvatar(userToSave.picture)) {
+      lookupGravatar(userToSave.email).then((grav) => {
+        if (grav.hasGravatar && grav.gravatarUrl) {
+          const userWithGravatar = { ...userToSave, picture: grav.gravatarUrl };
+          setDemoUser(userWithGravatar);
+          localStorage.setItem("tn_demo_user", JSON.stringify(userWithGravatar));
+        }
+      }).catch(() => {});
+    }
   };
 
   const demoLogout = () => {

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.94 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
+
+### 🚀 Features & Nuevas Funcionalidades
+- implement AlertPopupContext to replace native browser alerts with custom modal notifications and toasts (`910cf44`)
+
 ## [v2.5.93 (Frontend) / v2.5.90 (Backend)] - 2026-09-09
 
 *Actualización de estabilidad, sincronización de versiones y optimización de componentes.*

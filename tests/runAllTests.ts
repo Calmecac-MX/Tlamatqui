@@ -10,3 +10,4 @@ import "./formatters.test.ts";
 import "./reportSchema.test.ts";
 import "./engagementWorkflow.test.ts";
 import "./auditWorkflow.test.ts";
+import "./gravatar.test.ts";
