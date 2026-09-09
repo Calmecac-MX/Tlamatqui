@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.98 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
+
+### 🐛 Corregido & Bug Fixes
+- **teams:** display onboarding modal exclusively when no workspace exists (`97fac01`)
+
 ## [v2.5.97 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
 
 ### 🚀 Features & Nuevas Funcionalidades

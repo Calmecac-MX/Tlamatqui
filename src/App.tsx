@@ -12,6 +12,7 @@ const ReportView = lazy(() => import("./components/ReportView"));
 import { JoinTeamModal } from "./components/JoinTeamModal";
 import { AlertPopupProvider } from "./context/AlertPopupContext";
 import { AlertPopupModal, AlertToastContainer } from "./components/AlertPopupModal";
+import { setupDynamicFavicon } from "./lib/faviconService";
 
 function MainAppRouter() {
   const [viewingReportId, setViewingReportId] = useState<string | null>(() => {
@@ -31,6 +32,12 @@ function MainAppRouter() {
     return params.get("inviteTeam");
   });
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Gestión reactiva del favicon según modo claro/oscuro del navegador
+  useEffect(() => {
+    const cleanup = setupDynamicFavicon();
+    return cleanup;
+  }, []);
 
   // Sync default document title when not viewing a report
   useEffect(() => {
