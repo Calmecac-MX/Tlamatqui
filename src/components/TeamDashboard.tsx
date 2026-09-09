@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Team, TeamMember, Report, Ally } from "../types";
+import { useAlertPopup } from "../context/AlertPopupContext";
 
 /**
  * Propiedades del componente TeamDashboard.
@@ -47,6 +48,7 @@ export default function TeamDashboard({
   subTab: controlledSubTab,
   onSubTabChange
 }: TeamDashboardProps) {
+  const { showAlert, showConfirm, toast } = useAlertPopup();
   const [localSubTab, setLocalSubTab] = useState<"dashboard" | "members" | "settings" | "partners">("dashboard");
   const subTab = controlledSubTab !== undefined ? controlledSubTab : localSubTab;
   const setSubTab = (tab: "dashboard" | "members" | "settings" | "partners") => {
@@ -199,11 +201,18 @@ export default function TeamDashboard({
     handleSavePartner(nextMembers);
   };
 
-  const handleDeletePartnerMember = (memberId: string) => {
-    if (!confirm("¿Deseas eliminar este miembro del equipo de socios?")) return;
+  const handleDeletePartnerMember = async (memberId: string) => {
+    const confirmed = await showConfirm("¿Deseas eliminar este miembro del equipo de socios?", {
+      title: "Eliminar Miembro Socio",
+      type: "danger",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) return;
     const currentMembers = partnerData?.members || [];
     const nextMembers = currentMembers.filter((m: any) => m.id !== memberId);
     handleSavePartner(nextMembers);
+    toast.success("Miembro socio eliminado.", "Equipo de Socios");
   };
 
   // Sync config inputs when active team changes
@@ -233,7 +242,10 @@ export default function TeamDashboard({
   const handleAddAlly = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAllyName.trim() || !newAllyLogo.trim() || !newAllyUrl.trim()) {
-      alert("El nombre, logo y URL del aliado son obligatorios.");
+      showAlert("El nombre, logo y URL del aliado son obligatorios.", {
+        type: "warning",
+        title: "Campos Requeridos"
+      });
       return;
     }
     const newAlly: Ally = {
@@ -513,10 +525,19 @@ export default function TeamDashboard({
   // Handle Delete Member
   const handleDeleteMember = async (memberId: string) => {
     if (activeTeam.members.length <= 1) {
-      alert("El equipo debe tener al menos un miembro.");
+      showAlert("El equipo debe tener al menos un miembro.", {
+        type: "warning",
+        title: "Operación no Permitida"
+      });
       return;
     }
-    if (!confirm("¿Estás seguro de que deseas eliminar este miembro de tu equipo?")) return;
+    const confirmed = await showConfirm("¿Estás seguro de que deseas eliminar este miembro de tu equipo?", {
+      title: "Eliminar Miembro del Equipo",
+      type: "danger",
+      confirmText: "Eliminar Miembro",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) return;
 
     const updatedTeam = {
       ...activeTeam,
@@ -525,14 +546,14 @@ export default function TeamDashboard({
 
     try {
       await onUpdateTeam(updatedTeam);
+      toast.success("Miembro eliminado del equipo con éxito.", "Miembro Removido");
     } catch (err) {
-      alert("No se pudo eliminar al miembro.");
+      showAlert("No se pudo eliminar al miembro.", { type: "error" });
     }
   };
 
   // Handle Edit Member Role
   const handleSaveMemberRole = async (memberId: string, role: "Superusuario" | "Administrador" | "Agente" | "Visor") => {
-
     const updatedTeam = {
       ...activeTeam,
       members: activeTeam.members.map(m => m.id === memberId ? { ...m, role } : m)
@@ -541,8 +562,9 @@ export default function TeamDashboard({
     try {
       await onUpdateTeam(updatedTeam);
       setIsEditingMember(null);
+      toast.success(`Rol actualizado a "${role}" correctamente.`, "Rol de Miembro");
     } catch (err) {
-      alert("No se pudo actualizar el rol del miembro.");
+      showAlert("No se pudo actualizar el rol del miembro.", { type: "error" });
     }
   };
 
@@ -559,16 +581,24 @@ export default function TeamDashboard({
         const updatedMembers = activeTeam.members.map(m => m.id === memberId ? { ...m, status: "approved" as const } : m);
         await onUpdateTeam({ ...activeTeam, members: updatedMembers });
       }
+      toast.success("Solicitud de ingreso aprobada con éxito.", "Miembro Aprobado");
     } catch (err) {
       console.error("Error al aprobar miembro:", err);
       const updatedMembers = activeTeam.members.map(m => m.id === memberId ? { ...m, status: "approved" as const } : m);
       await onUpdateTeam({ ...activeTeam, members: updatedMembers });
+      toast.success("Miembro aprobado en el equipo.", "Miembro Aprobado");
     }
   };
 
   // Handle Reject Pending Member
   const handleRejectMember = async (memberId: string) => {
-    if (!confirm("¿Deseas rechazar la solicitud de ingreso de este usuario?")) return;
+    const confirmed = await showConfirm("¿Deseas rechazar la solicitud de ingreso de este usuario?", {
+      title: "Rechazar Solicitud de Ingreso",
+      type: "warning",
+      confirmText: "Rechazar Solicitud",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/teams/${activeTeam.id}/members/${memberId}/reject`, {
         method: "POST"
@@ -580,10 +610,12 @@ export default function TeamDashboard({
         const updatedMembers = activeTeam.members.filter(m => m.id !== memberId);
         await onUpdateTeam({ ...activeTeam, members: updatedMembers });
       }
+      toast.info("Solicitud de ingreso rechazada.", "Solicitud Rechazada");
     } catch (err) {
       console.error("Error al rechazar miembro:", err);
       const updatedMembers = activeTeam.members.filter(m => m.id !== memberId);
       await onUpdateTeam({ ...activeTeam, members: updatedMembers });
+      toast.info("Solicitud removida.", "Solicitud Rechazada");
     }
   };
 
@@ -1526,16 +1558,22 @@ export default function TeamDashboard({
                         <button
                           type="button"
                           onClick={async () => {
-                            if (confirm("¿Estás seguro de regenerar el enlace? El enlace previo dejará de funcionar.")) {
+                            const confirmed = await showConfirm("¿Estás seguro de regenerar el enlace? El enlace previo dejará de funcionar inmediatamente.", {
+                              title: "Regenerar Enlace de Invitación",
+                              type: "warning",
+                              confirmText: "Regenerar Enlace",
+                              cancelText: "Cancelar"
+                            });
+                            if (confirmed) {
                               try {
                                 const res = await fetch(`/api/teams/${activeTeam.id}/reset-invite`, { method: "POST" });
                                 const data = await res.json();
                                 if (res.ok) {
                                   await onUpdateTeam(data);
-                                  alert("¡Nuevo enlace de invitación generado exitosamente!");
+                                  toast.success("¡Nuevo enlace de invitación generado exitosamente!", "Enlace Actualizado");
                                 }
                               } catch (e) {
-                                alert("Error al regenerar enlace.");
+                                showAlert("Error al regenerar enlace.", { type: "error" });
                               }
                             }
                           }}
@@ -1557,18 +1595,15 @@ export default function TeamDashboard({
                       <input 
                         type="file" 
                         id="team-image-file" 
-                        accept="image/*"
-                        onChange={e => {
-                          const files = e.target.files;
-                          if (files && files.length > 0) handleTeamImageFile(files[0]);
-                        }}
                         className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleTeamImageFile(file);
+                        }} 
                       />
-                      <UploadCloud className="w-5 h-5 text-accent-theme" />
-                      <div className="text-center">
-                        <p className="text-[11px] font-bold text-white">Haz clic o arrastra un logo aquí</p>
-                        <p className="text-[9px] text-text-dim-theme">Soporta PNG, JPG o WEBP (Máx. 2MB)</p>
-                      </div>
+                      <UploadCloud className="w-6 h-6 text-text-dim-theme" />
+                      <span className="text-xs text-text-dim-theme">Arrastra o haz clic para subir imagen</span>
                     </div>
                   </div>
 
@@ -1593,7 +1628,7 @@ export default function TeamDashboard({
 
               {/* Right Column: Danger Zone / Delete Team */}
               <div className="lg:col-span-4 space-y-6">
-                <div className="p-6 rounded-2xl border border-rose-500/15 bg-rose-500/5 backdrop-blur-md space-y-4">
+                <div className="p-6 rounded-2xl border border-red-theme/20 bg-red-theme/5 space-y-4">
                   <div className="flex items-center gap-2 mb-2 border-b border-rose-500/10 pb-2">
                     <AlertTriangle className="w-4 h-4 text-red-theme" />
                     <h3 className="font-bold text-sm text-red-theme uppercase tracking-wider">Zona de Peligro</h3>
@@ -1606,12 +1641,21 @@ export default function TeamDashboard({
                   <button
                     onClick={async () => {
                       if (activeTeam.id === "team-default") {
-                        alert("No es posible eliminar el equipo predeterminado por motivos de integridad.");
+                        showAlert("No es posible eliminar el equipo predeterminado por motivos de integridad.", {
+                          type: "warning",
+                          title: "Equipo Protegido"
+                        });
                         return;
                       }
-                      if (confirm(`¿Estás seguro de que deseas ELIMINAR permanentemente el equipo "${activeTeam.name}"?`)) {
+                      const confirmed = await showConfirm(`¿Estás seguro de que deseas ELIMINAR permanentemente el equipo "${activeTeam.name}"? Esta acción borrará todas sus asociaciones.`, {
+                        title: "Eliminar Equipo",
+                        type: "danger",
+                        confirmText: "Eliminar Definitivamente",
+                        cancelText: "Cancelar"
+                      });
+                      if (confirmed) {
                         await onDeleteTeam(activeTeam.id);
-                        alert("Equipo eliminado con éxito.");
+                        toast.success("Equipo eliminado con éxito.", "Equipo Eliminado");
                       }
                     }}
                     className="w-full bg-red-theme/15 border border-red-theme/25 hover:bg-red-theme/20 text-red-theme font-bold py-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"

@@ -4,6 +4,36 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.93 (Frontend) / v2.5.90 (Backend)] - 2026-09-09
+
+*Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
+
+## [v2.5.93 (Frontend) / v2.5.89 (Backend)] - 2026-09-09
+
+*Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
+
+## [v2.5.93 (Frontend) / v2.5.88 (Backend)] - 2026-09-09
+
+*Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
+
+## [v2.5.93 (Frontend) / v2.5.87 (Backend)] - 2026-09-09
+
+*Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
+
+## [v2.5.93 (Frontend) / v2.5.86 (Backend)] - 2026-09-09
+
+### 📌 Otros Cambios
+- Merge pull request #1 from Calmecac-MX/release-please--branches--main--components--tlamatqui (`b1ffe66`)
+- fijar GitHub Actions a SHAs completos de commit requeridos por política de seguridad (`87d1862`)
+
+## [v2.5.92 (Frontend) / v2.5.85 (Backend)] - 2026-09-09
+
+### 🐛 Corregido & Bug Fixes
+- **tests:** supply missing Tool properties in calculations test suite (`44cea6d`)
+
+### 🧪 Pruebas y Testing
+- **reports:** add comprehensive unit and integration test suite for report functions (`18a9012`)
+
 ## [v2.5.92 (Frontend) / v2.5.84 (Backend)] - 2026-09-09
 
 ### 🚀 Features & Nuevas Funcionalidades

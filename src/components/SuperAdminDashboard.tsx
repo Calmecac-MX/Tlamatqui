@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SystemHealthData, ApiKeyItem, UserAccount, Team, Report, LogoType } from "../types";
+import { useAlertPopup } from "../context/AlertPopupContext";
 
 interface SuperAdminDashboardProps {
   isDarkMode: boolean;
@@ -66,6 +67,7 @@ export default function SuperAdminDashboard({
   onVerifyDomainDNS,
   verifyingDomainConfig = false
 }: SuperAdminDashboardProps) {
+  const { showAlert, showConfirm, toast } = useAlertPopup();
   const [activeTab, setActiveTab] = useState<"health" | "branding" | "users" | "teams" | "database" | "apikeys" | "apilock" | "reset">("health");
   const [healthData, setHealthData] = useState<SystemHealthData | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
@@ -255,12 +257,13 @@ export default function SuperAdminDashboard({
           { id: Date.now().toString(), time: new Date().toLocaleTimeString(), type: "success", text: `Rol de usuario ${targetUserId} cambiado a '${newRole}'` },
           ...prev.slice(0, 15)
         ]);
+        toast.success(`Rol de usuario actualizado a "${newRole}" con éxito.`, "Rol de Usuario");
       } else {
         const err = await res.json();
-        alert(err.message || "Error al actualizar el rol del usuario.");
+        showAlert(err.message || "Error al actualizar el rol del usuario.", { type: "error" });
       }
     } catch (e) {
-      alert("No se pudo conectar con el servidor.");
+      showAlert("No se pudo conectar con el servidor.", { type: "error" });
     } finally {
       setIsUpdatingUserRole(false);
     }
@@ -290,16 +293,17 @@ export default function SuperAdminDashboard({
         setCreatedRawToken(data.rawToken);
         setApiKeys((prev) => [data.apiKey, ...prev]);
         setNewKeyName("");
+        toast.success(`Nueva API Key "${data.apiKey.name}" creada exitosamente.`, "API Key Creada");
         
         setLogs((prev) => [
           { id: Date.now().toString(), time: new Date().toLocaleTimeString(), type: "success", text: `Nueva API Key creada: '${data.apiKey.name}'` },
           ...prev.slice(0, 15)
         ]);
       } else {
-        alert("Error al generar la API Key.");
+        showAlert("Error al generar la API Key.", { type: "error" });
       }
     } catch (e) {
-      alert("No se pudo conectar con el servidor.");
+      showAlert("No se pudo conectar con el servidor.", { type: "error" });
     } finally {
       setIsCreatingKey(false);
     }
@@ -307,7 +311,13 @@ export default function SuperAdminDashboard({
 
   // Handle Revoke API Key
   const handleDeleteKey = async (id: string, name: string) => {
-    if (!confirm(`¿Estás seguro de revocar la API Key '${name}'?`)) return;
+    const confirmed = await showConfirm(`¿Estás seguro de revocar la API Key '${name}'? Las integraciones que usen este token perderán el acceso.`, {
+      title: "Revocar Llave de API",
+      type: "danger",
+      confirmText: "Revocar API Key",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/superadmin/api-keys/${id}`, {
@@ -316,13 +326,14 @@ export default function SuperAdminDashboard({
       });
       if (res.ok) {
         setApiKeys((prev) => prev.filter((k) => k.id !== id));
+        toast.success(`API Key "${name}" revocada.`, "Llave Revocada");
         setLogs((prev) => [
           { id: Date.now().toString(), time: new Date().toLocaleTimeString(), type: "warn", text: `API Key revocada: '${name}'` },
           ...prev.slice(0, 15)
         ]);
       }
     } catch (e) {
-      alert("Error al revocar la API Key.");
+      showAlert("Error al revocar la API Key.", { type: "error" });
     }
   };
 
@@ -345,7 +356,9 @@ export default function SuperAdminDashboard({
       if (res.ok) {
         const data = await res.json();
         setIsApiLocked(data.apiLocked);
-        setLockSuccessMsg(newLockState ? "🔒 API bloqueada exitosamente. Las llamadas no autorizadas devolverán HTTP 503." : "🟢 API desbloqueada. Acceso normal restablecido.");
+        const lockMsg = newLockState ? "🔒 API bloqueada exitosamente. Las llamadas no autorizadas devolverán HTTP 503." : "🟢 API desbloqueada. Acceso normal restablecido.";
+        setLockSuccessMsg(lockMsg);
+        toast.info(lockMsg, "Estado Maestro de API");
         setTimeout(() => setLockSuccessMsg(null), 5000);
 
         setLogs((prev) => [
@@ -358,10 +371,10 @@ export default function SuperAdminDashboard({
           ...prev.slice(0, 15)
         ]);
       } else {
-        alert("Error al modificar el estado de bloqueo de la API.");
+        showAlert("Error al modificar el estado de bloqueo de la API.", { type: "error" });
       }
     } catch (e) {
-      alert("No se pudo conectar con el servidor.");
+      showAlert("No se pudo conectar con el servidor.", { type: "error" });
     } finally {
       setIsTogglingLock(false);
     }
@@ -370,11 +383,20 @@ export default function SuperAdminDashboard({
   // Handle Factory Reset
   const handleExecuteFactoryReset = async () => {
     if (resetConfirmInput.trim() !== "RESTABLECER_FABRICA") {
-      alert('Debes escribir la frase exacta "RESTABLECER_FABRICA" para confirmar.');
+      showAlert('Debes escribir la frase exacta "RESTABLECER_FABRICA" para confirmar.', {
+        type: "warning",
+        title: "Confirmación Requerida"
+      });
       return;
     }
 
-    if (!confirm("🚨 ATENCIÓN: Se eliminarán de forma permanente todos los reportes, usuarios, equipos y llaves de API. ¿Deseas continuar?")) {
+    const confirmed = await showConfirm("🚨 ATENCIÓN: Se eliminarán de forma permanente todos los reportes, usuarios, equipos y llaves de API. ¿Deseas continuar?", {
+      title: "Restablecimiento de Fábrica Crítico",
+      type: "danger",
+      confirmText: "Sí, Restablecer Todo",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) {
       return;
     }
 

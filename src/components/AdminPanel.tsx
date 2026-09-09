@@ -26,6 +26,7 @@ import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
 import { CreateDiagnosticModal } from "./CreateDiagnosticModal";
 import TeamOnboardingModal from "./TeamOnboardingModal";
+import { useAlertPopup } from "../context/AlertPopupContext";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -64,6 +65,7 @@ const DEFAULT_GLOBAL_COMPARISON_ROWS: ComparisonRow[] = [
  */
 export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }: AdminPanelProps) {
   const { user: authUser, logout: authLogout, isAuth0Configured } = useAuth();
+  const { showAlert, showConfirm, toast } = useAlertPopup();
   const [adminLogo, setAdminLogo] = useState<string>("");
   const [adminLogo2, setAdminLogo2] = useState<string>("");
   const [adminLogo3, setAdminLogo3] = useState<string>("");
@@ -930,7 +932,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   const handleDeleteConfigTemplate = async (templateId: string, templateName: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`¿Deseas eliminar la plantilla "${templateName}"?`)) return;
+    const confirmed = await showConfirm(`¿Deseas eliminar la plantilla "${templateName}"?`, {
+      title: "Eliminar Plantilla",
+      type: "danger",
+      confirmText: "Eliminar Plantilla",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/templates/${templateId}`, {
         method: "DELETE"
@@ -938,18 +946,26 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       if (res.ok) {
         if (activeTemplateId === templateId) setActiveTemplateId(null);
         fetchTemplates();
+        toast.success("Plantilla eliminada correctamente.", "Plantilla Eliminada");
       } else {
-        alert("Error al eliminar la plantilla.");
+        showAlert("Error al eliminar la plantilla.", { type: "error" });
       }
     } catch (e) {
-      alert("Error de red al eliminar la plantilla.");
+      showAlert("Error de red al eliminar la plantilla.", { type: "error" });
     }
   };
 
-  const handleResetConfigComparisonRows = () => {
-    if (confirm("¿Deseas restablecer la tabla comparativa a los valores predeterminados de fábrica?")) {
+  const handleResetConfigComparisonRows = async () => {
+    const confirmed = await showConfirm("¿Deseas restablecer la tabla comparativa a los valores predeterminados de fábrica?", {
+      title: "Restablecer Tabla Comparativa",
+      type: "warning",
+      confirmText: "Restablecer Fábrica",
+      cancelText: "Cancelar"
+    });
+    if (confirmed) {
       setConfigComparisonRows(DEFAULT_GLOBAL_COMPARISON_ROWS);
       setActiveTemplateId(null);
+      toast.info("Valores comparativos predeterminados restaurados.", "Restablecimiento");
     }
   };
 
@@ -1113,28 +1129,34 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           return [savedData, ...prev];
         });
         await fetchReports();
-        alert(`Reporte de diagnóstico guardado con éxito.`);
+        toast.success(`Reporte de diagnóstico "${savedData.name}" guardado con éxito.`, "Diagnóstico Guardado");
       } else {
         const errJson = await res.json().catch(() => ({}));
-        alert(`Ocurrió un error al guardar el diagnóstico: ${errJson.error || res.statusText}`);
+        showAlert(`Ocurrió un error al guardar el diagnóstico: ${errJson.error || res.statusText}`, { type: "error" });
       }
     } catch (e: any) {
-      alert(`Error de red al guardar el reporte: ${e?.message || "Error de red desconocido"}`);
+      showAlert(`Error de red al guardar el reporte: ${e?.message || "Error de red desconocido"}`, { type: "error" });
     }
   };
 
   // Delete Report
   const handleDeleteReport = async (id: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este reporte de diagnóstico?")) return;
+    const confirmed = await showConfirm("¿Estás seguro de que deseas eliminar este reporte de diagnóstico? Esta acción no se puede deshacer.", {
+      title: "Eliminar Reporte de Diagnóstico",
+      type: "danger",
+      confirmText: "Eliminar Reporte",
+      cancelText: "Cancelar"
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
       if (res.ok) {
         setReports(prev => prev.filter(r => r.id !== id));
         await fetchReports();
-        alert("Reporte eliminado correctamente.");
+        toast.success("Reporte de diagnóstico eliminado correctamente.", "Reporte Eliminado");
       }
     } catch (e) {
-      alert("No se pudo eliminar el reporte.");
+      showAlert("No se pudo eliminar el reporte.", { type: "error" });
     }
   };
 
@@ -1975,11 +1997,9 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
                         {/* Delete Button */}
                         <button
-                          onClick={() => {
-                            if (confirm("¿Estás seguro de que deseas eliminar este reporte de diagnóstico?")) {
-                              handleDeleteReport(selectedLiveMetricsReport.id);
-                              setSelectedLiveMetricsReport(null);
-                            }
+                          onClick={async () => {
+                            await handleDeleteReport(selectedLiveMetricsReport.id);
+                            setSelectedLiveMetricsReport(null);
                           }}
                           className="inline-flex items-center gap-2 font-bold text-xs px-4.5 py-2.5 rounded-xl border border-red-theme/20 bg-red-theme/10 hover:bg-red-theme/20 text-red-theme transition-all hover:scale-105 active:scale-95 cursor-pointer"
                         >

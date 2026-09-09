@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { Report, Config } from "../types";
 import { ShareReportModal } from "./ShareReportModal";
+import { useAlertPopup } from "../context/AlertPopupContext";
 
 /**
  * Propiedades del componente GlobalDashboard.
@@ -43,6 +44,7 @@ export default function GlobalDashboard({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [shareModalReport, setShareModalReport] = useState<Report | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
+  const { toast, showAlert } = useAlertPopup();
 
   React.useEffect(() => {
     fetch("/api/config")
@@ -507,9 +509,12 @@ export default function GlobalDashboard({
             if (firstWithLink) {
               const url = `${window.location.origin}/?report=${firstWithLink.id}&shared=true`;
               navigator.clipboard.writeText(url);
-              alert("¡Se copió un link de ejemplo de diagnóstico compartido!");
+              toast.success("¡Se copió un link de ejemplo de diagnóstico compartido al portapapeles!", "Enlace Copiado");
             } else {
-              alert("Por favor crea un diagnóstico primero.");
+              showAlert("Por favor crea un diagnóstico primero antes de copiar el enlace de prueba.", {
+                type: "warning",
+                title: "Sin Diagnósticos Disponibles",
+              });
             }
           }}
           className="bg-accent-theme hover:bg-accent-theme/90 text-white font-semibold text-xs px-4.5 py-2.5 rounded-lg shrink-0 transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5"

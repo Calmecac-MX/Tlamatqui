@@ -27,16 +27,17 @@ Always validate the schema after making structural changes to `prisma/schema.pri
 npx prisma validate
 ```
 
-### B. Generating Prisma Client
-Generate or update the Prisma Client whenever `prisma/schema.prisma` is modified:
-```bash
-npx prisma generate
-```
+### B. Cliente y Adaptadores de Prisma ORM 8
+En Prisma ORM 8 (`@prisma/client` + `@prisma/adapter-pg`), la arquitectura utiliza adaptadores dinámicos de conexión (`pg.Pool` / `PrismaPg` en [`server/lib/prisma.ts`](file:///Users/cesarayar/Documents/tlamatqui/server/lib/prisma.ts)) y configuración declarativa en [`prisma.config.ts`](file:///Users/cesarayar/Documents/tlamatqui/prisma.config.ts). El comando legacy `prisma generate` no forma parte de la CLI de Prisma 8.
 
-### C. Direct Schema Deployment (Development / Prototype Sync)
-Push schema state directly to the database without generating migration SQL files (useful for direct sync):
+### C. Despliegue Directo de Esquema DDL (`db:push`)
+Para sincronizar el estado del esquema con la base de datos PostgreSQL de forma segura y directa:
 ```bash
-npx prisma db push
+npm run db:push
+```
+O para pasar una URL explícita:
+```bash
+npx tsx scripts/push-schema.ts --url="<DATABASE_URL>"
 ```
 
 ### D. Creating & Applying Migrations (Versioned SQL Migrations)

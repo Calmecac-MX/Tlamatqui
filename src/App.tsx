@@ -10,6 +10,8 @@ import { Auth0ProviderWrapper, useAuth } from "./lib/authContext";
 const AdminPanel = lazy(() => import("./components/AdminPanel"));
 const ReportView = lazy(() => import("./components/ReportView"));
 import { JoinTeamModal } from "./components/JoinTeamModal";
+import { AlertPopupProvider } from "./context/AlertPopupContext";
+import { AlertPopupModal, AlertToastContainer } from "./components/AlertPopupModal";
 
 function MainAppRouter() {
   const [viewingReportId, setViewingReportId] = useState<string | null>(() => {
@@ -200,7 +202,12 @@ function MainAppRouter() {
 export default function App() {
   return (
     <Auth0ProviderWrapper>
-      <MainAppRouter />
+      <AlertPopupProvider>
+        <MainAppRouter />
+        <AlertPopupModal />
+        <AlertToastContainer />
+      </AlertPopupProvider>
     </Auth0ProviderWrapper>
   );
 }
+

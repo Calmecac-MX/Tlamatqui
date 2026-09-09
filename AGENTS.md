@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.85 (Frontend) / v2.5.75 (Backend)  
+> **Versión:** v2.5.93 (Frontend) / v2.5.86 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -21,6 +21,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 - **Frontend (SPA React 19 + Vite 6):**
   - **Ubicación:** `src/`, `index.html`, `vite.config.ts`.
   - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Auth0 Lock, Lucide React, GSAP / Motion.
+  - **Sistema Global de Popups & Avisos:** `AlertPopupProvider` (`src/context/AlertPopupContext.tsx`), `AlertPopupModal` y `AlertToastContainer` (`src/components/AlertPopupModal.tsx`) para unificar todos los avisos, alertas de error/éxito, confirmaciones modales y toasts interactivos reemplazando los diálogos nativos del navegador.
   - **Puerto Dev:** `http://localhost:3000`.
   - **Build Output:** `dist/`.
 

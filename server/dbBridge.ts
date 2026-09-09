@@ -98,14 +98,16 @@ const DEFAULT_CONFIG = {
 
 const DEFAULT_TEAMS: Team[] = [
   {
-    id: "team_1",
-    name: "Equipo de Consultoría Principal",
-    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80",
+    id: "Calmécac",
+    name: "Calmécac",
+    image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
     ownerName: "César Ayar",
     ownerEmail: "cesar.ayar19@gmail.com",
+    contactEmail: "cesar.ayar19@gmail.com",
+    contactPhone: "+52 9651057561",
     inviteToken: "team-inv-sec_e83b4c10a29f",
     inviteRole: "Agente",
-    teamBrandName: "Calmecac Growth Agency",
+    teamBrandName: "Calmécac",
     teamBrandLogo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
     teamBrandWebsite: "https://calmecac.lat",
     members: [
@@ -121,13 +123,13 @@ const DEFAULT_TEAMS: Team[] = [
     ],
     allies: [],
     config: {
-      id: "tc_team_1",
-      teamId: "team_1",
+      id: "tc_Calmécac",
+      teamId: "Calmécac",
       reportConfig: {
-        id: "trc_tc_team_1",
-        configId: "tc_team_1",
+        id: "trc_tc_Calmécac",
+        configId: "tc_Calmécac",
         emailReport: "cesar.ayar19@gmail.com",
-        phoneReport: 5512345678,
+        phoneReport: 529651057561,
         reportLogos: []
       }
     },
@@ -604,7 +606,7 @@ export async function getDbTeams(): Promise<Team[]> {
         3500
       );
 
-      result = teams.map((t: any) => ({
+      result = (teams as any[]).map((t: any) => ({
         id: t.id,
         name: t.name,
         image: t.image || undefined,
@@ -757,9 +759,71 @@ export async function getDbTeamById(id: string): Promise<Team | null> {
   return null;
 }
 
+/**
+ * Genera el slug base del equipo a partir del nombre:
+ * - Convierte espacios en guiones medios (-)
+ * - Mantiene mayúsculas y minúsculas intactas
+ * - Limpia caracteres inválidos de URI/ID manteniendo letras (con acentos), números y guiones
+ */
+export function slugifyTeamName(name: string): string {
+  if (!name || typeof name !== "string") {
+    return `Equipo-${Date.now()}`;
+  }
+  const trimmed = name.trim();
+  const slug = trimmed
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\-_]/g, "");
+
+  return slug.length > 0 ? slug : `Equipo-${Date.now()}`;
+}
+
+/**
+ * Garantiza la unicidad del ID de un equipo en la base de datos o almacenamiento local.
+ * Si ya existe otro equipo con el mismo slug (y no es el mismo registro siendo editado),
+ * agrega sufijos numéricos (-2, -3, etc.).
+ */
+export async function generateUniqueTeamId(name: string, excludeTeamId?: string): Promise<string> {
+  const baseSlug = slugifyTeamName(name);
+  let candidate = baseSlug;
+  let counter = 1;
+
+  const prisma = getPrisma();
+  if (prisma) {
+    while (true) {
+      const existing = await prisma.team.findUnique({
+        where: { id: candidate },
+        select: { id: true }
+      }).catch(() => null);
+
+      if (!existing || (excludeTeamId && existing.id === excludeTeamId)) {
+        return candidate;
+      }
+      counter++;
+      candidate = `${baseSlug}-${counter}`;
+    }
+  }
+
+  // Fallback en memoria / JSON
+  const existingTeams = await getDbTeams();
+  while (true) {
+    const exists = existingTeams.some(t => t.id === candidate && t.id !== excludeTeamId);
+    if (!exists) {
+      return candidate;
+    }
+    counter++;
+    candidate = `${baseSlug}-${counter}`;
+  }
+}
+
 export async function saveDbTeam(team: Team): Promise<Team> {
+  // Asegurar que el ID sea generado a partir del nombre si es un nuevo equipo o si viene con prefijo temporal
+  const finalId = (!team.id || team.id.startsWith("team-") || team.id === "new")
+    ? await generateUniqueTeamId(team.name || "Equipo", team.id)
+    : team.id;
+
   const cleanTeam: Team = {
     ...team,
+    id: finalId,
     inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
     inviteRole: team.inviteRole || "Visor",
     members: (team.members || []).map(m => ({
@@ -1270,7 +1334,7 @@ export async function getDbReports(): Promise<Report[]> {
         4500
       );
 
-      result = dbReports.map(r => mapPrismaReportToDomain(r));
+      result = (dbReports as any[]).map(r => mapPrismaReportToDomain(r));
     } catch (err: any) {
       if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
         console.warn("[Prisma Auto-Repair] Column mismatch in getDbReports, reparando columnas automáticamente...", err.message);
@@ -1495,18 +1559,50 @@ export async function saveDbReport(report: Report): Promise<Report> {
   if (prisma) {
     try {
       await prisma.$transaction(async (tx) => {
+        // Validar que teamId y creatorId existan realmente en la base de datos para no romper claves foráneas
+        let validTeamId: string | null = null;
+        if (cleanReport.teamId && typeof cleanReport.teamId === "string" && cleanReport.teamId.trim() !== "") {
+          const teamExists = await tx.team.findUnique({
+            where: { id: cleanReport.teamId.trim() },
+            select: { id: true }
+          }).catch(() => null);
+          if (teamExists) {
+            validTeamId = teamExists.id;
+          }
+        }
+
+        let validCreatorId: string | null = null;
+        const candidateCreator = (cleanReport as any).creatorId || cleanReport.createdBy;
+        if (candidateCreator && typeof candidateCreator === "string" && candidateCreator.trim() !== "") {
+          const trimmedCreator = candidateCreator.trim();
+          const userExists = await tx.user.findFirst({
+            where: {
+              OR: [
+                { id: trimmedCreator },
+                { email: trimmedCreator },
+                { sub: trimmedCreator }
+              ]
+            },
+            select: { id: true }
+          }).catch(() => null);
+
+          if (userExists) {
+            validCreatorId = userExists.id;
+          }
+        }
+
         await tx.report.upsert({
           where: { id: cleanReport.id },
           update: {
             ...prismaReportData,
-            teamId: cleanReport.teamId || null,
-            creatorId: cleanReport.createdBy || null
+            teamId: validTeamId,
+            creatorId: validCreatorId
           },
           create: {
             id: cleanReport.id,
             ...prismaReportData,
-            teamId: cleanReport.teamId || null,
-            creatorId: cleanReport.createdBy || null,
+            teamId: validTeamId,
+            creatorId: validCreatorId,
             createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
           }
         });
@@ -1569,7 +1665,66 @@ export async function saveDbReport(report: Report): Promise<Report> {
         }
       });
     } catch (err: any) {
-      if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
+      const isFkError = err?.code === "P2003" || 
+                        String(err?.message || "").includes("Foreign key constraint violated") ||
+                        String(err?.message || "").includes("ForeignKeyConstraintViolation") ||
+                        String(err?.message || "").toLowerCase().includes("foreign key") ||
+                        String(err?.meta?.driverAdapterError || "").includes("ForeignKeyConstraintViolation");
+
+      if (isFkError) {
+        console.warn(`[Prisma Foreign-Key Fallback] Clave foránea no encontrada para saveDbReport(${cleanReport.id}), reintentando sin teamId/creatorId...`);
+        try {
+          await prisma.$transaction(async (tx) => {
+            await tx.report.upsert({
+              where: { id: cleanReport.id },
+              update: {
+                ...prismaReportData,
+                teamId: null,
+                creatorId: null
+              },
+              create: {
+                id: cleanReport.id,
+                ...prismaReportData,
+                teamId: null,
+                creatorId: null,
+                createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
+              }
+            });
+            await tx.reportMetrics.upsert({
+              where: { reportId: cleanReport.id },
+              update: metricsData,
+              create: { ...metricsData, report: { connect: { id: cleanReport.id } } }
+            });
+            await tx.reportPlatformConfig.upsert({
+              where: { reportId: cleanReport.id },
+              update: platformConfigData,
+              create: { ...platformConfigData, report: { connect: { id: cleanReport.id } } }
+            });
+            await tx.reportAnalytics.upsert({
+              where: { reportId: cleanReport.id },
+              update: analyticsData,
+              create: { ...analyticsData, report: { connect: { id: cleanReport.id } } }
+            });
+            if (sanitizedPageSpeed) {
+              await tx.reportPageSpeed.upsert({
+                where: { reportId: cleanReport.id },
+                update: sanitizedPageSpeed,
+                create: { ...sanitizedPageSpeed, report: { connect: { id: cleanReport.id } } }
+              });
+            }
+            await tx.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
+            if (sanitizedTools.length > 0) {
+              await tx.reportTool.createMany({ data: sanitizedTools as any });
+            }
+            await tx.reportComparisonRow.deleteMany({ where: { reportId: cleanReport.id } });
+            if (sanitizedComparisonRows.length > 0) {
+              await tx.reportComparisonRow.createMany({ data: sanitizedComparisonRows });
+            }
+          });
+        } catch (fkRetryErr) {
+          console.error(`[Prisma FK Fallback Error in saveDbReport for ${cleanReport.id}]:`, fkRetryErr);
+        }
+      } else if (err?.code === "P2022" || String(err?.message || "").includes("does not exist in the current database") || String(err?.message || "").includes("ColumnNotFound")) {
         console.warn(`[Prisma Auto-Repair] Column mismatch in saveDbReport(${cleanReport.id}), reparando columnas automáticamente...`, err.message);
         try {
           await ensureDatabaseSchema(prisma);
@@ -1577,14 +1732,14 @@ export async function saveDbReport(report: Report): Promise<Report> {
             where: { id: cleanReport.id },
             update: {
               ...prismaReportData,
-              teamId: cleanReport.teamId || null,
-              creatorId: cleanReport.createdBy || null
+              teamId: null,
+              creatorId: null
             },
             create: {
               id: cleanReport.id,
               ...prismaReportData,
-              teamId: cleanReport.teamId || null,
-              creatorId: cleanReport.createdBy || null,
+              teamId: null,
+              creatorId: null,
               createdAt: cleanReport.createdAt ? new Date(cleanReport.createdAt) : new Date()
             }
           });
@@ -1861,7 +2016,7 @@ export async function getDbUsers(): Promise<UserAccount[]> {
         }),
         3500
       );
-      return users.map((u: any) => ({
+      return (users as any[]).map((u: any) => ({
         id: u.id,
         email: u.email,
         name: u.name,

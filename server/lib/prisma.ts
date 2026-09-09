@@ -1,7 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { PrismaClient } from "@prisma/client";
+import pkgPrismaClient from "@prisma/client";
+const { PrismaClient } = (pkgPrismaClient as any)?.PrismaClient ? pkgPrismaClient : { PrismaClient: (pkgPrismaClient as any) };
+type PrismaClient = any;
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
@@ -24,6 +26,34 @@ function getDatabaseUrl(): string | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * Normaliza la cadena de conexión de PostgreSQL para compatibilidad con libpq y pg v9,
+ * eliminando advertencias de SSL en entornos serverless y proveedores en la nube (Neon, Supabase, Vercel).
+ *
+ * @param {string} rawUrl - URI original de PostgreSQL
+ * @returns {string} URI normalizada con parámetros de SSL compatibles
+ */
+export function normalizeDatabaseUrl(rawUrl: string): string {
+  if (!rawUrl) return rawUrl;
+  
+  // Si ya contiene uselibpqcompat o sslmode=verify-full o no usa SSL, mantener
+  if (rawUrl.includes("uselibpqcompat=true") || rawUrl.includes("sslmode=verify-full") || rawUrl.includes("sslmode=disable")) {
+    return rawUrl;
+  }
+  
+  // Compatibilidad explícita con libpq para sslmode=require / prefer / verify-ca
+  if (rawUrl.includes("sslmode=require")) {
+    return rawUrl.includes("?") 
+      ? `${rawUrl}&uselibpqcompat=true` 
+      : `${rawUrl}?uselibpqcompat=true&sslmode=require`;
+  }
+  if (rawUrl.includes("sslmode=prefer") || rawUrl.includes("sslmode=verify-ca")) {
+    return `${rawUrl}&uselibpqcompat=true`;
+  }
+
+  return rawUrl;
 }
 
 let schemaRepairPromise: Promise<void> | null = null;
@@ -97,19 +127,20 @@ export function getPrisma(): PrismaClient | null {
 
   if (!prisma) {
     try {
-      if (dbUrl.startsWith("prisma://") || dbUrl.startsWith("prisma+postgres://")) {
-        prisma = new PrismaClient({ accelerateUrl: dbUrl });
+      const normalizedUrl = normalizeDatabaseUrl(dbUrl);
+      if (normalizedUrl.startsWith("prisma://") || normalizedUrl.startsWith("prisma+postgres://")) {
+        prisma = new PrismaClient({ accelerateUrl: normalizedUrl });
       } else {
-        const isSslNeeded = dbUrl.includes("sslmode=require") || 
-                            dbUrl.includes("supabase.co") || 
-                            dbUrl.includes("neon.tech") || 
-                            dbUrl.includes("render.com") || 
-                            dbUrl.includes("railway.app") ||
-                            dbUrl.includes("vercel-storage.com") ||
-                            dbUrl.includes("pooler.supabase.com");
+        const isSslNeeded = normalizedUrl.includes("sslmode=require") || 
+                            normalizedUrl.includes("supabase.co") || 
+                            normalizedUrl.includes("neon.tech") || 
+                            normalizedUrl.includes("render.com") || 
+                            normalizedUrl.includes("railway.app") ||
+                            normalizedUrl.includes("vercel-storage.com") ||
+                            normalizedUrl.includes("pooler.supabase.com");
 
         const pool = new pg.Pool({
-          connectionString: dbUrl,
+          connectionString: normalizedUrl,
           ssl: isSslNeeded ? { rejectUnauthorized: false } : undefined,
           max: 10,
           connectionTimeoutMillis: 5000,

@@ -19,6 +19,8 @@ import {
   getDbTeams,
   saveDbTeam,
   deleteDbTeam,
+  generateUniqueTeamId,
+  slugifyTeamName,
   getDbReports,
   getDbReportById,
   saveDbReport,
@@ -809,10 +811,15 @@ app.post("/api/teams", async (req: Request, res: Response) => {
         }
       ];
 
+    const teamName = String(req.body.name || "Nuevo-Equipo").trim();
+    const teamId = (req.body.id && !req.body.id.startsWith("team-") && req.body.id !== "new")
+      ? await generateUniqueTeamId(req.body.id, req.body.id)
+      : await generateUniqueTeamId(teamName);
+
     const newTeam = {
-      id: req.body.id || "team-" + Math.random().toString(36).substring(2, 11),
-      name: req.body.name || "Nuevo Equipo",
-      brandName: req.body.brandName || req.body.name || "Mi Marca",
+      id: teamId,
+      name: teamName,
+      brandName: req.body.brandName || teamName || "Mi Marca",
       image: req.body.image || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
       brandLogo: req.body.brandLogo || req.body.image || "",
       brandColor: req.body.brandColor || "#6366f1",

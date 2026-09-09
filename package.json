@@ -1,7 +1,7 @@
 {
   "name": "tlamatqui",
   "private": true,
-  "version": "2.5.84",
+  "version": "2.5.90",
   "license": "AGPL-3.0-only",
   "engines": {
     "node": "24.x"
@@ -35,6 +35,8 @@
     "bump:frontend": "node scripts/auto-version.js --bump-frontend",
     "bump:backend": "node scripts/auto-version.js --bump-backend",
     "bump:both": "node scripts/auto-version.js --bump-both",
+    "db:push": "tsx scripts/push-schema.ts",
+    "studio": "npx prisma@6 studio",
     "changelog": "node scripts/generate-changelog.js"
   },
   "dependencies": {
@@ -58,7 +60,6 @@
     "motion": "^12.23.24",
     "nodemailer": "^9.0.3",
     "pg": "^8.23.0",
-    "prisma": "^8.0.0-rc.13",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "recharts": "^3.9.2",
@@ -77,6 +78,7 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
     "esbuild": "^0.25.0",
+    "prisma": "8.0.0-rc.13",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2"
