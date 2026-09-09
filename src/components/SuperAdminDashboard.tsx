@@ -663,13 +663,47 @@ export default function SuperAdminDashboard({
 
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">
               <div className="flex items-center justify-between text-text-dim-theme">
-                <span className="text-xs font-bold uppercase tracking-wider">Tiempo de Actividad</span>
-                <Clock className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold uppercase tracking-wider">Base de Datos</span>
+                <Database className={`w-4 h-4 ${
+                  healthData?.database?.status === "connected" 
+                    ? "text-emerald-400" 
+                    : healthData?.database?.status === "fallback_json" 
+                    ? "text-amber-400" 
+                    : "text-rose-400"
+                }`} />
               </div>
-              <div className="text-2xl font-black text-white font-mono">
-                {healthData ? formatUptime(healthData.uptimeSeconds) : "0h 0m 0s"}
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-white uppercase">
+                  {healthData?.database?.status === "connected" ? "PostgreSQL" : healthData?.database?.status === "fallback_json" ? "Modo JSON" : "Desconectada"}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 ${
+                  healthData?.database?.status === "connected"
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                    : healthData?.database?.status === "fallback_json"
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                    : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    healthData?.database?.status === "connected"
+                      ? "bg-emerald-400 animate-pulse"
+                      : healthData?.database?.status === "fallback_json"
+                      ? "bg-amber-400"
+                      : "bg-rose-400"
+                  }`} />
+                  {healthData?.database?.status === "connected"
+                    ? `${healthData.database.latencyMs}ms`
+                    : healthData?.database?.status === "fallback_json"
+                    ? "Local"
+                    : "Error"}
+                </span>
               </div>
-              <p className="text-[11px] text-text-dim-theme">Tiempo activo desde la última inicialización.</p>
+              <p className="text-[11px] text-text-dim-theme">
+                {healthData?.database?.status === "connected"
+                  ? `Prisma ORM activo • ${healthData.database.counts?.reports || 0} reportes / ${healthData.database.counts?.users || 0} usuarios`
+                  : healthData?.database?.status === "fallback_json"
+                  ? "Persistencia local mediante archivo JSON activo."
+                  : "No se pudo conectar a la base de datos PostgreSQL."}
+              </p>
             </div>
 
             <div className="p-5 rounded-2xl border border-border-theme bg-surface-theme/60 backdrop-blur-md space-y-3 shadow-lg">

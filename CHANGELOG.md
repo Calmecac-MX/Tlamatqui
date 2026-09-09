@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.96 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
+
+### 🚀 Features & Nuevas Funcionalidades
+- implement Gravatar integration and standardize logo display containers across dashboard components (`1d30b71`)
+
 ## [v2.5.95 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
 
 ### 🚀 Features & Nuevas Funcionalidades
