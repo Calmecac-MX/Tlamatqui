@@ -43,12 +43,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         )}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-3 flex-wrap">
-            {adminLogo && adminLogo.toLowerCase() !== "none" ? (
+            {!isSidebarExpanded && (adminLogo && adminLogo.toLowerCase() !== "none" ? (
               <div className="flex items-center gap-3">
                 <img
                   src={adminLogo}
                   alt={adminText || "Logo de Administrador"}
-                  className="h-9 max-w-[240px] object-contain rounded border border-border-theme bg-surface-theme/30 p-1"
+                  className="h-10 md:h-12 max-w-[280px] object-contain rounded border border-border-theme bg-surface-theme/30 p-1"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = "none";
                     const fallbackText = document.getElementById(
@@ -67,7 +67,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
               <h2 className="text-lg font-bold tracking-tight text-white">
                 {adminText || "Evolución Diagnostics"}
               </h2>
-            )}
+            ))}
 
             <span className="inline-flex px-2 py-0.5 text-[10px] font-bold bg-accent-theme/10 text-accent-theme border border-accent-theme/20 rounded-md uppercase tracking-wider">
               {editingReport

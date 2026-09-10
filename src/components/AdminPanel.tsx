@@ -1328,7 +1328,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       <img 
                         src={effectiveAdminLogo} 
                         alt={adminText || "Logo"} 
-                        className="h-8 max-w-[140px] object-contain rounded border border-border-theme bg-surface-theme/30 p-0.5"
+                        className="h-10 md:h-12 max-w-[190px] object-contain rounded border border-border-theme/40 bg-surface-theme/30 p-1"
                         onError={(e) => { 
                           (e.target as HTMLElement).style.display = "none";
                           const fallback = document.getElementById("sidebar-fallback-text");
@@ -1336,7 +1336,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         }}
                       />
                       <div id="sidebar-fallback-text" className="hidden">
-                        <h1 className="text-sm font-bold tracking-tight text-white truncate">
+                        <h1 className="text-base font-bold tracking-tight text-white truncate">
                           {adminText || "Tlachiālōyan"}
                         </h1>
                       </div>
@@ -1881,15 +1881,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
             )}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-3 flex-wrap">
-                {/* LOGO / TITLE */}
-                {(() => {
+                {/* LOGO / TITLE - Solo se muestra en el header cuando el menú lateral está oculto */}
+                {!isSidebarExpanded && (() => {
                   const effectiveAdminLogo = getInstanceLogo(isDarkMode, adminLogo);
                   return effectiveAdminLogo && effectiveAdminLogo.toLowerCase() !== "none" ? (
                     <div className="flex items-center gap-3">
                       <img 
                         src={effectiveAdminLogo} 
                         alt={adminText || "Logo de Administrador"} 
-                        className="h-9 max-w-[240px] object-contain rounded border border-border-theme bg-surface-theme/30 p-1"
+                        className="h-10 md:h-12 max-w-[280px] object-contain rounded border border-border-theme bg-surface-theme/30 p-1"
                         onError={(e) => { 
                           // If logo fails to load, fallback to text representation
                           (e.target as HTMLElement).style.display = "none";

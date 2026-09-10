@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.102 (Frontend) / v2.5.95 (Backend)] - 2026-09-10
+
+### 🐛 Corregido & Bug Fixes
+- **prisma:** remove deprecated datasource url from schema.prisma in favor of prisma.config.ts (`42e8d2c`)
+
 ## [v2.5.101 (Frontend) / v2.5.95 (Backend)] - 2026-09-10
 
 ### 🚀 Features & Nuevas Funcionalidades
