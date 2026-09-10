@@ -157,8 +157,11 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           }
           setIsOnboardingModalOpen(false);
         } else {
-          // Solo cuando se confirma que no existe ningún equipo
-          setIsOnboardingModalOpen(true);
+          // Solo abrir automáticamente la primera vez si el usuario no tiene ningún equipo y no lo ha descartado
+          const isDismissed = sessionStorage.getItem("tlamatqui_onboarding_dismissed");
+          if (!isDismissed) {
+            setIsOnboardingModalOpen(true);
+          }
         }
       }
     } catch (e) {
@@ -216,6 +219,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         setSelectedTeamId(created.id);
         setIsOnboardingModalOpen(false);
         setIsTeamSelectorOpen(false);
+        sessionStorage.setItem("tlamatqui_onboarding_dismissed", "true");
       } else {
         const err = await res.json();
         throw new Error(err.error || "Error al crear el equipo");
@@ -4845,11 +4849,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         isDarkMode={isDarkMode}
       />
 
-      {/* Modal de Onboarding y Creación Guiada de Espacio de Trabajo (Solo cuando no exista ningún equipo o al crearlo manualmente) */}
+      {/* Modal de Onboarding y Creación Guiada de Espacio de Trabajo */}
       <TeamOnboardingModal
-        isOpen={!isTeamsLoading && (teams.length === 0 || isOnboardingModalOpen)}
+        isOpen={isOnboardingModalOpen}
         isFirstTeam={teams.length === 0}
-        onClose={() => setIsOnboardingModalOpen(false)}
+        onClose={() => {
+          setIsOnboardingModalOpen(false);
+          sessionStorage.setItem("tlamatqui_onboarding_dismissed", "true");
+        }}
         onSaveTeam={handleSaveOnboardingTeam}
         currentUserEmail={userEmail || authUser?.email || "cesar.ayar19@gmail.com"}
         currentUserName={userName || authUser?.name || "César Ayar"}

@@ -367,10 +367,11 @@ export default function TeamOnboardingModal({
             </div>
           </div>
 
-          {!isFirstTeam && onClose && (
+          {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-text-dim-theme hover:text-white hover:bg-surface-theme/60 transition-colors"
+              className="p-2 rounded-xl text-text-dim-theme hover:text-white hover:bg-surface-theme/60 transition-colors cursor-pointer"
+              title="Cerrar modal"
             >
               <X className="w-5 h-5" />
             </button>
