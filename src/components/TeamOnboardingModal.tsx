@@ -36,6 +36,17 @@ const PRESET_COLORS = [
   { name: "Azul", value: "#3b82f6" }
 ];
 
+function slugify(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function TeamOnboardingModal({
   isOpen,
   onClose,
@@ -50,6 +61,8 @@ export default function TeamOnboardingModal({
 
   // Step 1: Identidad y Marca
   const [teamName, setTeamName] = useState("");
+  const [teamSlug, setTeamSlug] = useState("");
+  const [isSlugTouched, setIsSlugTouched] = useState(false);
   const [brandName, setBrandName] = useState("");
   const [teamLogo, setTeamLogo] = useState(PRESET_LOGOS[0]);
   const [brandColor, setBrandColor] = useState("#6366f1");
@@ -93,6 +106,9 @@ export default function TeamOnboardingModal({
       }
       if (!brandName.trim()) {
         setBrandName(teamName);
+      }
+      if (!teamSlug.trim()) {
+        setTeamSlug(slugify(teamName));
       }
       setCurrentStep(2);
     } else if (currentStep === 2) {
@@ -276,8 +292,10 @@ export default function TeamOnboardingModal({
       });
 
       const parsedPhone = contactPhone.trim() ? parseFloat(contactPhone.replace(/\D/g, '')) || undefined : undefined;
+      const finalSlug = teamSlug.trim() ? slugify(teamSlug) : slugify(teamName || "equipo");
       const teamPayload: Partial<Team> = {
         name: teamName.trim(),
+        slug: finalSlug,
         brandName: (brandName.trim() || teamName.trim()),
         image: teamLogo,
         brandLogo: teamLogo,
@@ -324,29 +342,27 @@ export default function TeamOnboardingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-2xl bg-surface-theme border border-border-theme rounded-3xl shadow-2xl overflow-hidden my-8"
-      >
-        {/* Top Header / Progress */}
-        <div className="px-6 py-5 border-b border-border-theme bg-bg-theme/40 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-surface-theme border border-border-theme rounded-3xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Header con pasos */}
+        <div className="px-6 py-5 border-b border-border-theme flex items-center justify-between bg-bg-theme/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-accent-theme/15 border border-accent-theme/30 flex items-center justify-center text-accent-theme font-extrabold shadow-inner">
-              <Sparkles className="w-5 h-5" />
+            <div className="p-2.5 rounded-2xl bg-accent-theme/10 border border-accent-theme/20 text-accent-theme">
+              <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                {isFirstTeam ? "Configura tu Primer Espacio de Trabajo" : "Crear Nuevo Espacio de Trabajo"}
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <span>{isFirstTeam ? "Configura tu Primer Espacio de Trabajo" : "Crear Nuevo Espacio de Trabajo"}</span>
+                <span className="text-[11px] font-semibold bg-accent-theme/20 text-accent-theme px-2 py-0.5 rounded-full border border-accent-theme/30">
+                  Paso {currentStep} de 4
+                </span>
               </h2>
               <p className="text-xs text-text-dim-theme">
-                Paso {currentStep} de 4: {
-                  currentStep === 1 ? "Nombre y Logo" :
-                  currentStep === 2 ? "Datos Generales de Contacto" :
-                  currentStep === 3 ? "Invitar Miembros del Equipo" : "Alianzas Estratégicas"
-                }
+                {currentStep === 1 && "Personaliza la identidad visual y slug de tu equipo"}
+                {currentStep === 2 && "Establece los datos de contacto y representación"}
+                {currentStep === 3 && "Invita a tu equipo de trabajo o colaboradores"}
+                {currentStep === 4 && "Agrega aliados o socios estratégicos (opcional)"}
               </p>
             </div>
           </div>
@@ -354,36 +370,32 @@ export default function TeamOnboardingModal({
           {!isFirstTeam && onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-text-dim-theme hover:text-white hover:bg-surface-theme transition-all cursor-pointer"
+              className="p-2 rounded-xl text-text-dim-theme hover:text-white hover:bg-surface-theme/60 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        {/* Progress Bar Indicator */}
-        <div className="w-full bg-border-theme/30 h-1.5 flex">
-          {[1, 2, 3, 4].map((step) => (
-            <div
-              key={step}
-              className={`h-full transition-all duration-300 flex-1 ${
-                step <= currentStep ? "bg-accent-theme" : "bg-transparent"
-              }`}
-            />
-          ))}
+        {/* Progress Bar */}
+        <div className="w-full bg-border-theme h-1.5 overflow-hidden">
+          <div 
+            className="bg-accent-theme h-full transition-all duration-300 ease-out"
+            style={{ width: `${(currentStep / 4) * 100}%` }}
+          />
         </div>
 
-        {/* Body Content */}
-        <div className="p-6 md:p-8 space-y-6">
+        {/* Form Body */}
+        <div className="p-6 sm:p-8 space-y-6">
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold flex items-center gap-2.5 animate-fade-in">
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 animate-shake">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           <AnimatePresence mode="wait">
-            {/* ----------------- PASO 1: NOMBRE Y LOGO ----------------- */}
+            {/* ----------------- PASO 1: NOMBRE, SLUG Y LOGO ----------------- */}
             {currentStep === 1 && (
               <motion.div
                 key="step1"
@@ -404,11 +416,43 @@ export default function TeamOnboardingModal({
                     placeholder="Ej. Growth Ecommerce Hub"
                     value={teamName}
                     onChange={(e) => {
-                      setTeamName(e.target.value);
-                      if (!brandName) setBrandName(e.target.value);
+                      const val = e.target.value;
+                      setTeamName(val);
+                      if (!brandName) setBrandName(val);
+                      if (!isSlugTouched) setTeamSlug(slugify(val));
                     }}
                     className="w-full text-sm px-4 py-3 rounded-xl border outline-none bg-bg-theme border-border-theme text-white focus:border-accent-theme focus:ring-1 focus:ring-accent-theme transition-all"
                   />
+                </div>
+
+                {/* Slug para URL del Equipo */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-text-dim-theme mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-accent-theme" />
+                      Slug / URL del Equipo *
+                    </span>
+                    <span className="text-[10px] text-text-dim-theme font-normal lowercase">Solo minúsculas, números y guiones</span>
+                  </label>
+                  <div className="flex items-center rounded-xl border border-border-theme bg-bg-theme focus-within:border-accent-theme focus-within:ring-1 focus-within:ring-accent-theme transition-all overflow-hidden">
+                    <span className="px-3.5 py-3 text-xs font-mono text-text-dim-theme bg-surface-theme/50 border-r border-border-theme select-none whitespace-nowrap">
+                      {appOrigin}/team/
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      placeholder="growth-ecommerce-hub"
+                      value={teamSlug}
+                      onChange={(e) => {
+                        setIsSlugTouched(true);
+                        setTeamSlug(slugify(e.target.value));
+                      }}
+                      className="w-full text-sm px-3.5 py-3 outline-none bg-transparent text-emerald-400 font-mono"
+                    />
+                  </div>
+                  <p className="text-[11px] text-text-dim-theme mt-1.5">
+                    Este identificador se utilizará para la dirección web única y reportes vinculados a este equipo.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -935,7 +979,7 @@ export default function TeamOnboardingModal({
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

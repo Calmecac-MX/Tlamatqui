@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.99 (Frontend) / v2.5.92 (Backend)] - 2026-09-10
+
+### 🚀 Features & Nuevas Funcionalidades
+- **ui:** dynamic adaptive favicon with blanco.ico in dark mode and negro.ico in light mode (`03d5d0e`)
+
 ## [v2.5.98 (Frontend) / v2.5.91 (Backend)] - 2026-09-09
 
 ### 🐛 Corregido & Bug Fixes

@@ -91,6 +91,7 @@ model User {
 /// Equipo o workspace de trabajo colaborativo de una agencia / cliente.
 model Team {
   id               String       @id @default(uuid())
+  slug             String?      @unique
   name             String
   image            String?
   ownerName        String
@@ -110,6 +111,7 @@ model Team {
   config           TeamConfig?
   createdAt        DateTime     @default(now())
 
+  @@index([slug])
   @@index([ownerEmail])
   @@index([ownerId])
 }

@@ -609,6 +609,7 @@ export async function getDbTeams(): Promise<Team[]> {
 
       result = (teams as any[]).map((t: any) => ({
         id: t.id,
+        slug: t.slug || slugifyTeamName(t.name),
         name: t.name,
         image: t.image || undefined,
         ownerName: t.ownerName,
@@ -679,7 +680,7 @@ export async function getDbTeamById(id: string): Promise<Team | null> {
   const prisma = getPrisma();
   if (prisma) {
     try {
-      const t: any = await prisma.team.findUnique({
+      let t: any = await prisma.team.findUnique({
         where: { id: cleanId },
         include: {
           members: true,
@@ -694,9 +695,28 @@ export async function getDbTeamById(id: string): Promise<Team | null> {
         }
       });
 
+      // Si no se encuentra por id exacto, buscar por slug
+      if (!t) {
+        t = await prisma.team.findFirst({
+          where: { slug: cleanId },
+          include: {
+            members: true,
+            partners: {
+              include: { members: true }
+            },
+            config: {
+              include: {
+                reportConfig: true
+              }
+            }
+          }
+        });
+      }
+
       if (t) {
         return {
           id: t.id,
+          slug: t.slug || slugifyTeamName(t.name),
           name: t.name,
           image: t.image || undefined,
           ownerName: t.ownerName,
@@ -761,27 +781,30 @@ export async function getDbTeamById(id: string): Promise<Team | null> {
 }
 
 /**
- * Genera el slug base del equipo a partir del nombre:
- * - Convierte espacios en guiones medios (-)
- * - Mantiene mayúsculas y minúsculas intactas
- * - Limpia caracteres inválidos de URI/ID manteniendo letras (con acentos), números y guiones
+ * Genera el slug normalizado amigable para la URL del equipo:
+ * - Convierte a minúsculas
+ * - Normaliza y elimina diacríticos/acentos
+ * - Reemplaza espacios y caracteres no válidos por guiones
+ * - Elimina guiones redundantes al inicio y fin
  */
 export function slugifyTeamName(name: string): string {
   if (!name || typeof name !== "string") {
-    return `Equipo-${Date.now()}`;
+    return `equipo-${Date.now()}`;
   }
-  const trimmed = name.trim();
-  const slug = trimmed
-    .replace(/\s+/g, "-")
-    .replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\-_]/g, "");
+  const normalized = name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 
-  return slug.length > 0 ? slug : `Equipo-${Date.now()}`;
+  return normalized.length > 0 ? normalized : `equipo-${Date.now()}`;
 }
 
 /**
  * Garantiza la unicidad del ID de un equipo en la base de datos o almacenamiento local.
- * Si ya existe otro equipo con el mismo slug (y no es el mismo registro siendo editado),
- * agrega sufijos numéricos (-2, -3, etc.).
  */
 export async function generateUniqueTeamId(name: string, excludeTeamId?: string): Promise<string> {
   const baseSlug = slugifyTeamName(name);
@@ -816,15 +839,53 @@ export async function generateUniqueTeamId(name: string, excludeTeamId?: string)
   }
 }
 
+/**
+ * Garantiza la unicidad del slug amigable de un equipo para URLs públicas/compartidas.
+ */
+export async function generateUniqueTeamSlug(slugOrName: string, excludeTeamId?: string): Promise<string> {
+  const baseSlug = slugifyTeamName(slugOrName);
+  let candidate = baseSlug;
+  let counter = 1;
+
+  const prisma = getPrisma();
+  if (prisma) {
+    while (true) {
+      const existing = await prisma.team.findFirst({
+        where: { slug: candidate },
+        select: { id: true, slug: true }
+      }).catch(() => null);
+
+      if (!existing || (excludeTeamId && existing.id === excludeTeamId)) {
+        return candidate;
+      }
+      counter++;
+      candidate = `${baseSlug}-${counter}`;
+    }
+  }
+
+  const existingTeams = await getDbTeams();
+  while (true) {
+    const exists = existingTeams.some(t => t.slug === candidate && t.id !== excludeTeamId);
+    if (!exists) {
+      return candidate;
+    }
+    counter++;
+    candidate = `${baseSlug}-${counter}`;
+  }
+}
+
 export async function saveDbTeam(team: Team): Promise<Team> {
   // Asegurar que el ID sea generado a partir del nombre si es un nuevo equipo o si viene con prefijo temporal
   const finalId = (!team.id || team.id.startsWith("team-") || team.id === "new")
     ? await generateUniqueTeamId(team.name || "Equipo", team.id)
     : team.id;
 
+  const cleanSlug = await generateUniqueTeamSlug(team.slug || team.name || "equipo", finalId);
+
   const cleanTeam: Team = {
     ...team,
     id: finalId,
+    slug: cleanSlug,
     inviteToken: team.inviteToken || `team-inv-sec_${crypto.randomBytes(6).toString("hex")}`,
     inviteRole: team.inviteRole || "Visor",
     members: (team.members || []).map(m => ({
@@ -851,6 +912,7 @@ export async function saveDbTeam(team: Team): Promise<Team> {
         await tx.team.upsert({
           where: { id: cleanTeam.id },
           update: {
+            slug: cleanTeam.slug,
             name: cleanTeam.name,
             image: cleanTeam.image || null,
             ownerName: cleanTeam.ownerName,
@@ -896,6 +958,7 @@ export async function saveDbTeam(team: Team): Promise<Team> {
           },
           create: {
             id: cleanTeam.id,
+            slug: cleanTeam.slug,
             name: cleanTeam.name,
             image: cleanTeam.image || null,
             ownerName: cleanTeam.ownerName,

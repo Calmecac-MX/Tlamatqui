@@ -17,6 +17,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
   - **Ubicación:** `server.ts`, `server/`, `prisma/`, `data/`.
   - **Tecnologías:** Express 4, TypeScript, Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`), Auth0, Zod, esbuild.
   - **Servicio Gravatar:** `server/gravatarService.ts` (`computeGravatarHash`, `getGravatarUrl`, `checkGravatarExists`, `resolveUserAvatar`, endpoints `/api/gravatar/lookup` y `/api/users/gravatar`) para resolución, caché y auto-asignación de fotos de perfil vía Gravatar.
+  - **Gestión de Slugs e Identidad de Equipos:** `slugifyTeamName`, `generateUniqueTeamSlug`, modelo Prisma `Team.slug` (unique e indexado) y endpoints `/api/teams/:idOrSlug` para URLs amigables de workspace (`/team/:slug`).
   - **Puerto Dev:** `http://localhost:4000` (API REST `/api/*`).
   - **Build Output:** `dist/server.cjs`.
 - **Frontend (SPA React 19 + Vite 6):**
@@ -24,6 +25,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
   - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Auth0 Lock, Lucide React, GSAP / Motion.
   - **Utilidad Gravatar:** `src/lib/gravatar.ts` con soporte SHA-256 en cliente, auto-detección con debounce al invitar miembros y sincronización en 1 clic desde el panel de perfil de usuario.
   - **Sistema Global de Popups & Avisos:** `AlertPopupProvider` (`src/context/AlertPopupContext.tsx`), `AlertPopupModal` y `AlertToastContainer` (`src/components/AlertPopupModal.tsx`) para unificar todos los avisos, alertas de error/éxito, confirmaciones modales y toasts interactivos reemplazando los diálogos nativos del navegador.
+  - **Flujo de Onboarding de Equipos y Workspace URL:** `TeamOnboardingModal` con generación dinámica de slugs para URLs personalizadas (`/team/:slug`), condicionado para activarse solo al crear equipos o cuando un usuario nuevo no cuenta con ningún equipo registrado.
   - **Puerto Dev:** `http://localhost:3000`.
   - **Build Output:** `dist/`.
 

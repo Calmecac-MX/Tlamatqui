@@ -17,6 +17,7 @@ import {
   getDbConfig,
   saveDbConfig,
   getDbTeams,
+  getDbTeamById,
   saveDbTeam,
   deleteDbTeam,
   generateUniqueTeamId,
@@ -818,6 +819,22 @@ app.get("/api/teams", async (req: Request, res: Response) => {
 });
 
 /**
+ * @route GET /api/teams/:idOrSlug
+ * @description Obtiene el detalle de un equipo de trabajo por ID o slug de URL.
+ */
+app.get("/api/teams/:idOrSlug", async (req: Request, res: Response) => {
+  try {
+    const team = await getDbTeamById(req.params.idOrSlug);
+    if (!team) {
+      return res.status(404).json({ error: "Equipo no encontrado" });
+    }
+    res.json(team);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * @route POST /api/teams
  * @description Crea un nuevo equipo de trabajo con su miembro propietario por defecto.
  */
@@ -855,6 +872,7 @@ app.post("/api/teams", async (req: Request, res: Response) => {
 
     const newTeam = {
       id: teamId,
+      slug: req.body.slug ? slugifyTeamName(req.body.slug) : slugifyTeamName(teamName),
       name: teamName,
       brandName: req.body.brandName || teamName || "Mi Marca",
       image: req.body.image || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",

@@ -12,3 +12,4 @@ import "./engagementWorkflow.test.ts";
 import "./auditWorkflow.test.ts";
 import "./gravatar.test.ts";
 import "./favicon.test.ts";
+import "./teamSlug.test.ts";

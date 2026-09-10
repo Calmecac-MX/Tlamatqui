@@ -2,12 +2,23 @@ import React, { useState, useEffect } from "react";
 import { 
   Users, Settings, Shield, Plus, Trash2, Edit, UploadCloud, 
   Mail, Clock, FileText, DollarSign, Crown, CheckCircle, X, ChevronRight, User, AlertTriangle, Copy, Link as LinkIcon, RefreshCw, Check, Sparkles,
-  Phone, ArrowUp, ArrowDown, UserCheck, Layers
+  Phone, ArrowUp, ArrowDown, UserCheck, Layers, Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Team, TeamMember, Report, Ally } from "../types";
 import { useAlertPopup } from "../context/AlertPopupContext";
 import { lookupGravatar, getInitialsAvatarUrl } from "../lib/gravatar";
+
+function slugify(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 /**
  * Propiedades del componente TeamDashboard.
@@ -103,6 +114,8 @@ export default function TeamDashboard({
 
   // Config Form State
   const [teamName, setTeamName] = useState("");
+  const [teamSlug, setTeamSlug] = useState("");
+  const [copiedTeamUrl, setCopiedTeamUrl] = useState(false);
   const [teamImage, setTeamImage] = useState("");
   const [teamOwnerName, setTeamOwnerName] = useState("");
   const [teamOwnerEmail, setTeamOwnerEmail] = useState("");
@@ -252,6 +265,7 @@ export default function TeamDashboard({
   useEffect(() => {
     if (activeTeam) {
       setTeamName(activeTeam.name);
+      setTeamSlug(activeTeam.slug || slugify(activeTeam.name || ""));
       setTeamImage(activeTeam.image || "");
       setTeamOwnerName(activeTeam.ownerName || "");
       setTeamOwnerEmail(activeTeam.ownerEmail || "");
@@ -325,9 +339,11 @@ export default function TeamDashboard({
     setConfigError(null);
 
     const numericPhone = reportPhone.trim() ? parseFloat(reportPhone.replace(/\D/g, '')) || undefined : undefined;
+    const cleanSlug = teamSlug ? slugify(teamSlug) : (activeTeam.slug || slugify(teamName || "equipo"));
     const updatedTeam: Team = {
       ...activeTeam,
       name: teamName,
+      slug: cleanSlug,
       image: teamImage || undefined,
       ownerName: teamOwnerName,
       ownerEmail: teamOwnerEmail,
@@ -1279,6 +1295,83 @@ export default function TeamDashboard({
                   <div className="flex items-center gap-2 mb-2 border-b border-border-theme/30 pb-2">
                     <Settings className="w-4 h-4 text-accent-theme" />
                     <h3 className="font-bold text-sm text-white uppercase tracking-wider">Configuración del Equipo y Reporte</h3>
+                  </div>
+
+                  {/* SECCIÓN: Identidad del Workspace y Slug para URL */}
+                  <div className="p-5 rounded-2xl border border-border-theme/60 bg-surface-theme/40 backdrop-blur-md space-y-4">
+                    <div className="flex items-center justify-between border-b border-border-theme/30 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-accent-theme" />
+                        <div>
+                          <h4 className="font-bold text-xs text-white uppercase tracking-wider">Identidad y URL del Workspace</h4>
+                          <p className="text-[11px] text-text-dim-theme">Nombre, logo y dirección web personalizada para el equipo</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] bg-accent-theme/10 text-accent-theme font-mono px-2 py-0.5 rounded border border-accent-theme/20">
+                        /team/{teamSlug || activeTeam.slug || activeTeam.id}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5">
+                          Nombre del Equipo
+                        </label>
+                        <input 
+                          type="text" 
+                          value={teamName} 
+                          onChange={e => setTeamName(e.target.value)}
+                          placeholder="Ej. Mi Agencia E-commerce"
+                          className="w-full text-sm px-3.5 py-2.5 rounded-lg border outline-none focus:ring-1 focus:ring-accent-theme bg-bg-theme border-border-theme focus:border-text-dim-theme text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-text-dim-theme mb-1.5 flex items-center justify-between">
+                          <span>Slug / URL del Equipo</span>
+                          <span className="text-[10px] text-text-dim-theme lowercase">Solo minúsculas y guiones</span>
+                        </label>
+                        <div className="flex items-center rounded-lg border border-border-theme bg-bg-theme focus-within:border-accent-theme focus-within:ring-1 focus-within:ring-accent-theme transition-all overflow-hidden">
+                          <span className="px-3 py-2 text-xs font-mono text-text-dim-theme bg-surface-theme/50 border-r border-border-theme select-none">
+                            /team/
+                          </span>
+                          <input 
+                            type="text" 
+                            value={teamSlug} 
+                            onChange={e => setTeamSlug(slugify(e.target.value))}
+                            placeholder="mi-agencia-ecommerce"
+                            className="w-full text-sm px-3 py-2 outline-none bg-transparent text-emerald-400 font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card URL Pública con botón de copiar */}
+                    <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-950/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0 w-full sm:w-auto">
+                        <LinkIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <div className="truncate">
+                          <span className="text-[11px] font-bold text-emerald-300 block">Enlace directo al Workspace:</span>
+                          <span className="text-xs font-mono text-text-dim-theme truncate block">
+                            {typeof window !== "undefined" ? window.location.origin : "https://tlamatqui.app"}/team/{teamSlug || activeTeam.slug || activeTeam.id}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = `${typeof window !== "undefined" ? window.location.origin : "https://tlamatqui.app"}/team/${teamSlug || activeTeam.slug || activeTeam.id}`;
+                          navigator.clipboard.writeText(url);
+                          setCopiedTeamUrl(true);
+                          toast.success("URL del equipo copiada al portapapeles", "Enlace del Workspace");
+                          setTimeout(() => setCopiedTeamUrl(false), 2000);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        {copiedTeamUrl ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedTeamUrl ? "Copiado" : "Copiar URL"}</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* SECCIÓN: Subtabla ReportConfig (Contacto, Usuario 1:1 y Logos de Campaña) */}

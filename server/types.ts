@@ -416,6 +416,8 @@ export interface Ally {
  */
 export interface Team {
   id: string;
+  /** Identificador slug único para la URL del equipo (ej. growth-ecommerce) */
+  slug?: string;
   name: string;
   image?: string;
   ownerName: string;

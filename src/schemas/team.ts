@@ -109,6 +109,7 @@ export type TeamConfig = z.infer<typeof TeamConfigSchema>;
  */
 export const TeamSchema = z.object({
   id: z.string().min(1),
+  slug: z.string().optional(),
   name: z.string().min(1),
   image: z.string().optional(),
   ownerName: z.string().min(1),

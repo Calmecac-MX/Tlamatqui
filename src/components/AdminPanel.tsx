@@ -321,16 +321,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       const result = await lookupGravatar(emailToLookup);
       if (result.hasGravatar && result.gravatarUrl) {
         setUserAvatar(result.gravatarUrl);
-        showAlert({
+        showAlert(`Se recuperó exitosamente la foto de perfil vinculada al correo ${emailToLookup}.`, {
           type: "success",
-          title: "¡Gravatar Recuperado!",
-          message: `Se recuperó exitosamente la foto de perfil vinculada al correo ${emailToLookup}.`
+          title: "¡Gravatar Recuperado!"
         });
       } else {
-        showAlert({
+        showAlert(`No se encontró una foto de perfil personalizada en Gravatar para ${emailToLookup}. Puedes subir tu propia imagen.`, {
           type: "info",
-          title: "Sin foto en Gravatar",
-          message: `No se encontró una foto de perfil personalizada en Gravatar para ${emailToLookup}. Puedes subir tu propia imagen.`
+          title: "Sin foto en Gravatar"
         });
       }
     } catch (err: any) {

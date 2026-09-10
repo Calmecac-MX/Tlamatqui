@@ -53,6 +53,7 @@ export const ReportSchema = z.object({
 
 export const TeamSchema = z.object({
   id: z.string().optional(),
+  slug: z.string().optional(),
   name: z.string().min(1, "El nombre del equipo es obligatorio"),
   image: z.string().optional(),
   ownerName: z.string().min(1),
