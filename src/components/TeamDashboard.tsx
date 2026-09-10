@@ -382,9 +382,10 @@ export default function TeamDashboard({
 
     try {
       await onUpdateTeam(updatedTeam);
-      alert("¡Configuración del reporte del equipo guardada con éxito!");
+      toast.success("Configuración de equipo y reporte guardada con éxito.", "Equipo Actualizado");
     } catch (err) {
       setConfigError("Error al guardar la configuración del reporte.");
+      toast.error("Error al guardar la configuración del reporte.", "Error");
     } finally {
       setIsSavingConfig(false);
     }
@@ -518,8 +519,10 @@ export default function TeamDashboard({
       setNewMemberAvatar("");
       setIsAddingMember(false);
       setMemberError(null);
+      toast.success(`Miembro "${newMember.name}" agregado al equipo con éxito.`, "Miembro Agregado");
     } catch (err) {
       setMemberError("No se pudo agregar al miembro");
+      toast.error("No se pudo agregar al miembro.", "Error");
     }
   };
 
@@ -556,6 +559,7 @@ export default function TeamDashboard({
         type: "success",
         message: `¡Correo de invitación enviado exitosamente a ${sendInviteEmail.trim()}!`
       });
+      toast.success(`Correo de invitación enviado a ${sendInviteEmail.trim()}`, "Invitación Enviada");
 
       setSendInviteEmail("");
       setSendInviteName("");
@@ -565,6 +569,7 @@ export default function TeamDashboard({
         type: "error",
         message: err.message || "Error al enviar la invitación por correo electrónico."
       });
+      toast.error(err.message || "Error al enviar invitación.", "Error de Envío");
     } finally {
       setIsSendingInvite(false);
     }

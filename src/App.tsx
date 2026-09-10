@@ -10,11 +10,13 @@ import { Auth0ProviderWrapper, useAuth } from "./lib/authContext";
 const AdminPanel = lazy(() => import("./components/AdminPanel"));
 const ReportView = lazy(() => import("./components/ReportView"));
 import { JoinTeamModal } from "./components/JoinTeamModal";
-import { AlertPopupProvider } from "./context/AlertPopupContext";
+import { AlertPopupProvider, useAlertPopup } from "./context/AlertPopupContext";
 import { AlertPopupModal, AlertToastContainer } from "./components/AlertPopupModal";
 import { setupDynamicFavicon } from "./lib/faviconService";
+import { FRONTEND_VERSION } from "./version";
 
 function MainAppRouter() {
+  const { toast } = useAlertPopup();
   const [viewingReportId, setViewingReportId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -38,6 +40,36 @@ function MainAppRouter() {
     const cleanup = setupDynamicFavicon();
     return cleanup;
   }, []);
+
+  // Notificación de actualización de la aplicación disponible
+  useEffect(() => {
+    let timer: any;
+    const checkVersion = async () => {
+      try {
+        const res = await fetch("/api/version");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.frontendVersion && data.frontendVersion !== FRONTEND_VERSION) {
+            toast.info(
+              `Nueva actualización v${data.frontendVersion} disponible. Recarga la página para aplicar los cambios.`,
+              "Actualización Disponible",
+              8000
+            );
+          }
+        }
+      } catch (err) {
+        // Silencio en errores de red
+      }
+    };
+
+    const initialTimeout = setTimeout(checkVersion, 3500);
+    timer = setInterval(checkVersion, 120000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(timer);
+    };
+  }, [toast]);
 
   // Sync default document title when not viewing a report
   useEffect(() => {

@@ -140,21 +140,21 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           </div>
         )}
 
-        {editingReport && (
+        {editingReport ? (
           <button
             onClick={() => setEditingReport(null)}
             className="text-xs text-text-dim-theme hover:text-white border border-border-theme bg-surface-theme hover:bg-surface-hover-theme transition-all px-3 py-1.5 rounded-lg cursor-pointer font-bold mr-1"
           >
             Volver a la Lista
           </button>
+        ) : (
+          <button
+            onClick={handleStartCreate}
+            className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95"
+          >
+            <Plus className="w-4 h-4" /> Nuevo Diagnóstico
+          </button>
         )}
-
-        <button
-          onClick={handleStartCreate}
-          className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95"
-        >
-          <Plus className="w-4 h-4" /> Nuevo Diagnóstico
-        </button>
       </div>
     </header>
   );

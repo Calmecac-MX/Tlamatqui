@@ -240,6 +240,19 @@ app.get("/api/health", (req: Request, res: Response) => {
   });
 });
 
+/**
+ * @route GET /api/version
+ * @description Endpoint ligero para consultar la versión actual del sistema y verificar actualizaciones.
+ */
+app.get("/api/version", (req: Request, res: Response) => {
+  res.json({
+    backendVersion: BACKEND_VERSION,
+    frontendVersion: FRONTEND_VERSION,
+    appVersion: FRONTEND_VERSION,
+    timestamp: new Date().toISOString()
+  });
+});
+
 
 /**
  * @route GET /api/auth/callback

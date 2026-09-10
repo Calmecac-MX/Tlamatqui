@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.105 (Frontend) / v2.5.99 (Backend)] - 2026-09-10
+
+### 🚀 Features & Nuevas Funcionalidades
+- **admin:** remove analytics and clicks tab from report edit form (`e36d153`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- bump frontend version to 2.5.104 (`5df5237`)
+
 ## [v2.5.104 (Frontend) / v2.5.98 (Backend)] - 2026-09-10
 
 ### 🐛 Corregido & Bug Fixes

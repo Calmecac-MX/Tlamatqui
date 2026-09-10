@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import RealTimeDashboard from "./RealTimeDashboard";
 import GlobalDashboard from "./GlobalDashboard";
 
@@ -13,7 +13,7 @@ const SuperAdminDashboard = lazy(() => import("./SuperAdminDashboard"));
 import { 
   Plus, Edit, Trash2, Eye, Copy, Save, Sparkles, AlertTriangle, 
   Settings, User, Phone, Mail, Link as LinkIcon, DollarSign, 
-  Layers, Database, FileText, CheckCircle, RefreshCw, Moon, Sun, Laptop, ArrowRight,
+  Layers, Database, FileText, CheckCircle, Check, RefreshCw, Moon, Sun, Laptop, ArrowRight,
   TrendingUp, Menu, ChevronLeft, ChevronRight, LayoutDashboard, Undo2, RotateCcw, Bookmark,
   UploadCloud, Camera, Image as ImageIcon, X, Users, ChevronDown, Crown,
   Search, Filter, SlidersHorizontal, Calendar, Table, LayoutGrid, LogOut, ShieldCheck, Lock,
@@ -199,11 +199,13 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         setTeams(prev => prev.filter(t => t.id !== teamId));
         setSelectedTeamId("team-default");
         setAdminTab("dashboard");
+        toast.success("Equipo eliminado con éxito.", "Equipo Eliminado");
       } else {
-        alert("Error al eliminar el equipo");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Error al eliminar el equipo", "Error");
       }
-    } catch (e) {
-      alert("Error de red al eliminar el equipo");
+    } catch (e: any) {
+      toast.error(e.message || "Error de red al eliminar el equipo", "Error");
     }
   };
 
@@ -221,12 +223,14 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
         setIsOnboardingModalOpen(false);
         setIsTeamSelectorOpen(false);
         sessionStorage.setItem("tlamatqui_onboarding_dismissed", "true");
+        toast.success(`Equipo "${created.name}" creado con éxito.`, "Equipo Creado");
       } else {
         const err = await res.json();
         throw new Error(err.error || "Error al crear el equipo");
       }
     } catch (e: any) {
       console.error("Error al crear el equipo:", e);
+      toast.error(e.message || "Error al crear el equipo", "Error");
       throw e;
     }
   };
@@ -527,6 +531,94 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const [scraperUrl, setScraperUrl] = useState<string>("");
   const [scraping, setScraping] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Autosave State & Refs for Report Editor
+  const [isAutoSaving, setIsAutoSaving] = useState<boolean>(false);
+  const [lastAutoSavedTime, setLastAutoSavedTime] = useState<string | null>(null);
+  const isInitialLoadRef = useRef<boolean>(true);
+  const previousReportJsonRef = useRef<string>("");
+
+  // Reset autosave flags when opening a report
+  useEffect(() => {
+    if (editingReport) {
+      isInitialLoadRef.current = true;
+      previousReportJsonRef.current = JSON.stringify(editingReport);
+    } else {
+      setIsAutoSaving(false);
+      setLastAutoSavedTime(null);
+    }
+  }, [editingReport?.id]);
+
+  // Debounced Autosave Effect
+  useEffect(() => {
+    if (!editingReport) return;
+
+    const currentJson = JSON.stringify(editingReport);
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      previousReportJsonRef.current = currentJson;
+      return;
+    }
+
+    if (currentJson === previousReportJsonRef.current) return;
+    if (!editingReport.name?.trim()) return;
+
+    const timer = setTimeout(async () => {
+      setIsAutoSaving(true);
+      try {
+        const isNew = !reports.some(r => r.id === editingReport.id);
+        const url = isNew ? "/api/reports" : `/api/reports/${editingReport.id}`;
+        const method = isNew ? "POST" : "PUT";
+
+        const reportToSave: Report = {
+          ...editingReport,
+          id: editingReport.id || `rep_${Date.now()}`,
+          createdBy: editingReport.createdBy || userEmail || "cesar.ayar19@gmail.com",
+          contactEmail: editingReport.contactEmail || userEmail || "comercial@tiendanube.mx",
+          teamId: editingReport.teamId || selectedTeamId || "team-default",
+          tools: editingReport.tools || [],
+          comparisonRows: (editingReport.comparisonRows && editingReport.comparisonRows.length > 0)
+            ? editingReport.comparisonRows
+            : (configComparisonRows && configComparisonRows.length > 0 ? configComparisonRows : DEFAULT_GLOBAL_COMPARISON_ROWS),
+          adminLogos: (editingReport.adminLogos && editingReport.adminLogos.length > 0)
+            ? editingReport.adminLogos
+            : [
+              "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=100&q=80",
+              "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=100&q=80",
+              "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80"
+            ]
+        } as Report;
+
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reportToSave)
+        });
+
+        if (res.ok) {
+          const savedData: Report = await res.json();
+          previousReportJsonRef.current = JSON.stringify(savedData);
+          setReports(prev => {
+            const idx = prev.findIndex(r => r.id === savedData.id);
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = savedData;
+              return next;
+            }
+            return [savedData, ...prev];
+          });
+          const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          setLastAutoSavedTime(timeStr);
+        }
+      } catch (e) {
+        console.warn("Autosave warning:", e);
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [editingReport, reports, userEmail, selectedTeamId, configComparisonRows]);
 
   // Tool Form State
   const [newTool, setNewTool] = useState<Partial<Tool>>({
@@ -1950,21 +2042,21 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
           </div>
 
           <div className="flex items-center gap-3">
-            {editingReport && (
+            {editingReport ? (
               <button 
                 onClick={() => setEditingReport(null)}
                 className="text-xs text-text-dim-theme hover:text-white border border-border-theme bg-surface-theme hover:bg-surface-hover-theme transition-all px-3 py-1.5 rounded-lg cursor-pointer font-bold mr-1"
               >
                 Volver a la Lista
               </button>
+            ) : (
+              <button 
+                onClick={handleStartCreate}
+                className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95"
+              >
+                <Plus className="w-4 h-4" /> Nuevo Diagnóstico
+              </button>
             )}
-            
-            <button 
-              onClick={handleStartCreate}
-              className="bg-accent-theme hover:bg-accent-theme/90 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95"
-            >
-              <Plus className="w-4 h-4" /> Nuevo Diagnóstico
-            </button>
           </div>
         </header>
 
@@ -3917,6 +4009,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 </h2>
               </div>
               <div className="flex items-center gap-3">
+                {isAutoSaving && (
+                  <span className="text-xs text-text-dim-theme flex items-center gap-1.5 animate-pulse bg-bg-theme px-2.5 py-1 rounded-md border border-border-theme">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-accent-theme" /> Guardando...
+                  </span>
+                )}
+                {!isAutoSaving && lastAutoSavedTime && (
+                  <span className="text-xs text-emerald-400 flex items-center gap-1.5 font-mono bg-emerald-950/20 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Autoguardado {lastAutoSavedTime}
+                  </span>
+                )}
                 <button 
                   onClick={() => setEditingReport(null)}
                   className="px-4 py-2 rounded-lg text-sm transition-all border border-border-theme bg-surface-theme hover:bg-surface-hover-theme text-slate-300 cursor-pointer"
@@ -4761,8 +4863,20 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
             </div>
 
             {/* Form Footer */}
-            <div className="border-t border-border-theme mt-8 pt-5 flex items-center justify-between">
-              <p className="text-[10px] text-text-dim-theme italic">Recuerda pulsar "Guardar Todo" al finalizar para persistir los cambios.</p>
+            <div className="border-t border-border-theme mt-8 pt-5 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <p className="text-[10px] text-text-dim-theme italic">Recuerda pulsar "Guardar Todo" al finalizar para persistir los cambios.</p>
+                {isAutoSaving && (
+                  <span className="text-[11px] text-text-dim-theme flex items-center gap-1.5 animate-pulse bg-bg-theme px-2 py-0.5 rounded border border-border-theme">
+                    <RefreshCw className="w-3 h-3 animate-spin text-accent-theme" /> Guardando...
+                  </span>
+                )}
+                {!isAutoSaving && lastAutoSavedTime && (
+                  <span className="text-[11px] text-emerald-400 flex items-center gap-1.5 font-mono bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-500/20">
+                    <Check className="w-3 h-3 text-emerald-400" /> Autoguardado {lastAutoSavedTime}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button 
                   onClick={() => setEditingReport(null)}
