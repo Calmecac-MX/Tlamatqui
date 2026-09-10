@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.102 (Frontend) / v2.5.96 (Backend)] - 2026-09-10
+
+### 🚀 Features & Nuevas Funcionalidades
+- **ui:** enlarge instance logo and hide header logo when sidebar is visible (`980298c`)
+
 ## [v2.5.102 (Frontend) / v2.5.95 (Backend)] - 2026-09-10
 
 ### 🐛 Corregido & Bug Fixes

@@ -48,6 +48,7 @@ CREATE INDEX IF NOT EXISTS "User_email_idx" ON "User"("email");
 
 CREATE TABLE IF NOT EXISTS "Team" (
     "id" TEXT NOT NULL PRIMARY KEY,
+    "slug" TEXT UNIQUE,
     "name" TEXT NOT NULL,
     "image" TEXT,
     "ownerName" TEXT NOT NULL,
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS "Team" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Team_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
+CREATE INDEX IF NOT EXISTS "Team_slug_idx" ON "Team"("slug");
 CREATE INDEX IF NOT EXISTS "Team_ownerEmail_idx" ON "Team"("ownerEmail");
 CREATE INDEX IF NOT EXISTS "Team_ownerId_idx" ON "Team"("ownerId");
 

@@ -1,10 +1,21 @@
-import dotenv from "dotenv";
-dotenv.config();
-
-type PrismaClient = any;
+import { createRequire } from "node:module";
 import pg from "pg";
 
-let prisma: PrismaClient | null = null;
+let PrismaClientClass: any = null;
+let PrismaPgClass: any = null;
+
+try {
+  const req = createRequire(import.meta.url);
+  const prismaClientPkg = req("@prisma/client");
+  PrismaClientClass = prismaClientPkg?.PrismaClient || prismaClientPkg;
+  const adapterPgPkg = req("@prisma/adapter-pg");
+  PrismaPgClass = adapterPgPkg?.PrismaPg || adapterPgPkg;
+} catch (e) {
+  console.warn("[Prisma Init Warn] Could not require prisma packages via createRequire:", e);
+}
+
+type PrismaClientInstance = any;
+let prisma: PrismaClientInstance | null = null;
 
 /**
  * Obtiene y valida la variable de conexión a la base de datos PostgreSQL.
@@ -60,7 +71,7 @@ let schemaRepairPromise: Promise<void> | null = null;
  * Asegura de forma idempotente que todas las columnas nuevas requeridas existan en la tabla PostgreSQL
  * para prevenir errores de tipo P2022 (ColumnNotFound) en producción y entornos serverless.
  */
-export async function ensureDatabaseSchema(prismaClient: PrismaClient): Promise<void> {
+export async function ensureDatabaseSchema(prismaClient: PrismaClientInstance): Promise<void> {
   if (!schemaRepairPromise) {
     schemaRepairPromise = (async () => {
       try {
@@ -77,6 +88,7 @@ export async function ensureDatabaseSchema(prismaClient: PrismaClient): Promise<
           `ALTER TABLE "Report" ADD COLUMN IF NOT EXISTS "teamId" TEXT;`,
           `ALTER TABLE "Report" ADD COLUMN IF NOT EXISTS "creatorId" TEXT;`,
 
+          `ALTER TABLE "Team" ADD COLUMN IF NOT EXISTS "slug" TEXT;`,
           `ALTER TABLE "Team" ADD COLUMN IF NOT EXISTS "contactEmail" TEXT;`,
           `ALTER TABLE "Team" ADD COLUMN IF NOT EXISTS "contactPhone" TEXT;`,
           `ALTER TABLE "Team" ADD COLUMN IF NOT EXISTS "teamBrandName" TEXT;`,
@@ -95,7 +107,7 @@ export async function ensureDatabaseSchema(prismaClient: PrismaClient): Promise<
 
         for (const sql of statements) {
           try {
-            await prismaClient.$executeRawUnsafe(sql);
+            await (prismaClient as any).$executeRawUnsafe(sql);
           } catch (e) {
             // Ignorar si la tabla no existe aún
           }
@@ -116,7 +128,7 @@ export async function ensureDatabaseSchema(prismaClient: PrismaClient): Promise<
  * 
  * @returns {PrismaClient | null} Instancia del cliente de Prisma o null.
  */
-export function getPrisma(): PrismaClient | null {
+export function getPrisma(): PrismaClientInstance | null {
   const dbUrl = getDatabaseUrl();
   if (!dbUrl) {
     return null;
@@ -124,20 +136,11 @@ export function getPrisma(): PrismaClient | null {
 
   if (!prisma) {
     try {
-      let PrismaClientPkg: any = null;
-      let PrismaPgPkg: any = null;
-      try {
-        PrismaClientPkg = require("@prisma/client");
-        PrismaPgPkg = require("@prisma/adapter-pg");
-      } catch (e) {
-        // Fallback si no está generado el cliente en el entorno
-      }
-      const PrismaClientClass = PrismaClientPkg?.PrismaClient || PrismaClientPkg;
-      const PrismaPgClass = PrismaPgPkg?.PrismaPg || PrismaPgPkg;
       if (!PrismaClientClass) {
+        console.warn("[Prisma Singleton] PrismaClientClass is not loaded.");
         return null;
       }
-      
+
       const normalizedUrl = normalizeDatabaseUrl(dbUrl);
       if (normalizedUrl.startsWith("prisma://") || normalizedUrl.startsWith("prisma+postgres://")) {
         prisma = new PrismaClientClass({ accelerateUrl: normalizedUrl });
