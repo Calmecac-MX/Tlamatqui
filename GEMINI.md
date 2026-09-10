@@ -14,7 +14,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 - **Servicio Gravatar:** Resolución automática y en tiempo real de fotos de perfil (`server/gravatarService.ts`, `src/lib/gravatar.ts`) en Auth Context, Registro/Sincronización de Usuarios, Panel de Administración e Invitación de Miembros del Equipo.
 - **Sistema Global de Popups & Avisos:** `AlertPopupProvider`, `AlertPopupModal` y `AlertToastContainer` para unificar avisos, errores, confirmaciones y toasts en popups modales reactivos.
 - **Gestión de Slugs e Identidad de Equipos:** `slug` único e indexado en `Team` (`server/dbBridge.ts`, `prisma/schema.prisma`), endpoints `/api/teams/:idOrSlug`, y onboarding reactivo (`TeamOnboardingModal`) activado únicamente al crear equipo o para usuarios nuevos sin equipo.
-- **Arquitectura de Workflows (`server/workflows/`):** Patrón *Thin Controller* con pipelines modulares para `auditWorkflow`, `emailWorkflow`, `domainWorkflow`, `teamWorkflow` y `engagementWorkflow`.
+- **Arquitectura de Workflows (`server/workflows/`):** Patrón *Thin Controller* con pipelines modulares para `auditWorkflow`, `emailWorkflow`, `domainWorkflow`, `teamWorkflow` y `engagementWorkflow` (telemetría y píxel estrictamente vinculados a accesos de clientes en `isShared === true`, sin visitantes simulados).
 - **Base de Datos:** Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`).
 - **Autenticación:** Auth0 (`@auth0/auth0-react` en Frontend y validación JWT en Backend).
 

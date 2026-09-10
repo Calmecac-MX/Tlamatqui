@@ -36,7 +36,7 @@ El backend implementa el patrón **Thin Controller + Modular Workflows** desacop
 - **`emailWorkflow.ts`:** Motor de correo transaccional y notificaciones con fallback dual automático (Brevo API -> Nodemailer SMTP) y plantillas HTML dinámicas.
 - **`domainWorkflow.ts`:** Verificación y aprovisionamiento de dominios personalizados (Sanitización, validación DNS TXT challenge, diagnósticos y vinculación con Vercel Domains API).
 - **`teamWorkflow.ts`:** Gestión del ciclo de vida de membresías y equipos (Generación y canje de tokens de invitación, solicitudes de unión, flujos de aprobación/rechazo y sincronización de roles).
-- **`engagementWorkflow.ts`:** Telemetría de interacción con reportes (Cálculo de visitantes únicos, vistas de slides, telemetría de sliders/calculadora y recálculo reactivo de ROI).
+- **`engagementWorkflow.ts`:** Telemetría de interacción con reportes (Cálculo de visitantes únicos, vistas de slides, telemetría de sliders/calculadora y recálculo reactivo de ROI). Píxel y telemetría condicionados a accesos compartidos públicos (`isShared === true`), garantizando 0 visitantes ficticios en borradores y reportes no visitados, con polling en vivo en `RealTimeDashboard`.
 
 ### 1.4 Comandos Principales de Desarrollo
 - **Desarrollo Simultáneo (Backend + Frontend):** `npm run dev`

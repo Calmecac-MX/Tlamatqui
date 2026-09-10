@@ -260,6 +260,8 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
 
   const sendInteraction = async (type: string, details?: any) => {
     if (!reportId || !report) return;
+    // Únicamente registrar telemetría y píxel cuando es un visitante real del enlace compartido público
+    if (!isShared) return;
     await sendReportInteraction(reportId, type, details);
   };
 
@@ -1001,12 +1003,13 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
           console.error("Error fetching config in ReportView", err);
         }
 
-        // Track view/open event (isolated try/catch)
-        try {
-          const trackType = isShared ? "view" : "open";
-          await fetch(`/api/reports/${cleanId}/${trackType}`, { method: "POST" });
-        } catch (err) {
-          console.warn("Error tracking report event", err);
+        // Track view event only when viewed via public shared link
+        if (isShared) {
+          try {
+            await fetch(`/api/reports/${cleanId}/view`, { method: "POST" });
+          } catch (err) {
+            console.warn("Error tracking report event", err);
+          }
         }
       } catch (e) {
         console.error("Error loading report", e);

@@ -166,6 +166,17 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
     contactWhatsapp: input.contactWhatsapp || undefined,
     teamId: input.teamId || undefined,
     createdBy: input.creatorId || undefined,
+    viewCount: 0,
+    openCount: 0,
+    uniqueVisitors: 0,
+    uniqueVisitorIds: [],
+    interactions: {
+      slideViews: {},
+      whatsappClicks: 0,
+      toolClicks: 0,
+      calculatorInteractions: 0,
+      timeSpentSeconds: 0
+    },
     createdAt: new Date().toISOString()
   };
 

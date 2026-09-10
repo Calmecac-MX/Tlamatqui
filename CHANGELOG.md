@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.103 (Frontend) / v2.5.98 (Backend)] - 2026-09-10
+
+### 🐛 Corregido & Bug Fixes
+- **db:** ensure unique member keys in saveDbTeam and correct typing in test_db_save (`763d4b8`)
+
 ## [v2.5.102 (Frontend) / v2.5.97 (Backend)] - 2026-09-10
 
 ### 🐛 Corregido & Bug Fixes

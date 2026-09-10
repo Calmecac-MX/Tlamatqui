@@ -66,182 +66,177 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
   const [chartType, setChartType] = useState<"area" | "line" | "bar">("area");
 
   // Real-time metrics
-  const [diagnosticsCount, setDiagnosticsCount] = useState<number>(0);
-  const [auditedVisits, setAuditedVisits] = useState<number>(0);
-  const [detectedLeaks, setDetectedLeaks] = useState<number>(0);
-  const [projectedSavings, setProjectedSavings] = useState<number>(0);
+  const [diagnosticsCount, setDiagnosticsCount] = useState<number>(report.viewCount || 0);
+  const [auditedVisits, setAuditedVisits] = useState<number>(report.uniqueVisitors || 0);
+  const [detectedLeaks, setDetectedLeaks] = useState<number>(report.fugasCantidad || 0);
+  const [projectedSavings, setProjectedSavings] = useState<number>(calculatedSavings || 0);
 
   // Sparkline-like historical points
   const [history, setHistory] = useState<HistoricalPoint[]>([]);
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [highlightedCard, setHighlightedCard] = useState<string | null>(null);
 
-  // Initialize metrics based on the current report's data
+  // Initialize metrics based on the current report's real data
   useEffect(() => {
-    const baseDiagnostics = report.viewCount || 1;
-    const baseVisits = report.uniqueVisitors || 1;
-    const baseLeaks = report.fugasCantidad || 3;
-    const baseSavings = calculatedSavings || 4500;
+    const baseDiagnostics = report.viewCount || 0;
+    const baseVisits = report.uniqueVisitors || 0;
+    const baseLeaks = report.fugasCantidad || 0;
+    const baseSavings = calculatedSavings || 0;
 
     setDiagnosticsCount(baseDiagnostics);
     setAuditedVisits(baseVisits);
     setDetectedLeaks(baseLeaks);
     setProjectedSavings(baseSavings);
 
-    // Generate last 12 historical points
+    // Generate historical points reflecting actual recorded values
     const initialHistory: HistoricalPoint[] = [];
     const now = new Date();
     for (let i = 11; i >= 0; i--) {
       const timeStr = new Date(now.getTime() - i * 60000 * 5)
         .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       
-      const variance = 1 + (Math.random() * 0.12 - 0.06); // slight noise
-      
       initialHistory.push({
         time: timeStr,
-        diagnostics: Math.max(1, Math.round(baseDiagnostics - (i * 0.1))),
-        visits: Math.round(baseVisits * variance),
-        leaks: Math.max(1, Math.round(baseLeaks - (i * 0.2))),
-        savings: Math.round(baseSavings * variance)
+        diagnostics: baseDiagnostics,
+        visits: baseVisits,
+        leaks: baseLeaks,
+        savings: baseSavings
       });
     }
 
     setHistory(initialHistory);
 
-    // Initial diagnostics feed logs for this specific report (Apertura, Navegación, Descarga)
+    // Initial real diagnostics feed logs (only if report has actual visits/interactions)
     const activeStoreName = report.name;
-    const initialFeed: FeedEvent[] = [
-      {
-        id: `init-1`,
-        timestamp: new Date(now.getTime() - 25000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    const initialFeed: FeedEvent[] = [];
+
+    if (report.interactions) {
+      if (report.interactions.slideViews) {
+        Object.entries(report.interactions.slideViews).forEach(([slide, count], idx) => {
+          if (count > 0) {
+            initialFeed.push({
+              id: `init-slide-${idx}`,
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              type: "navigate",
+              message: `Navegó a: ${slide} (${count} ${count === 1 ? "vista" : "vistas"})`,
+              value: "Navegación 🧭",
+              storeName: activeStoreName
+            });
+          }
+        });
+      }
+      if (report.interactions.whatsappClicks && report.interactions.whatsappClicks > 0) {
+        initialFeed.push({
+          id: `init-wa`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          type: "download",
+          message: `Clic en botón de contacto / WhatsApp (${report.interactions.whatsappClicks})`,
+          value: "Contacto 💬",
+          storeName: activeStoreName
+        });
+      }
+      if (report.interactions.toolClicks && report.interactions.toolClicks > 0) {
+        initialFeed.push({
+          id: `init-tool`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          type: "navigate",
+          message: `Inspección de herramientas del stack (${report.interactions.toolClicks})`,
+          value: "Herramientas 🛠️",
+          storeName: activeStoreName
+        });
+      }
+    }
+
+    if (baseVisits > 0 && initialFeed.length === 0) {
+      initialFeed.push({
+        id: `init-open`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         type: "open",
-        message: "Cliente potencial abrió el diagnóstico detallado",
+        message: "Cliente potencial abrió el diagnóstico en línea",
         value: "Apertura 👁️",
         storeName: activeStoreName
-      },
-      {
-        id: `init-2`,
-        timestamp: new Date(now.getTime() - 15000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        type: "navigate",
-        message: "Navegó a: Slide 2 (Costos Ocultos y Fugas)",
-        value: "Navegación 🧭",
-        storeName: activeStoreName
-      },
-      {
-        id: `init-3`,
-        timestamp: new Date(now.getTime() - 5000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        type: "download",
-        message: "Reporte descargado en formato PDF Horizontal",
-        value: "Descarga PDF 📄",
-        storeName: activeStoreName
-      }
-    ];
+      });
+    }
+
     setFeed(initialFeed);
   }, [report, calculatedSavings]);
 
-  // Real-time ticking interval
+  // Real-time polling interval to fetch live metrics from API
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !report.id) return;
 
-    const tick = () => {
-      const storeName = report.name;
+    let isMounted = true;
 
-      // Roll a die for diagnostics-related events:
-      // 40% View, 35% Leak found, 15% Contact initiated, 10% New Diagnostic Audit completed
-      const roll = Math.random();
-      const now = new Date();
-      const timeLabel = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const preciseTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const pollReport = async () => {
+      try {
+        const res = await fetch(`/api/reports/${report.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data) return;
 
-      let newEvent: FeedEvent | null = null;
+        const updatedReport: Report = data;
+        const newVisits = updatedReport.uniqueVisitors || 0;
+        const newViews = updatedReport.viewCount || 0;
+        const newLeaks = updatedReport.fugasCantidad || 0;
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const preciseTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-      let nextDiag = diagnosticsCount;
-      let nextVisits = auditedVisits;
-      let nextLeaks = detectedLeaks;
-      let nextSavings = projectedSavings;
+        // Detect real new visitor or view events
+        if (newVisits > auditedVisits) {
+          triggerCardHighlight("visits");
+          const openEvent: FeedEvent = {
+            id: `feed-visit-${Date.now()}`,
+            timestamp: preciseTime,
+            type: "open",
+            message: `Nuevo visitante único accedió al diagnóstico`,
+            value: `Apertura 👁️`,
+            storeName: updatedReport.name
+          };
+          setFeed(prev => [openEvent, ...prev.slice(0, 29)]);
+        }
 
-      if (roll < 0.25) {
-        // Evento: Abrir reporte
-        const extraTraffic = 1;
-        nextVisits += extraTraffic;
+        if (newViews > diagnosticsCount) {
+          triggerCardHighlight("diagnostics");
+          const viewEvent: FeedEvent = {
+            id: `feed-view-${Date.now()}`,
+            timestamp: preciseTime,
+            type: "navigate",
+            message: `Visualización del reporte registrada`,
+            value: `Vistas 📊`,
+            storeName: updatedReport.name
+          };
+          setFeed(prev => [viewEvent, ...prev.slice(0, 29)]);
+        }
 
-        newEvent = {
-          id: `feed-${Date.now()}`,
-          timestamp: preciseTime,
-          type: "open",
-          message: `Cliente potencial abrió el diagnóstico en línea`,
-          value: `Apertura 👁️`,
-          storeName: storeName
-        };
-        triggerCardHighlight("visits");
-      } else if (roll < 0.75) {
-        // Evento: Navegar en el reporte
-        const pages = [
-          "Slide 1: Comparativa General", 
-          "Slide 2: Costos Ocultos y Fugas", 
-          "Slide 3: Plan de Acción y Ahorro", 
-          "Ficha Técnica y Métricas",
-          "Calculadora de Comisiones"
-        ];
-        const randomPage = pages[Math.floor(Math.random() * pages.length)];
+        setDiagnosticsCount(newViews);
+        setAuditedVisits(newVisits);
+        setDetectedLeaks(newLeaks);
+        setProjectedSavings(calculatedSavings || 0);
 
-        newEvent = {
-          id: `feed-${Date.now()}`,
-          timestamp: preciseTime,
-          type: "navigate",
-          message: `Navegó a la sección: ${randomPage}`,
-          value: `Navegación 🧭`,
-          storeName: storeName
-        };
-        triggerCardHighlight("visits");
-      } else {
-        // Evento: Descargar reporte
-        const formats = [
-          "PDF Presentación (16:9)",
-          "Documento Markdown (.md)",
-          "Hoja de Cálculo Excel (.xlsx)",
-          "Resumen Ejecutivo PDF"
-        ];
-        const randomFormat = formats[Math.floor(Math.random() * formats.length)];
-
-        newEvent = {
-          id: `feed-${Date.now()}`,
-          timestamp: preciseTime,
-          type: "download",
-          message: `Reporte descargado en formato ${randomFormat}`,
-          value: `Descarga 📥`,
-          storeName: storeName
-        };
-
-        triggerCardHighlight("diagnostics");
-      }
-
-      setDiagnosticsCount(nextDiag);
-      setAuditedVisits(nextVisits);
-      setDetectedLeaks(nextLeaks);
-      setProjectedSavings(nextSavings);
-
-      setHistory(prev => {
-        const nextHist = [...prev];
-        if (nextHist.length >= 12) nextHist.shift();
-        nextHist.push({
-          time: timeLabel,
-          diagnostics: nextDiag,
-          visits: nextVisits,
-          leaks: nextLeaks,
-          savings: nextSavings
+        setHistory(prev => {
+          const nextHist = [...prev];
+          if (nextHist.length >= 12) nextHist.shift();
+          nextHist.push({
+            time: timeLabel,
+            diagnostics: newViews,
+            visits: newVisits,
+            leaks: newLeaks,
+            savings: calculatedSavings || 0
+          });
+          return nextHist;
         });
-        return nextHist;
-      });
-
-      if (newEvent) {
-        setFeed(prev => [newEvent!, ...prev.slice(0, 30)]);
+      } catch (err) {
+        // Polling network fail silently handled
       }
     };
 
-    const timer = setInterval(tick, updateInterval);
-    return () => clearInterval(timer);
-  }, [isPlaying, updateInterval, report, diagnosticsCount, auditedVisits, detectedLeaks, projectedSavings]);
+    const timer = setInterval(pollReport, Math.max(updateInterval, 3000));
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [isPlaying, updateInterval, report.id, diagnosticsCount, auditedVisits, calculatedSavings]);
 
   // Flash card helper
   const triggerCardHighlight = (cardId: string) => {
@@ -370,7 +365,7 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
             </h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] text-green-theme font-semibold flex items-center bg-green-theme/10 px-1.5 py-0.5 rounded">
-                {report.viewCount || 1} vistas base
+                {report.viewCount || 0} vistas base
               </span>
               <span className="text-[10px] text-text-dim-theme font-mono">
                 • {report.openCount || 0} clics
@@ -397,7 +392,7 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
           </div>
           <div>
             <h3 className="text-2xl font-bold font-mono text-white mt-1">
-              {report.uniqueVisitors || 1}
+              {auditedVisits}
               <span className="text-xs font-sans text-text-dim-theme ml-1">visitantes</span>
             </h3>
             <div className="flex items-center gap-1.5 mt-1">
@@ -682,13 +677,13 @@ export default function RealTimeDashboard({ report, calculatedSavings, updateInt
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="p-3.5 rounded-lg bg-bg-theme/40 border border-border-theme/60 space-y-1">
             <span className="text-[10px] uppercase font-bold text-text-dim-theme tracking-wide block">Usuarios Únicos</span>
-            <span className="text-lg font-bold font-mono text-white block">{report.uniqueVisitors || 1}</span>
+            <span className="text-lg font-bold font-mono text-white block">{auditedVisits}</span>
             <span className="text-[9px] text-text-dim-theme block">IPs / Dispositivos únicos</span>
           </div>
           <div className="p-3.5 rounded-lg bg-bg-theme/40 border border-border-theme/60 space-y-1">
             <span className="text-[10px] uppercase font-bold text-text-dim-theme tracking-wide block">Vistas de Diapositiva</span>
             <span className="text-lg font-bold font-mono text-white block">
-              {report.interactions?.slideViews ? Object.values(report.interactions.slideViews).reduce((a: any, b: any) => a + b, 0) : report.viewCount || 1}
+              {report.interactions?.slideViews ? Object.values(report.interactions.slideViews).reduce((a: any, b: any) => a + b, 0) : (report.viewCount || 0)}
             </span>
             <span className="text-[9px] text-text-dim-theme block">Cambios de pantalla</span>
           </div>
