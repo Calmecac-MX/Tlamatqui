@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { SystemHealthData, ApiKeyItem, UserAccount, Team, Report, LogoType } from "../types";
 import { useAlertPopup } from "../context/AlertPopupContext";
+import { DARK_MODE_INSTANCE_LOGO, LIGHT_MODE_INSTANCE_LOGO, getInstanceLogo } from "../lib/themeLogo";
 
 interface SuperAdminDashboardProps {
   isDarkMode: boolean;
@@ -868,14 +869,46 @@ export default function SuperAdminDashboard({
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">Logotipos Principales y Secundarios</h4>
 
                   <div>
-                    <label className="block text-xs font-semibold text-text-dim-theme mb-1.5">Logo Principal (URL imagen)</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-text-dim-theme">Logo Principal (URL imagen)</label>
+                      {(() => {
+                        const previewLogo = getInstanceLogo(isDarkMode, adminLogo);
+                        return previewLogo && previewLogo.toLowerCase() !== "none" ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-text-dim-theme">Vista previa:</span>
+                            <img src={previewLogo} alt="Logo Preview" className="h-6 max-w-[90px] object-contain rounded border border-border-theme bg-surface-theme/30 p-0.5" />
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
                     <input
                       type="text"
                       value={adminLogo}
                       onChange={(e) => setAdminLogo && setAdminLogo(e.target.value)}
-                      placeholder="https://images.unsplash.com/..."
+                      placeholder="https://..."
                       className="w-full text-xs px-3.5 py-2.5 rounded-xl border outline-none focus:ring-1 focus:ring-amber-400 bg-bg-theme border-border-theme text-white"
                     />
+                    <div className="flex items-center gap-2 pt-2">
+                      <span className="text-[10px] text-text-dim-theme">Presets de instancia:</span>
+                      <button
+                        type="button"
+                        onClick={() => setAdminLogo && setAdminLogo(DARK_MODE_INSTANCE_LOGO)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                          adminLogo === DARK_MODE_INSTANCE_LOGO ? "bg-amber-400/20 text-amber-300 border-amber-400/40" : "bg-bg-theme/60 text-text-dim-theme hover:text-white border-border-theme"
+                        }`}
+                      >
+                        🌙 Vector Positivo (Oscuro)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminLogo && setAdminLogo(LIGHT_MODE_INSTANCE_LOGO)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                          adminLogo === LIGHT_MODE_INSTANCE_LOGO ? "bg-amber-400/20 text-amber-300 border-amber-400/40" : "bg-bg-theme/60 text-text-dim-theme hover:text-white border-border-theme"
+                        }`}
+                      >
+                        ☀️ Vector Negativo (Claro)
+                      </button>
+                    </div>
                   </div>
 
                   <div>

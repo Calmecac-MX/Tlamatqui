@@ -16,8 +16,8 @@ import {
   Layers, Database, FileText, CheckCircle, RefreshCw, Moon, Sun, Laptop, ArrowRight,
   TrendingUp, Menu, ChevronLeft, ChevronRight, LayoutDashboard, Undo2, RotateCcw, Bookmark,
   UploadCloud, Camera, Image as ImageIcon, X, Users, ChevronDown, Crown,
-  Search, Filter, SlidersHorizontal, Calendar, Table, LayoutGrid, LogOut, ShieldCheck, Lock
-
+  Search, Filter, SlidersHorizontal, Calendar, Table, LayoutGrid, LogOut, ShieldCheck, Lock,
+  PanelLeftClose
 } from "lucide-react";
 import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } from "../types";
 import { scrapeShopifyStore, detectStoreWithChismografo, ChismografoAuditResult } from "../lib/scrapper";
@@ -28,6 +28,7 @@ import { CreateDiagnosticModal } from "./CreateDiagnosticModal";
 import TeamOnboardingModal from "./TeamOnboardingModal";
 import { useAlertPopup } from "../context/AlertPopupContext";
 import { lookupGravatar, isDefaultPlaceholderAvatar } from "../lib/gravatar";
+import { getInstanceLogo, DARK_MODE_INSTANCE_LOGO, LIGHT_MODE_INSTANCE_LOGO } from "../lib/themeLogo";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -1317,66 +1318,67 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       <aside className={`bg-surface-theme/95 backdrop-blur-md flex flex-col justify-between transition-all duration-300 ease-in-out z-50 shrink-0 ${isSidebarExpanded ? "fixed inset-0 w-full h-screen md:sticky md:top-0 md:h-screen md:w-64 border-b md:border-b-0 md:border-r border-border-theme" : "hidden md:flex md:sticky md:top-0 md:h-screen md:w-20 border-r border-border-theme"}`}>
         <div>
           {/* Sidebar Header */}
-          {isSidebarExpanded ? (
-            <div className="p-4 border-b border-border-theme flex items-center justify-between overflow-hidden">
-              <div className="flex items-center gap-3">
-                {adminLogo && adminLogo.toLowerCase() !== "none" ? (
-                  <div className="flex items-center">
-                    <img 
-                      src={adminLogo} 
-                      alt={adminText || "Logo"} 
-                      className="h-8 max-w-[140px] object-contain rounded border border-border-theme bg-surface-theme/30 p-0.5"
-                      onError={(e) => { 
-                        (e.target as HTMLElement).style.display = "none";
-                        const fallback = document.getElementById("sidebar-fallback-text");
-                        if (fallback) fallback.style.display = "block";
-                      }}
-                    />
-                    <div id="sidebar-fallback-text" className="hidden">
-                      <h1 className="text-sm font-bold tracking-tight text-white truncate">
-                        {adminText || "Tlachiālōyan"}
-                      </h1>
+          {(() => {
+            const effectiveAdminLogo = getInstanceLogo(isDarkMode, adminLogo);
+            return isSidebarExpanded ? (
+              <div className="p-4 border-b border-border-theme flex items-center justify-between overflow-hidden">
+                <div className="flex items-center gap-3">
+                  {effectiveAdminLogo && effectiveAdminLogo.toLowerCase() !== "none" ? (
+                    <div className="flex items-center">
+                      <img 
+                        src={effectiveAdminLogo} 
+                        alt={adminText || "Logo"} 
+                        className="h-8 max-w-[140px] object-contain rounded border border-border-theme bg-surface-theme/30 p-0.5"
+                        onError={(e) => { 
+                          (e.target as HTMLElement).style.display = "none";
+                          const fallback = document.getElementById("sidebar-fallback-text");
+                          if (fallback) fallback.style.display = "block";
+                        }}
+                      />
+                      <div id="sidebar-fallback-text" className="hidden">
+                        <h1 className="text-sm font-bold tracking-tight text-white truncate">
+                          {adminText || "Tlachiālōyan"}
+                        </h1>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <h1 className="text-sm font-bold tracking-tight text-white truncate">
-                    {adminText || "Tlachiālōyan"}
-                  </h1>
-                )}
-              </div>
-
-              {/* Toggle Button for collapsing/expanding sidebar */}
-              <button
-                onClick={() => setIsSidebarExpanded(false)}
-                className="p-1.5 rounded-lg border border-border-theme bg-bg-theme hover:bg-surface-hover-theme text-text-dim-theme hover:text-white transition-all cursor-pointer ml-auto"
-                title="Colapsar menú"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="p-4 border-b border-border-theme flex flex-col items-center justify-center gap-4 overflow-hidden">
-              <button
-                onClick={() => setIsSidebarExpanded(true)}
-                className="relative group cursor-pointer flex items-center justify-center"
-                title="Expandir menú"
-              >
-                <img 
-                  src={adminFavicon || "/favicon.ico"} 
-                  alt="Favicon Logo" 
-                  className="w-8 h-8 rounded-lg object-contain border border-border-theme bg-surface-theme/50 p-1 group-hover:scale-110 transition-transform"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                    const fallback = document.getElementById("collapsed-fallback-logo");
-                    if (fallback) fallback.classList.remove("hidden");
-                  }}
-                />
-                <div id="collapsed-fallback-logo" className="hidden w-8 h-8 rounded-lg bg-accent-theme/10 border border-accent-theme/35 flex items-center justify-center font-bold text-accent-theme text-[10px] select-none">
-                  EV
+                  ) : (
+                    <h1 className="text-sm font-bold tracking-tight text-white truncate">
+                      {adminText || "Tlachiālōyan"}
+                    </h1>
+                  )}
                 </div>
-              </button>
-            </div>
-          )}
+                <button 
+                  onClick={() => setIsSidebarExpanded(false)}
+                  className="p-1.5 rounded-lg text-text-dim-theme hover:text-white hover:bg-surface-elevated-theme transition-colors cursor-pointer"
+                  title="Colapsar menú lateral"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 border-b border-border-theme flex justify-center items-center">
+                <button 
+                  onClick={() => setIsSidebarExpanded(true)}
+                  className="relative group cursor-pointer flex items-center justify-center"
+                  title="Expandir menú"
+                >
+                  <img 
+                    src={adminFavicon || "/favicon.ico"} 
+                    alt="Favicon Logo" 
+                    className="w-8 h-8 rounded-lg object-contain border border-border-theme bg-surface-theme/50 p-1 group-hover:scale-110 transition-transform"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                      const fallback = document.getElementById("collapsed-fallback-logo");
+                      if (fallback) fallback.classList.remove("hidden");
+                    }}
+                  />
+                  <div id="collapsed-fallback-logo" className="hidden w-8 h-8 rounded-lg bg-accent-theme/10 border border-accent-theme/35 flex items-center justify-center font-bold text-accent-theme text-[10px] select-none">
+                    EV
+                  </div>
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Team Selector in Sidebar */}
           {isSidebarExpanded ? (
@@ -1880,30 +1882,33 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-3 flex-wrap">
                 {/* LOGO / TITLE */}
-                {adminLogo && adminLogo.toLowerCase() !== "none" ? (
-                  <div className="flex items-center gap-3">
-                    <img 
-                      src={adminLogo} 
-                      alt={adminText || "Logo de Administrador"} 
-                      className="h-9 max-w-[240px] object-contain rounded border border-border-theme bg-surface-theme/30 p-1"
-                      onError={(e) => { 
-                        // If logo fails to load, fallback to text representation
-                        (e.target as HTMLElement).style.display = "none";
-                        const fallbackText = document.getElementById("admin-header-fallback-text");
-                        if (fallbackText) fallbackText.style.display = "block";
-                      }}
-                    />
-                    <div id="admin-header-fallback-text" className="hidden">
-                      <h2 className="text-lg font-bold tracking-tight text-white">
-                        {adminText || "Evolución Diagnostics"}
-                      </h2>
+                {(() => {
+                  const effectiveAdminLogo = getInstanceLogo(isDarkMode, adminLogo);
+                  return effectiveAdminLogo && effectiveAdminLogo.toLowerCase() !== "none" ? (
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={effectiveAdminLogo} 
+                        alt={adminText || "Logo de Administrador"} 
+                        className="h-9 max-w-[240px] object-contain rounded border border-border-theme bg-surface-theme/30 p-1"
+                        onError={(e) => { 
+                          // If logo fails to load, fallback to text representation
+                          (e.target as HTMLElement).style.display = "none";
+                          const fallbackText = document.getElementById("admin-header-fallback-text");
+                          if (fallbackText) fallbackText.style.display = "block";
+                        }}
+                      />
+                      <div id="admin-header-fallback-text" className="hidden">
+                        <h2 className="text-lg font-bold tracking-tight text-white">
+                          {adminText || "Evolución Diagnostics"}
+                        </h2>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <h2 className="text-lg font-bold tracking-tight text-white">
-                    {adminText || "Evolución Diagnostics"}
-                  </h2>
-                )}
+                  ) : (
+                    <h2 className="text-lg font-bold tracking-tight text-white">
+                      {adminText || "Evolución Diagnostics"}
+                    </h2>
+                  );
+                })()}
                 
                 {/* Section Badge */}
                 <span className="inline-flex px-2 py-0.5 text-[10px] font-bold bg-accent-theme/10 text-accent-theme border border-accent-theme/20 rounded-md uppercase tracking-wider">
@@ -3143,7 +3148,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                             <p className="text-[10px] text-rose-400 font-semibold">{logoError}</p>
                           )}
 
-                          {/* Alternative text/url input or clear */}
+                          {/* Alternative text/url input or clear and preset buttons */}
                           <div className="flex gap-2">
                             <input 
                               type="text" 
@@ -3161,6 +3166,29 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                                 Quitar
                               </button>
                             )}
+                          </div>
+
+                          {/* Botones rápidos de logotipos por tema de instancia */}
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className="text-[10px] text-text-dim-theme">Presets de instancia:</span>
+                            <button
+                              type="button"
+                              onClick={() => setAdminLogo(DARK_MODE_INSTANCE_LOGO)}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                                adminLogo === DARK_MODE_INSTANCE_LOGO ? "bg-accent-theme/20 text-accent-theme border-accent-theme/40" : "bg-bg-theme/60 text-text-dim-theme hover:text-white border-border-theme"
+                              }`}
+                            >
+                              🌙 Vector Positivo (Oscuro)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAdminLogo(LIGHT_MODE_INSTANCE_LOGO)}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
+                                adminLogo === LIGHT_MODE_INSTANCE_LOGO ? "bg-accent-theme/20 text-accent-theme border-accent-theme/40" : "bg-bg-theme/60 text-text-dim-theme hover:text-white border-border-theme"
+                              }`}
+                            >
+                              ☀️ Vector Negativo (Claro)
+                            </button>
                           </div>
 
                           {/* Additional Global Logos for Final Slide Fallback */}

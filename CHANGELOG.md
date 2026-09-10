@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.101 (Frontend) / v2.5.94 (Backend)] - 2026-09-10
+
+### 🐛 Corregido & Bug Fixes
+- **teams:** prevent onboarding modal from auto opening on every access and allow closing it (`3659edc`)
+
 ## [v2.5.100 (Frontend) / v2.5.93 (Backend)] - 2026-09-10
 
 ### 🐛 Corregido & Bug Fixes

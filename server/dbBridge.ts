@@ -70,8 +70,8 @@ async function withDbTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise
 // ============================================================================
 
 const DEFAULT_CONFIG = {
-  adminLogoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
-  adminLogo2Url: "",
+  adminLogoUrl: "/logo/Vector_Positivo.svg",
+  adminLogo2Url: "/logo/Vector_Negativo.svg",
   adminLogo3Url: "",
   adminTextUrl: "Tlamatqui Diagnostics",
   appUrl: "http://localhost:3000",
@@ -302,6 +302,22 @@ export async function initializeDatabase() {
           domainVerificationToken: DEFAULT_CONFIG.domainVerificationToken
         }
       });
+    } else {
+      // Migrar logos predeterminados antiguos de unsplash a los nuevos logos SVG por tema
+      try {
+        const existingConfig = await prisma.config.findFirst();
+        if (existingConfig && (!existingConfig.adminLogoUrl || existingConfig.adminLogoUrl.includes("unsplash.com"))) {
+          await prisma.config.update({
+            where: { id: existingConfig.id },
+            data: {
+              adminLogoUrl: "/logo/Vector_Positivo.svg",
+              adminLogo2Url: existingConfig.adminLogo2Url || "/logo/Vector_Negativo.svg"
+            }
+          });
+        }
+      } catch (err) {
+        // Silencioso
+      }
     }
 
     // 2. Semilla Teams & Members

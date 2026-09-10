@@ -6,8 +6,8 @@ import { UserRoleSchema, LogoTypeSchema, SystemHealthStatusSchema } from "./comm
  */
 export const ConfigSchema = z.object({
   id: z.string().min(1),
-  adminLogoUrl: z.string().default(""),
-  adminLogo2Url: z.string().optional(),
+  adminLogoUrl: z.string().default("/logo/Vector_Positivo.svg"),
+  adminLogo2Url: z.string().default("/logo/Vector_Negativo.svg"),
   adminLogo3Url: z.string().optional(),
   adminTextUrl: z.string().default(""),
   appUrl: z.string().default(""),

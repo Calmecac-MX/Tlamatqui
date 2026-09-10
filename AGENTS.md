@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.98 (Frontend) / v2.5.91 (Backend)  
+> **Versión:** v2.5.101 (Frontend) / v2.5.94 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -23,6 +23,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 - **Frontend (SPA React 19 + Vite 6):**
   - **Ubicación:** `src/`, `index.html`, `vite.config.ts`.
   - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Auth0 Lock, Lucide React, GSAP / Motion.
+  - **Logotipos Dinámicos por Tema de Instancia:** `src/lib/themeLogo.ts` (`getInstanceLogo`, `DARK_MODE_INSTANCE_LOGO` -> `/logo/Vector_Positivo.svg`, `LIGHT_MODE_INSTANCE_LOGO` -> `/logo/Vector_Negativo.svg`), resolución reactiva al tema claro/oscuro en headers, barras laterales y paneles administrativos.
   - **Utilidad Gravatar:** `src/lib/gravatar.ts` con soporte SHA-256 en cliente, auto-detección con debounce al invitar miembros y sincronización en 1 clic desde el panel de perfil de usuario.
   - **Sistema Global de Popups & Avisos:** `AlertPopupProvider` (`src/context/AlertPopupContext.tsx`), `AlertPopupModal` y `AlertToastContainer` (`src/components/AlertPopupModal.tsx`) para unificar todos los avisos, alertas de error/éxito, confirmaciones modales y toasts interactivos reemplazando los diálogos nativos del navegador.
   - **Flujo de Onboarding de Equipos y Workspace URL:** `TeamOnboardingModal` con generación dinámica de slugs para URLs personalizadas (`/team/:slug`), condicionado para activarse solo al crear equipos o cuando un usuario nuevo no cuenta con ningún equipo registrado.

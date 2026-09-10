@@ -13,3 +13,4 @@ import "./auditWorkflow.test.ts";
 import "./gravatar.test.ts";
 import "./favicon.test.ts";
 import "./teamSlug.test.ts";
+import "./themeLogo.test.ts";
