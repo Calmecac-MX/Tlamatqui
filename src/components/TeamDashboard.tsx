@@ -60,7 +60,7 @@ export default function TeamDashboard({
   subTab: controlledSubTab,
   onSubTabChange
 }: TeamDashboardProps) {
-  const { showAlert, showConfirm, toast } = useAlertPopup();
+  const { showAlert, showConfirm, showPrompt, toast } = useAlertPopup();
   const [localSubTab, setLocalSubTab] = useState<"dashboard" | "members" | "settings" | "partners">("dashboard");
   const subTab = controlledSubTab !== undefined ? controlledSubTab : localSubTab;
   const setSubTab = (tab: "dashboard" | "members" | "settings" | "partners") => {
@@ -1809,16 +1809,32 @@ export default function TeamDashboard({
                         });
                         return;
                       }
-                      const confirmed = await showConfirm(`¿Estás seguro de que deseas ELIMINAR permanentemente el equipo "${activeTeam.name}"? Esta acción borrará todas sus asociaciones.`, {
-                        title: "Eliminar Equipo",
-                        type: "danger",
-                        confirmText: "Eliminar Definitivamente",
-                        cancelText: "Cancelar"
-                      });
-                      if (confirmed) {
-                        await onDeleteTeam(activeTeam.id);
-                        toast.success("Equipo eliminado con éxito.", "Equipo Eliminado");
+
+                      const typedName = await showPrompt(
+                        `Esta acción es IRREVERSIBLE.\n\nPara confirmar la eliminación permanente de este equipo y todas sus asociaciones, escribe el nombre del equipo:\n\n"${activeTeam.name}"`,
+                        {
+                          title: "Confirmar Eliminación de Equipo",
+                          type: "danger",
+                          confirmText: "Eliminar Definitivamente",
+                          cancelText: "Cancelar",
+                          inputPrompt: {
+                            placeholder: activeTeam.name,
+                          }
+                        }
+                      );
+
+                      if (typedName === null) return;
+
+                      if (typedName.trim().toLowerCase() !== activeTeam.name.trim().toLowerCase()) {
+                        showAlert("El nombre ingresado no coincide. La eliminación ha sido cancelada por protección.", {
+                          type: "error",
+                          title: "Nombre Incorrecto"
+                        });
+                        return;
                       }
+
+                      await onDeleteTeam(activeTeam.id);
+                      toast.success(`Equipo "${activeTeam.name}" eliminado con éxito.`, "Equipo Eliminado");
                     }}
                     className="w-full bg-red-theme/15 border border-red-theme/25 hover:bg-red-theme/20 text-red-theme font-bold py-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >

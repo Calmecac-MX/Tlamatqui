@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.106 (Frontend) / v2.5.99 (Backend)] - 2026-09-10
+
+### 🚀 Features & Nuevas Funcionalidades
+- **diagnostics:** add autosave, hide new diagnostic button while editing, and add toast notifications (`e7a2e00`)
+
 ## [v2.5.105 (Frontend) / v2.5.99 (Backend)] - 2026-09-10
 
 ### 🚀 Features & Nuevas Funcionalidades
