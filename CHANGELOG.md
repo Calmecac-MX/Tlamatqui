@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.104 (Frontend) / v2.5.98 (Backend)] - 2026-09-10
+
+### 🐛 Corregido & Bug Fixes
+- **telemetry:** correct pixel tracking and remove simulated visitor events in live dashboard (`f072c9f`)
+
 ## [v2.5.103 (Frontend) / v2.5.98 (Backend)] - 2026-09-10
 
 ### 🐛 Corregido & Bug Fixes

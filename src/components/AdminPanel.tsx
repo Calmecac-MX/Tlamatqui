@@ -3938,8 +3938,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 { id: "metrics", label: "1. Datos del Comercio & Métricas", icon: TrendingUp },
                 { id: "plan", label: "2. Configuración Plataformas", icon: Settings },
                 { id: "tools", label: "3. Aplicaciones Auditadas", icon: Layers },
-                { id: "analytics", label: "4. Analítica & Clics", icon: Eye },
-                { id: "audit", label: "5. Auditoría Técnica & PageSpeed", icon: Sparkles }
+                { id: "audit", label: "4. Auditoría Técnica & PageSpeed", icon: Sparkles }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isSelected = activeFormTab === tab.id;
@@ -4545,64 +4544,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                 </div>
               )}
 
-              {/* TAB 4: SUBTABLA DE ANALÍTICA E INTERACCIÓN (ReportAnalytics & ReportInteraction) */}
-              {activeFormTab === "analytics" && (
-                <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
-                  <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-accent-theme/10 border border-accent-theme/30 flex items-center justify-center text-accent-theme font-bold">
-                        <Eye className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-white uppercase tracking-wider">Subtabla: Métricas de Tráfico & Clics (ReportAnalytics)</h3>
-                        <p className="text-xs text-text-dim-theme">Historial de aperturas, vistas de diapositivas y comportamiento del usuario</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-bg-theme border border-border-theme text-accent-theme">Model: ReportAnalytics</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
-                      <div className="text-xs text-text-dim-theme uppercase font-bold">Total Impresiones</div>
-                      <div className="text-2xl font-black text-white mt-1">{editingReport.viewCount || 0}</div>
-                    </div>
-                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
-                      <div className="text-xs text-text-dim-theme uppercase font-bold">Aperturas Únicas</div>
-                      <div className="text-2xl font-black text-emerald-400 mt-1">{editingReport.openCount || 0}</div>
-                    </div>
-                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
-                      <div className="text-xs text-text-dim-theme uppercase font-bold">Visitantes Únicos</div>
-                      <div className="text-2xl font-black text-accent-theme mt-1">{editingReport.uniqueVisitors || 0}</div>
-                    </div>
-                    <div className="p-4 rounded-xl border border-border-theme bg-bg-theme text-center">
-                      <div className="text-xs text-text-dim-theme uppercase font-bold">Tiempo en Reporte</div>
-                      <div className="text-2xl font-black text-amber-400 mt-1">
-                        {editingReport.interactions?.timeSpentSeconds ? `${Math.round(editingReport.interactions.timeSpentSeconds / 60)} min` : "0 min"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-5 rounded-xl border border-border-theme bg-bg-theme/60 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Métricas de Interacción en Tiempo Real</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                      <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
-                        <span className="text-text-dim-theme">Clics WhatsApp:</span>
-                        <strong className="text-white font-bold">{editingReport.interactions?.whatsappClicks || 0}</strong>
-                      </div>
-                      <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
-                        <span className="text-text-dim-theme">Clics Herramientas:</span>
-                        <strong className="text-white font-bold">{editingReport.interactions?.toolClicks || 0}</strong>
-                      </div>
-                      <div className="p-3 rounded-lg bg-surface-theme border border-border-theme flex justify-between items-center">
-                        <span className="text-text-dim-theme">Uso Calculadora:</span>
-                        <strong className="text-white font-bold">{editingReport.interactions?.calculatorInteractions || 0}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 5: SUBTABLA AUDITORÍA TÉCNICA & PAGESPEED (Chismógrafo / Lighthouse) */}
+              {/* TAB 4: SUBTABLA AUDITORÍA TÉCNICA & PAGESPEED (Chismógrafo / Lighthouse) */}
               {activeFormTab === "audit" && (
                 <div className="p-6 rounded-xl border border-border-theme bg-surface-theme/50 space-y-6 animate-fade-in">
                   <div className="flex items-center justify-between border-b border-border-theme/30 pb-4">
