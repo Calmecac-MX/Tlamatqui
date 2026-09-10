@@ -59,7 +59,7 @@ async function testSave() {
       createdAt: new Date().toISOString()
     };
     const savedReport = await saveDbReport(testReport);
-    console.log("saveDbReport SUCCESS:", savedReport.id);
+      console.log("saveDbReport SUCCESS:", savedReport.id);
 
     const reports = await getDbReports();
     console.log("getDbReports count:", reports.length);
