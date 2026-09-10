@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.102 (Frontend) / v2.5.97 (Backend)] - 2026-09-10
+
+### 🐛 Corregido & Bug Fixes
+- **db:** resolve Prisma client generation and enable database persistence for teams and reports (`afee906`)
+
 ## [v2.5.102 (Frontend) / v2.5.96 (Backend)] - 2026-09-10
 
 ### 🚀 Features & Nuevas Funcionalidades

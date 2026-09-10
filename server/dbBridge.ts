@@ -941,9 +941,6 @@ export async function saveDbTeam(team: Team): Promise<Team> {
   if (prisma) {
     try {
       await prisma.$transaction(async (tx) => {
-        await tx.teamMember.deleteMany({ where: { teamId: cleanTeam.id } });
-        await tx.partner.deleteMany({ where: { teamId: cleanTeam.id } });
-
         await tx.team.upsert({
           where: { id: cleanTeam.id },
           update: {
@@ -958,38 +955,7 @@ export async function saveDbTeam(team: Team): Promise<Team> {
             inviteRole: (cleanTeam.inviteRole as any) || "Visor",
             teamBrandName: cleanTeam.teamBrandName || null,
             teamBrandLogo: cleanTeam.teamBrandLogo || null,
-            teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
-            members: {
-              create: cleanTeam.members.map(m => ({
-                id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                name: m.name,
-                email: m.email,
-                role: m.role as any,
-                avatar: m.avatar || null,
-                status: m.status || "approved",
-                isExternal: Boolean(m.isExternal),
-                partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
-                requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
-              }))
-            },
-            partners: {
-              create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
-                id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                name: a.name,
-                logo: a.logo,
-                link: a.url || (a as any).link || null,
-                description: (a as any).description || null,
-                representativeEmail: a.representativeEmail || null,
-                members: {
-                  create: (a.members || []).map((pm: any) => ({
-                    id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                    name: pm.name,
-                    email: pm.email,
-                    role: pm.role || "Lector"
-                  }))
-                }
-              }))
-            }
+            teamBrandWebsite: cleanTeam.teamBrandWebsite || null
           },
           create: {
             id: cleanTeam.id,
@@ -1005,40 +971,52 @@ export async function saveDbTeam(team: Team): Promise<Team> {
             teamBrandName: cleanTeam.teamBrandName || null,
             teamBrandLogo: cleanTeam.teamBrandLogo || null,
             teamBrandWebsite: cleanTeam.teamBrandWebsite || null,
-            createdAt: cleanTeam.createdAt ? new Date(cleanTeam.createdAt) : new Date(),
-            members: {
-              create: cleanTeam.members.map(m => ({
-                id: m.id || `mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                name: m.name,
-                email: m.email,
-                role: m.role as any,
-                avatar: m.avatar || null,
-                status: m.status || "approved",
-                isExternal: Boolean(m.isExternal),
-                partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
-                requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
-              }))
-            },
-            partners: {
-              create: (cleanTeam.allies || (cleanTeam as any).partners || []).map(a => ({
-                id: a.id || `partner-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                name: a.name,
-                logo: a.logo,
-                link: a.url || (a as any).link || null,
-                description: (a as any).description || null,
-                representativeEmail: a.representativeEmail || null,
-                members: {
-                  create: (a.members || []).map((pm: any) => ({
-                    id: pm.id || `pm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                    name: pm.name,
-                    email: pm.email,
-                    role: pm.role || "Lector"
-                  }))
-                }
-              }))
-            }
+            createdAt: cleanTeam.createdAt ? new Date(cleanTeam.createdAt) : new Date()
           }
         });
+
+        await tx.teamMember.deleteMany({ where: { teamId: cleanTeam.id } });
+        if (cleanTeam.members && cleanTeam.members.length > 0) {
+          await tx.teamMember.createMany({
+            data: cleanTeam.members.map((m, idx) => ({
+              id: `mem_${cleanTeam.id}_${idx}_${crypto.randomBytes(4).toString("hex")}`,
+              teamId: cleanTeam.id,
+              name: m.name,
+              email: m.email,
+              role: m.role as any,
+              avatar: m.avatar || null,
+              status: m.status || "approved",
+              isExternal: Boolean(m.isExternal),
+              partnerEmail: (m as any).partnerEmail || m.addedByAllyEmail || null,
+              requestedAt: m.requestedAt ? new Date(m.requestedAt) : (m.status === "pending" ? new Date() : null)
+            }))
+          });
+        }
+
+        await tx.partner.deleteMany({ where: { teamId: cleanTeam.id } });
+        const partnersList = cleanTeam.allies || (cleanTeam as any).partners || [];
+        for (const a of partnersList) {
+          const partnerId = a.id || `partner_${cleanTeam.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          await tx.partner.create({
+            data: {
+              id: partnerId,
+              teamId: cleanTeam.id,
+              name: a.name,
+              logo: a.logo,
+              link: a.url || (a as any).link || null,
+              description: (a as any).description || null,
+              representativeEmail: a.representativeEmail || null,
+              members: {
+                create: (a.members || []).map((pm: any, pIdx: number) => ({
+                  id: pm.id || `pm_${partnerId}_${pIdx}_${Date.now()}`,
+                  name: pm.name,
+                  email: pm.email,
+                  role: pm.role || "Lector"
+                }))
+              }
+            }
+          });
+        }
 
         // Configuración y subtabla ReportConfig del equipo
         if (cleanTeam.config) {
