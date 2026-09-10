@@ -99,7 +99,8 @@ const DEFAULT_CONFIG = {
 
 const DEFAULT_TEAMS: Team[] = [
   {
-    id: "Calmécac",
+    id: "calmecac",
+    slug: "calmecac",
     name: "Calmécac",
     image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
     ownerName: "César Ayar",
@@ -124,11 +125,11 @@ const DEFAULT_TEAMS: Team[] = [
     ],
     allies: [],
     config: {
-      id: "tc_Calmécac",
-      teamId: "Calmécac",
+      id: "tc_calmecac",
+      teamId: "calmecac",
       reportConfig: {
-        id: "trc_tc_Calmécac",
-        configId: "tc_Calmécac",
+        id: "trc_tc_calmecac",
+        configId: "tc_calmecac",
         emailReport: "cesar.ayar19@gmail.com",
         phoneReport: 529651057561,
         reportLogos: []
@@ -311,6 +312,7 @@ export async function initializeDatabase() {
         await prisma.team.create({
           data: {
             id: t.id,
+            slug: t.slug,
             name: t.name,
             image: t.image,
             ownerName: t.ownerName,
@@ -347,6 +349,22 @@ export async function initializeDatabase() {
             } : undefined
           }
         });
+      }
+    } else {
+      // Normalizar IDs y Slugs existentes sin mayúsculas ni caracteres especiales
+      try {
+        const existingDbTeams = await prisma.team.findMany({ select: { id: true, name: true, slug: true } });
+        for (const t of existingDbTeams) {
+          const cleanSlug = slugifyTeamName(t.slug || t.name || t.id);
+          if (t.slug !== cleanSlug) {
+            await prisma.team.update({
+              where: { id: t.id },
+              data: { slug: cleanSlug }
+            }).catch(() => null);
+          }
+        }
+      } catch (err) {
+        // Silencioso
       }
     }
 
@@ -875,12 +893,13 @@ export async function generateUniqueTeamSlug(slugOrName: string, excludeTeamId?:
 }
 
 export async function saveDbTeam(team: Team): Promise<Team> {
-  // Asegurar que el ID sea generado a partir del nombre si es un nuevo equipo o si viene con prefijo temporal
-  const finalId = (!team.id || team.id.startsWith("team-") || team.id === "new")
-    ? await generateUniqueTeamId(team.name || "Equipo", team.id)
-    : team.id;
+  // Asegurar que el ID sea normalizado sin mayúsculas ni caracteres especiales
+  const rawId = (!team.id || team.id.startsWith("team-") || team.id === "new")
+    ? await generateUniqueTeamId(team.name || "equipo", team.id)
+    : slugifyTeamName(team.id);
 
-  const cleanSlug = await generateUniqueTeamSlug(team.slug || team.name || "equipo", finalId);
+  const finalId = slugifyTeamName(rawId);
+  const cleanSlug = await generateUniqueTeamSlug(team.slug || team.name || finalId, finalId);
 
   const cleanTeam: Team = {
     ...team,

@@ -5,6 +5,7 @@ import { TeamSchema } from "../src/schemas/team";
 
 describe("Team Slug Logic & Schema Validation", () => {
   it("should correctly slugify team names with accents and special characters", () => {
+    assert.strictEqual(slugifyTeamName("Calmécac"), "calmecac");
     assert.strictEqual(slugifyTeamName("César Ayar Growth Labs"), "cesar-ayar-growth-labs");
     assert.strictEqual(slugifyTeamName("  Élite & Partners MX  "), "elite-partners-mx");
     assert.strictEqual(slugifyTeamName("Shopify_Experts-2026"), "shopify_experts-2026");

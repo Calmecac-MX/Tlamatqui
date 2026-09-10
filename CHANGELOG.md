@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.99 (Frontend) / v2.5.93 (Backend)] - 2026-09-10
+
+### 🚀 Features & Nuevas Funcionalidades
+- **teams:** add unique slug identifier and URL preview to team onboarding flow (`8898531`)
+
 ## [v2.5.99 (Frontend) / v2.5.92 (Backend)] - 2026-09-10
 
 ### 🚀 Features & Nuevas Funcionalidades

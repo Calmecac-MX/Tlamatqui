@@ -866,13 +866,14 @@ app.post("/api/teams", async (req: Request, res: Response) => {
       ];
 
     const teamName = String(req.body.name || "Nuevo-Equipo").trim();
-    const teamId = (req.body.id && !req.body.id.startsWith("team-") && req.body.id !== "new")
-      ? await generateUniqueTeamId(req.body.id, req.body.id)
+    const rawProvidedId = req.body.id ? slugifyTeamName(req.body.id) : undefined;
+    const teamId = (rawProvidedId && !rawProvidedId.startsWith("team-") && rawProvidedId !== "new")
+      ? await generateUniqueTeamId(rawProvidedId, rawProvidedId)
       : await generateUniqueTeamId(teamName);
 
     const newTeam = {
       id: teamId,
-      slug: req.body.slug ? slugifyTeamName(req.body.slug) : slugifyTeamName(teamName),
+      slug: req.body.slug ? slugifyTeamName(req.body.slug) : (rawProvidedId || slugifyTeamName(teamName)),
       name: teamName,
       brandName: req.body.brandName || teamName || "Mi Marca",
       image: req.body.image || "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
