@@ -474,6 +474,7 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
   detectedTools: Tool[];
   shopifyPlanEstimate: "basic" | "grow" | "advanced";
   estimatedMonthlyAppCostUSD: number;
+  measuredLatencyMs: number;
 }> {
   let cleanUrl = targetUrl.trim();
   if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
@@ -482,8 +483,10 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
 
   let htmlContent = "";
   let storeName = "Comercio Auditado";
+  let measuredLatencyMs = 85;
 
   try {
+    const t0 = Date.now();
     const response = await fetch(cleanUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -491,6 +494,7 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
       },
       signal: AbortSignal.timeout(8000),
     });
+    measuredLatencyMs = Math.max(1, Date.now() - t0);
 
     if (response.ok) {
       htmlContent = await response.text();
@@ -595,6 +599,7 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
     detectedTools,
     shopifyPlanEstimate: "grow",
     estimatedMonthlyAppCostUSD: totalCostUSD,
+    measuredLatencyMs,
   };
 }
 
@@ -1143,7 +1148,11 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
     pixels: [{ name: "Meta Pixel", category: "Publicidad" }, { name: "Google Analytics", category: "Analítica" }],
     infrastructure: [{ name: "Cloudflare", category: "CDN / Seguridad" }],
     location: { ip: "23.227.38.65", country: "Canadá", city: "Ottawa" },
-    latency: { latencyMs: 85, description: "85ms (Rápido)" },
+    latency: {
+      success: true,
+      latencyMs: native.measuredLatencyMs || 85,
+      description: `${native.measuredLatencyMs || 85}ms (${(native.measuredLatencyMs || 85) < 100 ? "Rápido" : (native.measuredLatencyMs || 85) < 300 ? "Aceptable" : "Lento"})`
+    },
     pageSpeed: {
       performanceScore: 78,
       accessibilityScore: 89,
