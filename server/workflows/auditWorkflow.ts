@@ -3,7 +3,7 @@ import { detectStoreWithChismografo, scrapeShopifyStoreNative, resolveTechnology
 import { saveDbReport, getDbConfig } from "../dbBridge.js";
 import { Report, Tool, ComparisonRow, ReportPageSpeed } from "../types.js";
 import { sendWorkflowEmail } from "./emailWorkflow.js";
-import { isS3Configured, uploadBase64ToStorage, buildStorageKey } from "../storageService.js";
+import { isS3Configured, uploadBase64ToStorage, buildStorageKey, ensureReportScreenshotsInStorage } from "../storageService.js";
 
 export interface AuditWorkflowInput {
   url: string;
@@ -107,33 +107,14 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
 
   const reportId = `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  // 4.1. Subida optimizada de capturas a S3 con distribución en Bunny CDN
-  let screenshotDesktop = chismografoData.screenshots?.desktop || undefined;
-  let screenshotMobile = chismografoData.screenshots?.mobile || undefined;
-
-  if (isS3Configured()) {
-    try {
-      if (screenshotDesktop && screenshotDesktop.startsWith("data:")) {
-        const uploadedDesktop = await uploadBase64ToStorage(
-          screenshotDesktop,
-          buildStorageKey("screenshots", `${reportId}_desktop.webp`),
-          "image/webp"
-        );
-        screenshotDesktop = uploadedDesktop.cdnUrl;
-      }
-
-      if (screenshotMobile && screenshotMobile.startsWith("data:")) {
-        const uploadedMobile = await uploadBase64ToStorage(
-          screenshotMobile,
-          buildStorageKey("screenshots", `${reportId}_mobile.webp`),
-          "image/webp"
-        );
-        screenshotMobile = uploadedMobile.cdnUrl;
-      }
-    } catch (err) {
-      console.warn("[AuditWorkflow Storage Warning] Fallback local a captura base64:", err);
-    }
-  }
+  // 4.1. Subida y persistencia de capturas en S3 / Bunny Storage
+  const processedScreenshots = await ensureReportScreenshotsInStorage({
+    id: reportId,
+    screenshotDesktop: chismografoData.screenshots?.desktop,
+    screenshotMobile: chismografoData.screenshots?.mobile,
+  });
+  const screenshotDesktop = processedScreenshots.screenshotDesktop;
+  const screenshotMobile = processedScreenshots.screenshotMobile;
 
   const resolvedPageSpeed: ReportPageSpeed = chismografoData.pageSpeed || {
     performanceScore: 78,

@@ -173,10 +173,10 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
 
   const normalizedName = (name || "").toLowerCase().trim();
 
-  // 1. Buscar en diccionario de tecnologías conocidas vía Chismógrafo API icon
+  // 1. Buscar en diccionario de tecnologías conocidas vía endpoint /api/icon con provider=local
   for (const [key, domain] of Object.entries(KNOWN_TECH_DOMAINS)) {
     if (normalizedName === key || normalizedName.includes(key) || key.includes(normalizedName)) {
-      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(domain)}&provider=brandicons`;
+      return `/api/icon?id=${encodeURIComponent(domain)}&provider=local&collection=apps`;
     }
   }
 
@@ -190,7 +190,7 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
       const parsed = new URL(rawUrl);
       const hostname = parsed.hostname.replace(/^www\./, "");
       if (hostname && !hostname.includes("example.com")) {
-        return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(hostname)}&provider=brandicons`;
+        return `/api/icon?id=${encodeURIComponent(hostname)}&provider=local&collection=apps`;
       }
     } catch (_) {}
   }
@@ -198,10 +198,16 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
   // 3. Si el nombre parece un dominio (ej: "app.ejemplo.com")
   if (normalizedName.includes(".")) {
     const cleanDomain = normalizedName.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split(" ")[0];
-    return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=brandicons`;
+    return `/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=local&collection=apps`;
   }
 
-  // 4. Fallback con avatar tipográfico estilizado de alta definición
+  // 4. Si es un nombre estándar de app, intentar consultar /api/icon con provider=local
+  const cleanAppId = normalizedName.replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  if (cleanAppId.length > 0) {
+    return `/api/icon?id=${encodeURIComponent(cleanAppId)}&provider=local&collection=apps`;
+  }
+
+  // 5. Fallback con avatar tipográfico estilizado de alta definición
   const safeName = encodeURIComponent(name || "Tech");
   return `https://ui-avatars.com/api/?name=${safeName}&background=0F172A&color=00FF66&bold=true&size=128`;
 }

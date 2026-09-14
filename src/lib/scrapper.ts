@@ -754,7 +754,7 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
 
   for (const [k, dom] of Object.entries(KNOWN_TECH_DOMAINS)) {
     if (cleanName === k || cleanName.includes(k) || k.includes(cleanName)) {
-      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(dom)}&provider=brandicons`;
+      return `/api/icon?id=${encodeURIComponent(dom)}&provider=local&collection=apps`;
     }
   }
 
@@ -763,14 +763,19 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
       const u = new URL(url.startsWith("http") ? url : `https://${url}`);
       const hostname = u.hostname.replace(/^www\./, "");
       if (hostname && !hostname.includes("example.com")) {
-        return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(hostname)}&provider=brandicons`;
+        return `/api/icon?id=${encodeURIComponent(hostname)}&provider=local&collection=apps`;
       }
     } catch (_) {}
   }
 
   if (cleanName.includes(".")) {
     const cleanDomain = cleanName.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split(" ")[0];
-    return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=brandicons`;
+    return `/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=local&collection=apps`;
+  }
+
+  const cleanAppId = cleanName.replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  if (cleanAppId.length > 0) {
+    return `/api/icon?id=${encodeURIComponent(cleanAppId)}&provider=local&collection=apps`;
   }
 
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Tech")}&background=0F172A&color=00FF66&bold=true&size=128`;

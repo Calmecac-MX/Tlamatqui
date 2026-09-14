@@ -58,6 +58,14 @@ export const ToolLogo: React.FC<ToolLogoProps> = ({
         setCurrentSrc(fallbackUrl);
         return;
       }
+      // Si el logo era un endpoint o URL previa que falló, intentar con el endpoint /api/icon con provider=local
+      const cleanName = (name || "").toLowerCase().trim();
+      const domainMatch = cleanName.includes(".") ? cleanName.split("/")[0].split(" ")[0] : undefined;
+      const targetId = domainMatch || cleanName.replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+      if (targetId) {
+        setCurrentSrc(`/api/icon?id=${encodeURIComponent(targetId)}&provider=local&collection=apps`);
+        return;
+      }
     }
     setHasError(true);
   };

@@ -382,6 +382,111 @@ export async function uploadBase64ToStorage(
 }
 
 /**
+ * Descarga una imagen remota (o ruta de captura de Chismógrafo) y la almacena en S3/Bunny Storage.
+ * 
+ * @param remoteUrl URL pública o relativa de la imagen/captura a transferir a S3.
+ * @param key Clave de almacenamiento destino en el bucket.
+ */
+export async function uploadRemoteImageToStorage(
+  remoteUrl: string,
+  key: string
+): Promise<{ key: string; url: string; cdnUrl: string; size: number }> {
+  let fullUrl = remoteUrl.trim();
+  if (fullUrl.startsWith("//")) {
+    fullUrl = `https:${fullUrl}`;
+  } else if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
+    fullUrl = `https://chismografo.rifatela.lol${fullUrl.startsWith("/") ? "" : "/"}${fullUrl}`;
+  }
+
+  const response = await fetch(fullUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status} al descargar imagen remota desde ${fullUrl}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const contentType = response.headers.get("content-type") || "image/webp";
+  return uploadBufferToStorage(buffer, key, contentType);
+}
+
+/**
+ * Verifica si una URL ya apunta a la CDN o bucket de almacenamiento activo.
+ */
+function isAlreadyCdnStored(url?: string): boolean {
+  if (!url) return false;
+  if (BUNNY_CDN_HOSTNAME && url.includes(BUNNY_CDN_HOSTNAME)) return true;
+  if (url.includes(".b-cdn.net") || url.includes("storage.bunnycdn.com")) return true;
+  if (url.includes(".s3.") || url.includes("s3.amazonaws.com")) return true;
+  return false;
+}
+
+/**
+ * Procesa y asegura que las capturas de un reporte (Desktop y Mobile) se almacenen en S3/Bunny Storage.
+ * Si vienen como Data URI (Base64) o URL externa/temporal (como /screenshots/...), las descarga
+ * y las almacena en S3, retornando las URLs de CDN públicas.
+ * 
+ * @param report Objeto Report o payload con screenshotDesktop y screenshotMobile.
+ * @returns Objeto con las URLs actualizadas en S3/CDN.
+ */
+export async function ensureReportScreenshotsInStorage<T extends { id?: string; screenshotDesktop?: string | null; screenshotMobile?: string | null }>(
+  report: T
+): Promise<{ screenshotDesktop?: string; screenshotMobile?: string }> {
+  if (!isS3Configured()) {
+    return {
+      screenshotDesktop: report.screenshotDesktop || undefined,
+      screenshotMobile: report.screenshotMobile || undefined,
+    };
+  }
+
+  const reportId = report.id || `rep_${Date.now()}`;
+  let desktop = report.screenshotDesktop ? String(report.screenshotDesktop).trim() : undefined;
+  let mobile = report.screenshotMobile ? String(report.screenshotMobile).trim() : undefined;
+
+  // 1. Procesar captura Desktop
+  if (desktop && !isAlreadyCdnStored(desktop)) {
+    try {
+      const key = buildStorageKey("screenshots", `${reportId}_desktop.webp`);
+      if (desktop.startsWith("data:")) {
+        const res = await uploadBase64ToStorage(desktop, key, "image/webp");
+        desktop = res.cdnUrl;
+      } else if (desktop.startsWith("http://") || desktop.startsWith("https://") || desktop.startsWith("/screenshots/")) {
+        const res = await uploadRemoteImageToStorage(desktop, key);
+        desktop = res.cdnUrl;
+      }
+    } catch (err) {
+      console.warn(`[Storage Warning] Error al migrar captura Desktop a S3 para ${reportId}:`, err);
+    }
+  }
+
+  // 2. Procesar captura Mobile
+  if (mobile && !isAlreadyCdnStored(mobile)) {
+    try {
+      const key = buildStorageKey("screenshots", `${reportId}_mobile.webp`);
+      if (mobile.startsWith("data:")) {
+        const res = await uploadBase64ToStorage(mobile, key, "image/webp");
+        mobile = res.cdnUrl;
+      } else if (mobile.startsWith("http://") || mobile.startsWith("https://") || mobile.startsWith("/screenshots/")) {
+        const res = await uploadRemoteImageToStorage(mobile, key);
+        mobile = res.cdnUrl;
+      }
+    } catch (err) {
+      console.warn(`[Storage Warning] Error al migrar captura Mobile a S3 para ${reportId}:`, err);
+    }
+  }
+
+  return {
+    screenshotDesktop: desktop || undefined,
+    screenshotMobile: mobile || undefined,
+  };
+}
+
+/**
  * Genera una URL prefirmada (Presigned URL) para descarga u obtención directa con expiración temporal.
  * 
  * @param key Clave del objeto en el bucket.

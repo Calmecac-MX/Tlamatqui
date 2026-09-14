@@ -70,7 +70,8 @@ import {
   detectCategoryFromKey,
   isStorageActionAllowed,
   signBunnyCdnUrl,
-  isBunnyTokenAuthEnabled
+  isBunnyTokenAuthEnabled,
+  ensureReportScreenshotsInStorage
 } from "./server/storageService.js";
 import { BACKEND_VERSION, FRONTEND_VERSION } from "./server/version.js";
 import { checkGravatarExists, getGravatarUrl, resolveUserAvatar, computeGravatarHash } from "./server/gravatarService.js";
@@ -836,6 +837,127 @@ app.post("/api/scrape", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @route GET /api/icon
+ * @description Endpoint unificado y proxy de alta resiliencia para iconos de aplicaciones y tecnologías.
+ * Consulta primero a la API oficial de Chismógrafo con provider: local (o especificado), y aplica fallbacks
+ * con provider: brandicons, icon.horse, unavatar y SVG vectorial sin recurrir a Google S2 ni DuckDuckGo.
+ */
+app.get("/api/icon", async (req: Request, res: Response) => {
+  try {
+    const id = String(req.query.id || req.query.domain || req.query.name || "").trim();
+    const provider = String(req.query.provider || "local").trim();
+    const collection = req.query.collection ? String(req.query.collection).trim() : undefined;
+
+    if (!id) {
+      return res.status(400).json({ error: "Falta parámetro id o domain" });
+    }
+
+    // Si ya es una URL absoluta directa
+    if (id.startsWith("http://") || id.startsWith("https://")) {
+      return res.redirect(id);
+    }
+
+    const cleanDomain = id.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split("?")[0];
+    const collectionParam = collection ? `&collection=${encodeURIComponent(collection)}` : "";
+
+    // 1. Intentar API Chismógrafo con provider: local (o el provider enviado)
+    try {
+      const chismoUrl = `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(id)}&provider=${encodeURIComponent(provider)}${collectionParam}`;
+      const chismoRes = await fetch(chismoUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        },
+        signal: AbortSignal.timeout(4000),
+      });
+
+      if (chismoRes.ok) {
+        const contentType = chismoRes.headers.get("content-type") || "";
+        if (contentType.startsWith("image/") || contentType.includes("svg")) {
+          const buffer = Buffer.from(await chismoRes.arrayBuffer());
+          res.setHeader("Content-Type", contentType);
+          res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+          return res.send(buffer);
+        }
+      }
+    } catch (_) {}
+
+    // 2. Si provider era "local" y no hubo match exacto, intentar Chismógrafo con provider: brandicons
+    if (cleanDomain && (provider === "local" || !provider)) {
+      try {
+        const chismoBrandUrl = `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=brandicons`;
+        const chismoBrandRes = await fetch(chismoBrandUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+          },
+          signal: AbortSignal.timeout(3500),
+        });
+
+        if (chismoBrandRes.ok) {
+          const contentType = chismoBrandRes.headers.get("content-type") || "";
+          if (contentType.startsWith("image/") || contentType.includes("svg")) {
+            const buffer = Buffer.from(await chismoBrandRes.arrayBuffer());
+            res.setHeader("Content-Type", contentType);
+            res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+            return res.send(buffer);
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Fallback a icon.horse
+    if (cleanDomain) {
+      try {
+        const iconRes = await fetch(`https://icon.horse/icon/${encodeURIComponent(cleanDomain)}`, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+          },
+          signal: AbortSignal.timeout(3500),
+        });
+        if (iconRes.ok) {
+          const buffer = Buffer.from(await iconRes.arrayBuffer());
+          const contentType = iconRes.headers.get("content-type") || "image/png";
+          res.setHeader("Content-Type", contentType);
+          res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+          return res.send(buffer);
+        }
+      } catch (_) {}
+    }
+
+    // 4. Fallback a unavatar.io
+    if (cleanDomain) {
+      try {
+        const unavatarRes = await fetch(`https://unavatar.io/${encodeURIComponent(cleanDomain)}?fallback=false`, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "image/*"
+          },
+          signal: AbortSignal.timeout(3500),
+        });
+        if (unavatarRes.ok) {
+          const buffer = Buffer.from(await unavatarRes.arrayBuffer());
+          const contentType = unavatarRes.headers.get("content-type") || "image/png";
+          res.setHeader("Content-Type", contentType);
+          res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+          return res.send(buffer);
+        }
+      } catch (_) {}
+    }
+
+    // 5. Fallback SVG vectorial estilizado
+    const initial = cleanDomain.charAt(0).toUpperCase() || id.charAt(0).toUpperCase() || "T";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0F172A"/><text x="50%" y="54%" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" fill="#00FF66" text-anchor="middle" dominant-baseline="middle">${initial}</text></svg>`;
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(svg);
+  } catch (err: any) {
+    res.status(500).json({ error: "Error al resolver icono" });
+  }
+});
+
 // ----------------------------------------------------------------------------
 // MÓDULO DE EQUIPOS (TEAMS)
 // ----------------------------------------------------------------------------
@@ -1187,9 +1309,15 @@ app.get("/api/reports/:id", async (req: Request, res: Response) => {
  */
 app.post("/api/reports", async (req: Request, res: Response) => {
   try {
+    const reportId = req.body.id || Math.random().toString(36).substring(2, 11);
+    const screenshots = await ensureReportScreenshotsInStorage({
+      ...req.body,
+      id: reportId
+    });
     const newReport = {
       ...req.body,
-      id: req.body.id || Math.random().toString(36).substring(2, 11),
+      ...screenshots,
+      id: reportId,
       createdAt: new Date().toISOString()
     };
     const saved = await saveDbReport(newReport);
@@ -1209,7 +1337,11 @@ app.put("/api/reports/:id", async (req: Request, res: Response) => {
     if (!report) {
       return res.status(404).json({ error: "Reporte no encontrado" });
     }
-    const updatedReport = { ...report, ...req.body, id: req.params.id };
+    const screenshots = await ensureReportScreenshotsInStorage({
+      ...req.body,
+      id: req.params.id
+    });
+    const updatedReport = { ...report, ...req.body, ...screenshots, id: req.params.id };
     const saved = await saveDbReport(updatedReport);
     res.json(saved);
   } catch (error: any) {

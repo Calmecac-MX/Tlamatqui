@@ -4,6 +4,20 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.114 (Frontend) / v2.5.109 (Backend)] - 2026-09-14
+
+*Actualización de estabilidad, sincronización de versiones y optimización de componentes.*
+
+## [v2.5.113 (Frontend) / v2.5.108 (Backend)] - 2026-09-14
+
+### 📌 Otros Cambios
+- adjust indentation in test_db_save.ts log statement (`e276c57`)
+
+## [v2.5.113 (Frontend) / v2.5.107 (Backend)] - 2026-09-14
+
+### 🚀 Features & Nuevas Funcionalidades
+- add native HTML store logo extraction and replace forbidden third-party logo services with Chismógrafo API (`600d917`)
+
 ## [v2.5.112 (Frontend) / v2.5.106 (Backend)] - 2026-09-14
 
 ### 🚀 Features & Nuevas Funcionalidades
