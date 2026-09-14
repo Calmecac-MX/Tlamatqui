@@ -17,6 +17,20 @@ export interface ToolLogoProps {
   className?: string;
 }
 
+function normalizeLogoUrl(name: string, logo?: string, url?: string): string {
+  if (logo && logo.trim().length > 0) {
+    let trimmed = logo.trim();
+    if (trimmed.includes("chismografo.rifatela.lol/api/icon")) {
+      trimmed = trimmed.replace("https://chismografo.rifatela.lol/api/icon", "/api/icon");
+      if (!trimmed.includes("provider=")) {
+        trimmed += "&provider=local";
+      }
+    }
+    return trimmed;
+  }
+  return resolveTechnologyLogo(name, url);
+}
+
 export const ToolLogo: React.FC<ToolLogoProps> = ({
   name,
   logo,
@@ -25,20 +39,15 @@ export const ToolLogo: React.FC<ToolLogoProps> = ({
   className = ""
 }) => {
   const [currentSrc, setCurrentSrc] = useState<string | null>(() => {
-    if (logo && logo.trim().length > 0) return logo.trim();
-    return resolveTechnologyLogo(name, url);
+    return normalizeLogoUrl(name, logo, url);
   });
   const [hasError, setHasError] = useState<boolean>(false);
-  const [triedFallback, setTriedFallback] = useState<boolean>(false);
+  const [step, setStep] = useState<number>(0);
 
   useEffect(() => {
     setHasError(false);
-    setTriedFallback(false);
-    if (logo && logo.trim().length > 0) {
-      setCurrentSrc(logo.trim());
-    } else {
-      setCurrentSrc(resolveTechnologyLogo(name, url));
-    }
+    setStep(0);
+    setCurrentSrc(normalizeLogoUrl(name, logo, url));
   }, [logo, name, url]);
 
   const sizeClasses = {
@@ -51,22 +60,31 @@ export const ToolLogo: React.FC<ToolLogoProps> = ({
   const initialLetter = (name || "T").trim().charAt(0).toUpperCase() || "T";
 
   const handleError = () => {
-    if (!triedFallback) {
-      setTriedFallback(true);
-      const fallbackUrl = resolveTechnologyLogo(name, url);
-      if (fallbackUrl && fallbackUrl !== currentSrc) {
-        setCurrentSrc(fallbackUrl);
-        return;
-      }
-      // Si el logo era un endpoint o URL previa que falló, intentar con el endpoint /api/icon con provider=local
-      const cleanName = (name || "").toLowerCase().trim();
-      const domainMatch = cleanName.includes(".") ? cleanName.split("/")[0].split(" ")[0] : undefined;
-      const targetId = domainMatch || cleanName.replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
-      if (targetId) {
-        setCurrentSrc(`/api/icon?id=${encodeURIComponent(targetId)}&provider=local&collection=apps`);
+    const cleanName = (name || "").toLowerCase().trim();
+    const domainMatch = cleanName.includes(".") ? cleanName.split("/")[0].split(" ")[0] : undefined;
+    const urlDomain = url ? url.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split("?")[0] : undefined;
+    const bestDomain = domainMatch || urlDomain || cleanName;
+
+    if (step === 0) {
+      setStep(1);
+      // Intentar proxy local con provider=local
+      const proxyUrl = `/api/icon?id=${encodeURIComponent(bestDomain)}&provider=local&collection=apps`;
+      if (proxyUrl !== currentSrc) {
+        setCurrentSrc(proxyUrl);
         return;
       }
     }
+    
+    if (step <= 1 && bestDomain && bestDomain.includes(".")) {
+      setStep(2);
+      // Intentar icon.horse directo
+      const horseUrl = `https://icon.horse/icon/${encodeURIComponent(bestDomain)}`;
+      if (horseUrl !== currentSrc) {
+        setCurrentSrc(horseUrl);
+        return;
+      }
+    }
+
     setHasError(true);
   };
 

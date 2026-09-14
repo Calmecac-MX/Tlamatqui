@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.115 (Frontend) / v2.5.110 (Backend)] - 2026-09-14
+
+### 🚀 Features & Nuevas Funcionalidades
+- support remote screenshot migration to S3 and improve tool logo fallbacks (`d7199fc`)
+
 ## [v2.5.114 (Frontend) / v2.5.109 (Backend)] - 2026-09-14
 
 *Actualización de estabilidad, sincronización de versiones y optimización de componentes.*

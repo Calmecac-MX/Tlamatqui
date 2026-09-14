@@ -862,26 +862,40 @@ app.get("/api/icon", async (req: Request, res: Response) => {
     const collectionParam = collection ? `&collection=${encodeURIComponent(collection)}` : "";
 
     // 1. Intentar API Chismógrafo con provider: local (o el provider enviado)
-    try {
-      const chismoUrl = `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(id)}&provider=${encodeURIComponent(provider)}${collectionParam}`;
-      const chismoRes = await fetch(chismoUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
-        },
-        signal: AbortSignal.timeout(4000),
-      });
+    const candidateIds: string[] = [id];
+    const slug = id.toLowerCase().replace(/\.(com|mx|io|app|co|org|net|me)$/i, "").replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    if (slug && !candidateIds.includes(slug)) {
+      candidateIds.push(slug);
+    }
+    if (slug && !candidateIds.includes(`${slug}.webp`)) {
+      candidateIds.push(`${slug}.webp`);
+    }
+    if (slug && !candidateIds.includes(`${slug}.png`)) {
+      candidateIds.push(`${slug}.png`);
+    }
 
-      if (chismoRes.ok) {
-        const contentType = chismoRes.headers.get("content-type") || "";
-        if (contentType.startsWith("image/") || contentType.includes("svg")) {
-          const buffer = Buffer.from(await chismoRes.arrayBuffer());
-          res.setHeader("Content-Type", contentType);
-          res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
-          return res.send(buffer);
+    for (const candId of candidateIds) {
+      try {
+        const chismoUrl = `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(candId)}&provider=${encodeURIComponent(provider)}${collectionParam}`;
+        const chismoRes = await fetch(chismoUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+          },
+          signal: AbortSignal.timeout(3000),
+        });
+
+        if (chismoRes.ok) {
+          const contentType = chismoRes.headers.get("content-type") || "";
+          if (contentType.startsWith("image/") || contentType.includes("svg")) {
+            const buffer = Buffer.from(await chismoRes.arrayBuffer());
+            res.setHeader("Content-Type", contentType);
+            res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+            return res.send(buffer);
+          }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
     // 2. Si provider era "local" y no hubo match exacto, intentar Chismógrafo con provider: brandicons
     if (cleanDomain && (provider === "local" || !provider)) {
