@@ -14,6 +14,9 @@ export interface ToolPricePlan {
   plan: string;
   precio: number;
   moneda: string;
+  frecuencia?: string;
+  features?: string[];
+  caracteristicas?: string[];
 }
 
 /**

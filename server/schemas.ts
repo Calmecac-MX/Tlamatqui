@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const ToolPricePlanSchema = z.object({
+  id: z.union([z.number(), z.string()]).optional(),
+  plan: z.string().min(1, "El nombre del plan es requerido"),
+  precio: z.number().nonnegative("El precio no puede ser negativo"),
+  moneda: z.string().default("USD"),
+  frecuencia: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  caracteristicas: z.array(z.string()).optional(),
+});
+
 export const ToolSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "El nombre de la aplicación es requerido"),
@@ -13,6 +23,8 @@ export const ToolSchema = z.object({
   url: z.string().optional(),
   description: z.string().optional(),
   logo: z.string().optional(),
+  precios: z.array(ToolPricePlanSchema).optional(),
+  selectedPlanId: z.union([z.string(), z.number()]).optional(),
 });
 
 export const ComparisonRowSchema = z.object({

@@ -1,5 +1,165 @@
 import { ToolPricePlan } from "../types";
 
+/**
+ * ============================================================================
+ * ESQUEMAS Y MODELOS DE CHISMÓGRAFO API REST (OPENAPI 3.0.3 v1.14.0)
+ * ============================================================================
+ */
+
+export interface ChismografoLogoMetadata {
+  id: string;
+  proveedor?: "local" | "logodev" | "brandicons" | "brandfetch" | "ninjapear" | "shopify" | string;
+  provider?: string;
+}
+
+export interface ChismografoPrecioPlan {
+  id?: number | string;
+  plan?: string;
+  precio?: { monto?: number; moneda?: string } | number | string;
+  moneda?: string;
+  frecuencia?: string;
+  features?: string[];
+  caracteristicas?: string[];
+}
+
+export interface ChismografoCalificacion {
+  puntaje?: number;
+  resenas?: number;
+}
+
+export interface ChismografoCmsCompatible {
+  id: string;
+  slug?: string;
+  enlace?: string;
+}
+
+export interface ChismografoReglaDeteccion {
+  id?: string;
+  tipo?: "script-src" | "script-content" | "meta" | "header" | "dom-element" | "js-variable" | "cookie" | "html" | string;
+  type?: string;
+  patron?: string;
+  pattern?: string;
+  descripcion?: string;
+  description?: string;
+  llave?: string;
+  key?: string;
+  atributo?: string;
+  peso?: number;
+}
+
+export interface ChismografoMetadata {
+  tipo?: number; // 1=Apps, 2=CMS, 3=Gateways, 4=Infra, 5=Pixels
+  version?: number;
+  ultimaActualizacion?: string;
+  utlimaActualizacion?: string;
+  revision?: number; // 0=ia, 1=manual
+  entorno?: number; // 0=desarrollo, 1=preview, 2=producción
+}
+
+export interface ChismografoToolData {
+  version?: string;
+  versionJson?: string;
+  fechaActualizacion?: string;
+  revision?: "ia" | "manual" | string;
+}
+
+export interface ChismografoTechItem {
+  id?: string;
+  $schema?: string;
+  chismografo?: ChismografoMetadata;
+  acercaDe?: {
+    detallesGenerales?: {
+      nombre?: string;
+      desarrollador?: string;
+      web?: string;
+      categoria?: string;
+      logo?: ChismografoLogoMetadata | string;
+    };
+    calificacion?: ChismografoCalificacion | number;
+    cmsCompatibles?: ChismografoCmsCompatible[];
+    precios?: ChismografoPrecioPlan[];
+  };
+  herramienta?: {
+    reglasDeteccion?: ChismografoReglaDeteccion[];
+  };
+  // Propiedades directas / aliases compatibles
+  nombre?: string;
+  name?: string;
+  desarrollador?: string;
+  developer?: string;
+  categoria?: string;
+  category?: string;
+  cmsCompatibles?: ChismografoCmsCompatible[] | any[];
+  compatibleCMS?: string[];
+  web?: string;
+  calificacion?: ChismografoCalificacion | number;
+  precios?: ChismografoPrecioPlan[];
+  logo?: ChismografoLogoMetadata | string;
+  toolData?: ChismografoToolData;
+  reglasDeteccion?: ChismografoReglaDeteccion[];
+  detectionRules?: ChismografoReglaDeteccion[];
+  shopifyAppIcon?: string;
+}
+
+export interface ChismografoLocationData {
+  success?: boolean;
+  ip?: string;
+  country?: string;
+  city?: string;
+  ll?: [number, number] | number[];
+}
+
+export interface ChismografoLatencyData {
+  success?: boolean;
+  latencyMs?: number;
+  description?: string;
+}
+
+export interface ChismografoPageSpeedScores {
+  performance?: number;
+  accessibility?: number;
+  seo?: number;
+}
+
+export interface ChismografoPageSpeedMetrics {
+  fcp?: string;
+  lcp?: string;
+  tbt?: string;
+  cls?: string;
+  speedIndex?: string;
+  interactive?: string;
+}
+
+export interface ChismografoPageSpeedResponse {
+  success?: boolean;
+  isDemo?: boolean;
+  scores?: ChismografoPageSpeedScores;
+  metrics?: ChismografoPageSpeedMetrics;
+}
+
+export interface ChismografoScreenshots {
+  desktop?: string;
+  mobile?: string;
+}
+
+export interface ChismografoDetectResponse {
+  url?: string;
+  resolvedUrl?: string;
+  success?: boolean;
+  detected?: boolean;
+  technology?: string;
+  confidence?: number;
+  theme?: string;
+  plugins?: ChismografoTechItem[];
+  infrastructure?: ChismografoTechItem[];
+  pixels?: ChismografoTechItem[];
+  paymentGateways?: string[];
+  location?: ChismografoLocationData;
+  latency?: ChismografoLatencyData;
+  screenshots?: ChismografoScreenshots;
+  pageSpeed?: ChismografoPageSpeedResponse;
+}
+
 export interface ScrapedApp {
   name: string;
   category: string;
@@ -38,11 +198,11 @@ export interface ChismografoAuditResult {
   theme?: string;
   apps: ScrapedApp[];
   paymentGateways: string[];
-  pixels: Array<{ name: string; category?: string; web?: string }>;
-  infrastructure: Array<{ name: string; category?: string; web?: string }>;
-  location?: { ip?: string; country?: string; city?: string; ll?: number[] };
-  latency?: { latencyMs?: number; description?: string };
-  screenshots?: { desktop?: string; mobile?: string };
+  pixels: Array<{ name: string; category?: string; web?: string; logo?: string }>;
+  infrastructure: Array<{ name: string; category?: string; web?: string; logo?: string }>;
+  location?: ChismografoLocationData;
+  latency?: ChismografoLatencyData;
+  screenshots?: ChismografoScreenshots;
   pageSpeed?: {
     performanceScore: number;
     accessibilityScore?: number;
@@ -60,8 +220,157 @@ export interface ChismografoAuditResult {
 }
 
 /**
+ * Normaliza planes de precios de Chismógrafo a ToolPricePlan[]
+ */
+export function normalizeChismografoPrices(rawPrices?: any[]): ToolPricePlan[] {
+  if (!Array.isArray(rawPrices) || rawPrices.length === 0) return [];
+
+  return rawPrices.map((p, idx) => {
+    let numericPrice = 0;
+    let moneda = p.moneda || "USD";
+
+    if (p.precio !== undefined && p.precio !== null) {
+      if (typeof p.precio === "object") {
+        numericPrice = Number(p.precio.monto) || 0;
+        if (p.precio.moneda) moneda = p.precio.moneda;
+      } else if (typeof p.precio === "number") {
+        numericPrice = p.precio;
+      } else if (typeof p.precio === "string") {
+        const lower = p.precio.toLowerCase().trim();
+        if (lower.includes("gratis") || lower.includes("free")) {
+          numericPrice = 0;
+        } else {
+          const match = lower.replace(/,/g, "").match(/[\d.]+/);
+          numericPrice = match ? parseFloat(match[0]) : 0;
+        }
+      }
+    }
+
+    const features = Array.isArray(p.features) ? p.features : Array.isArray(p.caracteristicas) ? p.caracteristicas : undefined;
+    const caracteristicas = Array.isArray(p.caracteristicas) ? p.caracteristicas : Array.isArray(p.features) ? p.features : undefined;
+
+    return {
+      id: p.id !== undefined ? p.id : idx + 1,
+      plan: p.plan || `Plan ${idx + 1}`,
+      precio: numericPrice,
+      moneda,
+      frecuencia: p.frecuencia || "mes",
+      features,
+      caracteristicas,
+    };
+  });
+}
+
+/**
+ * Resuelve URL de íconos usando el endpoint /api/icon del Chismógrafo o fallback
+ */
+export function resolveChismografoLogo(
+  logoMetadata?: ChismografoLogoMetadata | string,
+  name?: string,
+  webUrl?: string,
+  collection?: "apps" | "infra" | "pixels" | "gateways" | "cms" | string
+): string {
+  if (!logoMetadata && !name && !webUrl) {
+    return resolveTechnologyLogo("Tech", undefined);
+  }
+
+  if (typeof logoMetadata === "object" && logoMetadata !== null) {
+    const rawId = (logoMetadata.id || "").trim();
+    const provider = (logoMetadata.proveedor || logoMetadata.provider || "local").trim();
+
+    if (rawId.startsWith("http://") || rawId.startsWith("https://") || rawId.startsWith("data:")) {
+      return rawId;
+    }
+
+    if (rawId.length > 0) {
+      const collectionParam = collection ? `&collection=${encodeURIComponent(collection)}` : "";
+      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(rawId)}&provider=${encodeURIComponent(provider)}${collectionParam}`;
+    }
+  }
+
+  if (typeof logoMetadata === "string" && logoMetadata.trim().length > 0) {
+    const str = logoMetadata.trim();
+    if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("data:")) {
+      return str;
+    }
+    if (str.includes(".") && (str.endsWith(".webp") || str.endsWith(".png") || str.endsWith(".svg") || str.endsWith(".jpg"))) {
+      const collectionParam = collection ? `&collection=${encodeURIComponent(collection)}` : "";
+      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(str)}&provider=local${collectionParam}`;
+    }
+  }
+
+  return resolveTechnologyLogo(name || "Tech", webUrl, typeof logoMetadata === "string" ? logoMetadata : undefined);
+}
+
+/**
+ * Normaliza un TechItem del Chismógrafo en un ScrapedApp de Frontend.
+ */
+export function normalizeChismografoTechItemToScrapedApp(p: ChismografoTechItem, fallbackIndex: number): ScrapedApp {
+  const pluginName =
+    p.nombre ||
+    p.name ||
+    p.acercaDe?.detallesGenerales?.nombre ||
+    p.id ||
+    `App ${fallbackIndex + 1}`;
+
+  const developer =
+    p.desarrollador ||
+    p.developer ||
+    p.acercaDe?.detallesGenerales?.desarrollador ||
+    "Terceros";
+
+  const webUrl =
+    p.web ||
+    p.acercaDe?.detallesGenerales?.web ||
+    "";
+
+  const rawPrices = p.acercaDe?.precios || p.precios;
+  const precios = rawPrices && rawPrices.length > 0 ? normalizeChismografoPrices(rawPrices) : undefined;
+
+  let costMin: number | undefined = undefined;
+  let costMax: number | undefined = undefined;
+  let costEstimate = 29;
+  let costType: "exact" | "range" = "exact";
+
+  if (precios && precios.length > 0) {
+    const validPrices = precios.map((pr) => pr.precio).filter((pr) => !isNaN(pr));
+    if (validPrices.length > 0) {
+      costMin = Math.min(...validPrices);
+      costMax = Math.max(...validPrices);
+      const paidPlan = validPrices.find((pr) => pr > 0);
+      costEstimate = paidPlan !== undefined ? paidPlan : costMin;
+      costType = validPrices.length > 1 && costMin !== costMax ? "range" : "exact";
+    }
+  }
+
+  const category =
+    p.categoria ||
+    p.category ||
+    p.acercaDe?.detallesGenerales?.categoria ||
+    "Herramientas de E-commerce";
+
+  const description = `Aplicación detectada por Chismógrafo (${developer}).`;
+  const logo = resolveChismografoLogo(p.acercaDe?.detallesGenerales?.logo || p.logo || p.shopifyAppIcon, pluginName, webUrl, "apps");
+
+  return {
+    name: pluginName,
+    category,
+    costEstimate,
+    costMin,
+    costMax,
+    costType,
+    currency: "USD",
+    semaphore: "yellow",
+    url: webUrl,
+    description,
+    logo,
+    precios,
+  };
+}
+
+/**
  * Consulta la API del Chismógrafo alojada en https://chismografo.rifatela.lol
- * para auditar el sitio web, CMS, aplicaciones, pasarelas de pago y logos.
+ * para auditar el sitio web, CMS, aplicaciones, pasarelas de pago y logos (OpenAPI 3.0.3).
  *
  * @param {string} storeUrl - URL completa o dominio de la tienda a auditar.
  * @returns {Promise<ChismografoAuditResult>} Expediente estructurado con apps, pasarelas y metadatos.
@@ -86,30 +395,32 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
 
     if (res.ok) {
       const data = await res.json();
+      const apps: ScrapedApp[] = (data.detectedTools || []).map((t: any) => ({
+        name: t.name,
+        category: t.category,
+        costEstimate: t.costExact || 0,
+        costMin: t.costMin,
+        costMax: t.costMax,
+        costType: t.costType || "exact",
+        currency: t.currency || "USD",
+        semaphore: t.semaphore || "yellow",
+        url: t.url || "",
+        description: t.description || "",
+        logo: t.logo || resolveChismografoLogo(undefined, t.name, t.url, "apps"),
+        precios: t.precios,
+        selectedPlanId: t.selectedPlanId,
+      }));
+
       return {
         success: true,
         url: data.url || cleanDomain,
         resolvedUrl: data.resolvedUrl,
         storeName: data.storeName || defaultStoreName,
-        siteLogo: data.siteLogo,
+        siteLogo: data.siteLogo || resolveChismografoLogo(undefined, defaultStoreName, cleanDomain),
         technology: data.technology || "Shopify",
         confidence: data.confidence,
         theme: data.theme,
-        apps: (data.detectedTools || []).map((t: any) => ({
-          name: t.name,
-          category: t.category,
-          costEstimate: t.costExact || 0,
-          costMin: t.costMin,
-          costMax: t.costMax,
-          costType: t.costType || "exact",
-          currency: t.currency || "USD",
-          semaphore: t.semaphore || "yellow",
-          url: t.url || "",
-          description: t.description || "",
-          logo: t.logo || resolveTechnologyLogo(t.name, t.url),
-          precios: t.precios,
-          selectedPlanId: t.selectedPlanId,
-        })),
+        apps,
         paymentGateways: data.paymentGateways || [],
         pixels: data.pixels || [],
         infrastructure: data.infrastructure || [],
@@ -129,29 +440,22 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
   try {
     const directRes = await fetch("https://chismografo.rifatela.lol/api/detect", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({ url: cleanDomain }),
     });
 
     if (directRes.ok) {
-      const data = await directRes.json();
-      const plugins = data.plugins || [];
-      const apps: ScrapedApp[] = plugins.map((p: any) => ({
-        name: p.name,
-        category: p.category || "Herramientas de E-commerce",
-        costEstimate: 29,
-        costType: "exact",
-        currency: "USD",
-        semaphore: "yellow",
-        url: p.web || "",
-        description: `Aplicación detectada por Chismógrafo (${p.developer || "Terceros"}).`,
-        logo: p.shopifyAppIcon || resolveTechnologyLogo(p.name, p.web),
-      }));
+      const data: ChismografoDetectResponse = await directRes.json();
+      const plugins: ChismografoTechItem[] = data.plugins || [];
+      const rawInfra: any[] = data.infrastructure || [];
+      const rawPixels: any[] = data.pixels || [];
 
-      const screenshots = data.screenshots
+      const apps: ScrapedApp[] = plugins.map((p, idx) => normalizeChismografoTechItemToScrapedApp(p, idx));
+
+      const screenshots: ChismografoScreenshots | undefined = data.screenshots
         ? { desktop: data.screenshots.desktop, mobile: data.screenshots.mobile }
-        : data.screenshotUrl
-        ? { desktop: data.screenshotUrl }
+        : (data as any).screenshotUrl
+        ? { desktop: (data as any).screenshotUrl }
         : undefined;
 
       const pageSpeed = data.pageSpeed?.scores
@@ -169,25 +473,43 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
           }
         : undefined;
 
+      const infrastructure = rawInfra.map((inf) => {
+        const name = inf.nombre || inf.name || inf.acercaDe?.detallesGenerales?.nombre || (typeof inf === "string" ? inf : inf.id || "Infraestructura");
+        const category = inf.categoria || inf.category || inf.acercaDe?.detallesGenerales?.categoria || "Infraestructura / CDN";
+        const web = inf.web || inf.acercaDe?.detallesGenerales?.web || "";
+        const logo = resolveChismografoLogo(inf.acercaDe?.detallesGenerales?.logo || inf.logo, name, web, "infra");
+        return { name, category, web, logo };
+      });
+
+      const pixels = rawPixels.map((px) => {
+        const name = px.nombre || px.name || px.acercaDe?.detallesGenerales?.nombre || (typeof px === "string" ? px : px.id || "Píxel");
+        const category = px.categoria || px.category || px.acercaDe?.detallesGenerales?.categoria || "Píxel / Tracking";
+        const web = px.web || px.acercaDe?.detallesGenerales?.web || "";
+        const logo = resolveChismografoLogo(px.acercaDe?.detallesGenerales?.logo || px.logo, name, web, "pixels");
+        return { name, category, web, logo };
+      });
+
+      const totalAppCost = apps.reduce((sum, a) => sum + a.costEstimate, 0);
+
       return {
         success: true,
         url: cleanDomain,
         resolvedUrl: data.resolvedUrl,
         storeName: defaultStoreName,
-        siteLogo: data.siteLogo || resolveTechnologyLogo(defaultStoreName, cleanDomain),
+        siteLogo: resolveChismografoLogo(undefined, defaultStoreName, cleanDomain),
         technology: data.technology || "Shopify",
         confidence: data.confidence || 1,
         theme: data.theme,
         apps,
         paymentGateways: data.paymentGateways || [],
-        pixels: data.pixels || [],
-        infrastructure: data.infrastructure || [],
+        pixels,
+        infrastructure,
         location: data.location,
         latency: data.latency,
         screenshots,
         pageSpeed,
         shopifyPlanEstimate: apps.length >= 5 ? "advanced" : apps.length >= 2 ? "grow" : "basic",
-        estimatedMonthlyAppCostUSD: apps.reduce((sum, a) => sum + a.costEstimate, 0),
+        estimatedMonthlyAppCostUSD: totalAppCost,
       };
     }
   } catch (_) {}
@@ -368,4 +690,132 @@ function generateMockScrapedApps(domain: string): ScraperResponse {
       responseTimeMs: 382
     }
   };
+}
+
+/**
+ * ============================================================================
+ * MÉTODOS DE CONSULTA MODULARES DEL CHISMÓGRAFO (OPENAPI 3.0.3)
+ * ============================================================================
+ */
+
+const CHISMOGRAFO_BASE_URL = "https://chismografo.rifatela.lol";
+
+/**
+ * Consulta la plataforma de CMS detectada (/api/cms).
+ */
+export async function fetchChismografoCms(url: string): Promise<{ success: boolean; url: string; technology?: string; confidence?: number; theme?: string }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/cms?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar CMS`);
+  return res.json();
+}
+
+/**
+ * Consulta las apps y plugins instalados (/api/apps).
+ */
+export async function fetchChismografoApps(url: string): Promise<{ success: boolean; url: string; plugins: ChismografoTechItem[] }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/apps?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar apps`);
+  return res.json();
+}
+
+/**
+ * Consulta la pila de infraestructura y CDN (/api/infra).
+ */
+export async function fetchChismografoInfra(url: string): Promise<{ success: boolean; url: string; infrastructure: ChismografoTechItem[] }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/infra?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar infraestructura`);
+  return res.json();
+}
+
+/**
+ * Consulta procesadores de pago y pasarelas (/api/payment-processors).
+ */
+export async function fetchChismografoPaymentProcessors(url: string): Promise<{ success: boolean; url: string; paymentGateways: string[] }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/payment-processors?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar pasarelas de pago`);
+  return res.json();
+}
+
+/**
+ * Consulta la geolocalización del servidor y DNS (/api/location).
+ */
+export async function fetchChismografoLocation(url: string): Promise<{ success: boolean; url: string; location: ChismografoLocationData }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/location?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar geolocalización`);
+  return res.json();
+}
+
+/**
+ * Mide la latencia estimada desde México (/api/latency).
+ */
+export async function fetchChismografoLatency(url: string): Promise<{ success: boolean; url: string; latency: ChismografoLatencyData }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/latency?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al medir latencia`);
+  return res.json();
+}
+
+/**
+ * Consulta métricas de rendimiento Google PageSpeed / Lighthouse (/api/pagespeed).
+ */
+export async function fetchChismografoPageSpeed(url: string): Promise<ChismografoPageSpeedResponse> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/pagespeed?url=${encodeURIComponent(clean)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar PageSpeed`);
+  return res.json();
+}
+
+/**
+ * Genera captura de pantalla de la tienda (/api/screenshot o /api/screenshots).
+ */
+export async function fetchChismografoScreenshot(url: string, device: "desktop" | "mobile" = "desktop"): Promise<{ success: boolean; screenshotUrl?: string; screenshot?: string; screenshots?: ChismografoScreenshots }> {
+  const clean = url.startsWith("http") ? url : `https://${url}`;
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/screenshots?url=${encodeURIComponent(clean)}&device=${device}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al generar capturas de pantalla`);
+  return res.json();
+}
+
+/**
+ * Consulta el catálogo general de tecnologías (/api/techs).
+ */
+export async function fetchChismografoTechCatalog(): Promise<any> {
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/techs`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al consultar catálogo`);
+  return res.json();
+}
+
+/**
+ * Evalúa un lote de reglas de detección contra una URL o código HTML (/api/rules/test).
+ */
+export async function testChismografoRules(payload: { url?: string; html?: string; detectionRules: ChismografoReglaDeteccion[] }): Promise<any> {
+  const res = await fetch(`${CHISMOGRAFO_BASE_URL}/api/rules/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} al evaluar reglas`);
+  return res.json();
 }

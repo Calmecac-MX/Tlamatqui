@@ -56,6 +56,7 @@ async function testSave() {
       tiendanubePlan: "evolution",
       tools: [],
       comparisonRows: [],
+      adminLogos: [],
       createdAt: new Date().toISOString()
     };
     const savedReport = await saveDbReport(testReport);

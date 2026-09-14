@@ -580,7 +580,167 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
 }
 
 /**
- * Estructura de auditoría y diagnóstico generado por Chismógrafo API.
+ * ============================================================================
+ * ESQUEMAS Y MODELOS DE CHISMÓGRAFO API REST (OPENAPI 3.0.3 v1.14.0)
+ * ============================================================================
+ */
+
+export interface ChismografoLogoMetadata {
+  id: string;
+  proveedor?: "local" | "logodev" | "brandicons" | "brandfetch" | "ninjapear" | "shopify" | string;
+  provider?: string;
+}
+
+export interface ChismografoPrecioPlan {
+  id?: number | string;
+  plan?: string;
+  precio?: { monto?: number; moneda?: string } | number | string;
+  moneda?: string;
+  frecuencia?: string;
+  features?: string[];
+  caracteristicas?: string[];
+}
+
+export interface ChismografoCalificacion {
+  puntaje?: number;
+  resenas?: number;
+}
+
+export interface ChismografoCmsCompatible {
+  id: string;
+  slug?: string;
+  enlace?: string;
+}
+
+export interface ChismografoReglaDeteccion {
+  id?: string;
+  tipo?: "script-src" | "script-content" | "meta" | "header" | "dom-element" | "js-variable" | "cookie" | "html" | string;
+  type?: string;
+  patron?: string;
+  pattern?: string;
+  descripcion?: string;
+  description?: string;
+  llave?: string;
+  key?: string;
+  atributo?: string;
+  peso?: number;
+}
+
+export interface ChismografoMetadata {
+  tipo?: number; // 1=Apps, 2=CMS, 3=Gateways, 4=Infra, 5=Pixels
+  version?: number;
+  ultimaActualizacion?: string;
+  utlimaActualizacion?: string;
+  revision?: number; // 0=ia, 1=manual
+  entorno?: number; // 0=desarrollo, 1=preview, 2=producción
+}
+
+export interface ChismografoToolData {
+  version?: string;
+  versionJson?: string;
+  fechaActualizacion?: string;
+  revision?: "ia" | "manual" | string;
+}
+
+export interface ChismografoTechItem {
+  id?: string;
+  $schema?: string;
+  chismografo?: ChismografoMetadata;
+  acercaDe?: {
+    detallesGenerales?: {
+      nombre?: string;
+      desarrollador?: string;
+      web?: string;
+      categoria?: string;
+      logo?: ChismografoLogoMetadata | string;
+    };
+    calificacion?: ChismografoCalificacion | number;
+    cmsCompatibles?: ChismografoCmsCompatible[];
+    precios?: ChismografoPrecioPlan[];
+  };
+  herramienta?: {
+    reglasDeteccion?: ChismografoReglaDeteccion[];
+  };
+  // Propiedades directas / aliases compatibles
+  nombre?: string;
+  name?: string;
+  desarrollador?: string;
+  developer?: string;
+  categoria?: string;
+  category?: string;
+  cmsCompatibles?: ChismografoCmsCompatible[] | any[];
+  compatibleCMS?: string[];
+  web?: string;
+  calificacion?: ChismografoCalificacion | number;
+  precios?: ChismografoPrecioPlan[];
+  logo?: ChismografoLogoMetadata | string;
+  toolData?: ChismografoToolData;
+  reglasDeteccion?: ChismografoReglaDeteccion[];
+  detectionRules?: ChismografoReglaDeteccion[];
+  shopifyAppIcon?: string;
+}
+
+export interface ChismografoLocationData {
+  success?: boolean;
+  ip?: string;
+  country?: string;
+  city?: string;
+  ll?: [number, number] | number[];
+}
+
+export interface ChismografoLatencyData {
+  success?: boolean;
+  latencyMs?: number;
+  description?: string;
+}
+
+export interface ChismografoPageSpeedScores {
+  performance?: number;
+  accessibility?: number;
+  seo?: number;
+}
+
+export interface ChismografoPageSpeedMetrics {
+  fcp?: string;
+  lcp?: string;
+  tbt?: string;
+  cls?: string;
+  speedIndex?: string;
+  interactive?: string;
+}
+
+export interface ChismografoPageSpeedResponse {
+  success?: boolean;
+  isDemo?: boolean;
+  scores?: ChismografoPageSpeedScores;
+  metrics?: ChismografoPageSpeedMetrics;
+}
+
+export interface ChismografoScreenshots {
+  desktop?: string;
+  mobile?: string;
+}
+
+export interface ChismografoDetectResponse {
+  url?: string;
+  resolvedUrl?: string;
+  success?: boolean;
+  detected?: boolean;
+  technology?: string;
+  confidence?: number;
+  theme?: string;
+  plugins?: ChismografoTechItem[];
+  infrastructure?: ChismografoTechItem[];
+  pixels?: ChismografoTechItem[];
+  paymentGateways?: string[];
+  location?: ChismografoLocationData;
+  latency?: ChismografoLatencyData;
+  screenshots?: ChismografoScreenshots;
+  pageSpeed?: ChismografoPageSpeedResponse;
+}
+
+/**
+ * Estructura consolidada de auditoría y diagnóstico generado para Tlamatqui.
  */
 export interface ChismografoDiagnosticResult {
   url: string;
@@ -592,11 +752,11 @@ export interface ChismografoDiagnosticResult {
   theme?: string;
   detectedTools: Tool[];
   paymentGateways: string[];
-  pixels: Array<{ name: string; category?: string; web?: string }>;
-  infrastructure: Array<{ name: string; category?: string; web?: string }>;
-  location?: { ip?: string; country?: string; city?: string; ll?: number[] };
-  latency?: { latencyMs?: number; description?: string };
-  screenshots?: { desktop?: string; mobile?: string };
+  pixels: Array<{ name: string; category?: string; web?: string; logo?: string }>;
+  infrastructure: Array<{ name: string; category?: string; web?: string; logo?: string }>;
+  location?: ChismografoLocationData;
+  latency?: ChismografoLatencyData;
+  screenshots?: ChismografoScreenshots;
   pageSpeed?: {
     performanceScore: number;
     accessibilityScore?: number;
@@ -614,8 +774,198 @@ export interface ChismografoDiagnosticResult {
 }
 
 /**
+ * Resuelve la URL del logo según la configuración de LogoMetadata del Chismógrafo (/api/icon)
+ * o aplica fallback de favicon/dominio de alta resolución.
+ */
+export function resolveChismografoLogo(
+  logoMetadata?: ChismografoLogoMetadata | string,
+  name?: string,
+  webUrl?: string,
+  collection?: "apps" | "infra" | "pixels" | "gateways" | "cms" | string
+): string {
+  if (!logoMetadata && !name && !webUrl) {
+    return resolveTechnologyLogo("Tech", undefined);
+  }
+
+  // 1. Si es un objeto LogoMetadata con proveedor
+  if (typeof logoMetadata === "object" && logoMetadata !== null) {
+    const rawId = (logoMetadata.id || "").trim();
+    const provider = (logoMetadata.proveedor || logoMetadata.provider || "local").trim();
+
+    if (rawId.startsWith("http://") || rawId.startsWith("https://") || rawId.startsWith("data:")) {
+      return rawId;
+    }
+
+    if (rawId.length > 0) {
+      const collectionParam = collection ? `&collection=${encodeURIComponent(collection)}` : "";
+      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(rawId)}&provider=${encodeURIComponent(provider)}${collectionParam}`;
+    }
+  }
+
+  // 2. Si es una cadena directa
+  if (typeof logoMetadata === "string" && logoMetadata.trim().length > 0) {
+    const str = logoMetadata.trim();
+    if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("data:")) {
+      return str;
+    }
+    if (str.includes(".") && (str.endsWith(".webp") || str.endsWith(".png") || str.endsWith(".svg") || str.endsWith(".jpg"))) {
+      const collectionParam = collection ? `&collection=${encodeURIComponent(collection)}` : "";
+      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(str)}&provider=local${collectionParam}`;
+    }
+  }
+
+  // 3. Fallback inteligente basado en nombre o URL
+  return resolveTechnologyLogo(name || "Tech", webUrl, typeof logoMetadata === "string" ? logoMetadata : undefined);
+}
+
+/**
+ * Normaliza planes de precios de Chismógrafo (PrecioPlan) a ToolPricePlan[] fuertemente tipado.
+ */
+export function normalizeChismografoPrices(rawPrices?: any[]): ToolPricePlan[] {
+  if (!Array.isArray(rawPrices) || rawPrices.length === 0) return [];
+
+  return rawPrices.map((p, idx) => {
+    let numericPrice = 0;
+    let moneda = p.moneda || "USD";
+
+    if (p.precio !== undefined && p.precio !== null) {
+      if (typeof p.precio === "object") {
+        numericPrice = Number(p.precio.monto) || 0;
+        if (p.precio.moneda) moneda = p.precio.moneda;
+      } else if (typeof p.precio === "number") {
+        numericPrice = p.precio;
+      } else if (typeof p.precio === "string") {
+        const lower = p.precio.toLowerCase().trim();
+        if (lower.includes("gratis") || lower.includes("free")) {
+          numericPrice = 0;
+        } else {
+          const match = lower.replace(/,/g, "").match(/[\d.]+/);
+          numericPrice = match ? parseFloat(match[0]) : 0;
+        }
+      }
+    }
+
+    const features = Array.isArray(p.features) ? p.features : Array.isArray(p.caracteristicas) ? p.caracteristicas : undefined;
+    const caracteristicas = Array.isArray(p.caracteristicas) ? p.caracteristicas : Array.isArray(p.features) ? p.features : undefined;
+
+    return {
+      id: p.id !== undefined ? p.id : idx + 1,
+      plan: p.plan || `Plan ${idx + 1}`,
+      precio: numericPrice,
+      moneda,
+      frecuencia: p.frecuencia || "mes",
+      features,
+      caracteristicas,
+    };
+  });
+}
+
+/**
+ * Normaliza un TechItem del Chismógrafo en una entidad Tool de Tlamatqui.
+ */
+export function normalizeChismografoTechItemToTool(p: ChismografoTechItem, fallbackIndex: number): Tool {
+  const pluginName =
+    p.nombre ||
+    p.name ||
+    p.acercaDe?.detallesGenerales?.nombre ||
+    p.id ||
+    `App ${fallbackIndex + 1}`;
+
+  const developer =
+    p.desarrollador ||
+    p.developer ||
+    p.acercaDe?.detallesGenerales?.desarrollador ||
+    "Terceros";
+
+  const webUrl =
+    p.web ||
+    p.acercaDe?.detallesGenerales?.web ||
+    "";
+
+  // Buscar coincidencia en firmas conocidas de Tlamatqui para afinar categoría y costos
+  const matchedSig = KNOWN_APP_SIGNATURES.find(
+    (sig) =>
+      sig.name.toLowerCase() === pluginName.toLowerCase() ||
+      pluginName.toLowerCase().includes(sig.name.toLowerCase()) ||
+      sig.patterns.some((pat) =>
+        typeof pat === "string"
+          ? pluginName.toLowerCase().includes(pat.toLowerCase())
+          : pat.test(pluginName)
+      )
+  );
+
+  const rawPrices = p.acercaDe?.precios || p.precios;
+  const precios = rawPrices && rawPrices.length > 0
+    ? normalizeChismografoPrices(rawPrices)
+    : matchedSig?.precios;
+
+  let costMin = 0;
+  let costMax = 0;
+  let costExact = 0;
+  let costType: "exact" | "range" = "exact";
+
+  if (precios && precios.length > 0) {
+    const validPrices = precios.map((pr) => pr.precio).filter((pr) => !isNaN(pr));
+    if (validPrices.length > 0) {
+      costMin = Math.min(...validPrices);
+      costMax = Math.max(...validPrices);
+      // Costo de referencia: primer plan de pago o costMin
+      const paidPlan = validPrices.find((pr) => pr > 0);
+      costExact = paidPlan !== undefined ? paidPlan : costMin;
+      costType = validPrices.length > 1 && costMin !== costMax ? "range" : "exact";
+    }
+  } else if (matchedSig) {
+    costMin = matchedSig.costMin;
+    costMax = matchedSig.costMax;
+    costExact = matchedSig.costExact;
+    costType = matchedSig.costType;
+  } else {
+    costMin = 29;
+    costMax = 29;
+    costExact = 29;
+    costType = "exact";
+  }
+
+  if (costMin === 0 && costMax === 0 && costExact > 0) {
+    costMin = costExact;
+    costMax = costExact;
+  }
+
+  const category =
+    p.categoria ||
+    p.category ||
+    p.acercaDe?.detallesGenerales?.categoria ||
+    (matchedSig ? matchedSig.category : "Herramientas de E-commerce");
+
+  const semaphore: "green" | "yellow" | "red" = matchedSig ? matchedSig.semaphore : "yellow";
+
+  const description = matchedSig
+    ? matchedSig.description
+    : `Aplicación detectada por Chismógrafo (${developer}).`;
+
+  const logoMetadata = p.acercaDe?.detallesGenerales?.logo || p.logo || p.shopifyAppIcon;
+  const logo = resolveChismografoLogo(logoMetadata, pluginName, webUrl, "apps");
+
+  return {
+    id: p.id || `chismo-${Math.random().toString(36).substring(2, 9)}`,
+    name: pluginName,
+    category,
+    costType,
+    costExact,
+    costMin,
+    costMax,
+    currency: "USD",
+    semaphore,
+    description,
+    logo,
+    url: webUrl,
+    precios,
+  };
+}
+
+/**
  * Consulta la API oficial del Chismógrafo (https://chismografo.rifatela.lol/api/detect)
- * para obtener el expediente completo de tecnología, plugins, pasarelas, logo y costos estimados.
+ * conforme a la especificación OpenAPI 3.0.3 v1.14.0.
  *
  * @param {string} targetUrl - URL o dominio del comercio electrónico.
  * @returns {Promise<ChismografoDiagnosticResult>} Resultado enriquecido para inicializar diagnósticos.
@@ -642,22 +992,22 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
     });
 
     if (response.ok) {
-      const data = await response.json();
-      const plugins: any[] = data.plugins || [];
+      const data: ChismografoDetectResponse = await response.json();
+      const plugins: ChismografoTechItem[] = data.plugins || [];
       const paymentGateways: string[] = data.paymentGateways || [];
-      const pixels: any[] = data.pixels || [];
-      const infrastructure: any[] = data.infrastructure || [];
+      const rawPixels: any[] = data.pixels || [];
+      const rawInfra: any[] = data.infrastructure || [];
       const technology: string = data.technology || "Shopify";
-      const siteLogo: string = data.siteLogo || resolveTechnologyLogo(storeName, cleanUrl);
+      const siteLogo: string = resolveTechnologyLogo(storeName, cleanUrl);
 
-      // Extraer capturas de pantalla si están presentes
-      const screenshots = data.screenshots
+      // Normalizar capturas de pantalla de la respuesta
+      const screenshots: ChismografoScreenshots | undefined = data.screenshots
         ? { desktop: data.screenshots.desktop, mobile: data.screenshots.mobile }
-        : data.screenshotUrl
-        ? { desktop: data.screenshotUrl }
+        : (data as any).screenshotUrl
+        ? { desktop: (data as any).screenshotUrl }
         : undefined;
 
-      // Extraer datos de PageSpeed si vienen en la respuesta
+      // Normalizar datos de PageSpeed (Lighthouse / Core Web Vitals)
       const pageSpeed = data.pageSpeed?.scores
         ? {
             performanceScore: data.pageSpeed.scores.performance || 0,
@@ -673,62 +1023,41 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
           }
         : undefined;
 
-      // Mapear plugins del Chismógrafo a la entidad Tool de Tlamatqui
+      // Normalizar plugins a la entidad Tool de Tlamatqui
       const detectedTools: Tool[] = [];
       let totalCostUSD = 0;
 
-      for (const p of plugins) {
-        const pluginName = p.name || "App de E-commerce";
-        // Buscar si coincide con alguna firma conocida para afinar costo y semáforo
-        const matchedSig = KNOWN_APP_SIGNATURES.find((sig) =>
-          sig.name.toLowerCase() === pluginName.toLowerCase() ||
-          pluginName.toLowerCase().includes(sig.name.toLowerCase()) ||
-          sig.patterns.some((pat) => (typeof pat === "string" ? pluginName.toLowerCase().includes(pat.toLowerCase()) : pat.test(pluginName)))
-        );
-
-        const precios: ToolPricePlan[] | undefined = p.precios || matchedSig?.precios;
-        let costMin = precios && precios.length > 0 ? Math.min(...precios.map((pr: any) => pr.precio)) : (matchedSig ? matchedSig.costMin : 0);
-        let costMax = precios && precios.length > 0 ? Math.max(...precios.map((pr: any) => pr.precio)) : (matchedSig ? matchedSig.costMax : 0);
-        let costType: "exact" | "range" = (precios && precios.length > 1) || (matchedSig && matchedSig.costType === "range") ? "range" : "exact";
-        let costExact = matchedSig ? matchedSig.costExact : (costMin || 29);
-        if (costMin === 0 && costMax === 0 && costExact > 0) {
-          costMin = costExact;
-          costMax = costExact;
-        }
-        let category = matchedSig ? matchedSig.category : (p.category || "Herramientas de E-commerce");
-        let semaphore: "green" | "yellow" | "red" = matchedSig ? matchedSig.semaphore : "yellow";
-        let description = matchedSig
-          ? matchedSig.description
-          : `Aplicación detectada por Chismógrafo (${p.developer || "Terceros"}).`;
-
-        let logo = p.shopifyAppIcon || (p.logo?.id ? resolveTechnologyLogo(p.name, p.logo.id) : resolveTechnologyLogo(p.name, p.web));
-
-        const effectiveCost = costType === "exact" ? costExact : (costMin + costMax) / 2;
+      plugins.forEach((p, idx) => {
+        const tool = normalizeChismografoTechItemToTool(p, idx);
+        const effectiveCost = tool.costType === "exact" ? tool.costExact : (tool.costMin + tool.costMax) / 2;
         totalCostUSD += effectiveCost;
+        detectedTools.push(tool);
+      });
 
-        detectedTools.push({
-          id: `chismo-${Math.random().toString(36).substring(2, 9)}`,
-          name: pluginName,
-          category,
-          costType,
-          costExact,
-          costMin,
-          costMax,
-          currency: "USD",
-          semaphore,
-          description,
-          logo,
-          url: p.web || "",
-          precios,
-        });
-      }
-
-      // Si no se detectaron plugins pero la auditoría fue exitosa, generar herramientas de base
+      // Si no se detectaron plugins pero la auditoría fue exitosa, generar herramientas de base nativas
       if (detectedTools.length === 0) {
         const nativeFallback = await scrapeShopifyStoreNative(cleanUrl);
         detectedTools.push(...nativeFallback.detectedTools);
         totalCostUSD = nativeFallback.estimatedMonthlyAppCostUSD;
       }
+
+      // Normalizar infraestructura
+      const infrastructure = rawInfra.map((inf) => {
+        const name = inf.nombre || inf.name || inf.acercaDe?.detallesGenerales?.nombre || (typeof inf === "string" ? inf : inf.id || "Infraestructura");
+        const category = inf.categoria || inf.category || inf.acercaDe?.detallesGenerales?.categoria || "Infraestructura / CDN";
+        const web = inf.web || inf.acercaDe?.detallesGenerales?.web || "";
+        const logo = resolveChismografoLogo(inf.acercaDe?.detallesGenerales?.logo || inf.logo, name, web, "infra");
+        return { name, category, web, logo };
+      });
+
+      // Normalizar píxeles de seguimiento
+      const pixels = rawPixels.map((px) => {
+        const name = px.nombre || px.name || px.acercaDe?.detallesGenerales?.nombre || (typeof px === "string" ? px : px.id || "Píxel");
+        const category = px.categoria || px.category || px.acercaDe?.detallesGenerales?.categoria || "Píxel / Tracking";
+        const web = px.web || px.acercaDe?.detallesGenerales?.web || "";
+        const logo = resolveChismografoLogo(px.acercaDe?.detallesGenerales?.logo || px.logo, name, web, "pixels");
+        return { name, category, web, logo };
+      });
 
       const shopifyPlanEstimate: "basic" | "grow" | "advanced" =
         totalCostUSD > 200 || detectedTools.length >= 6 ? "advanced" : detectedTools.length >= 3 ? "grow" : "basic";
@@ -743,8 +1072,8 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
         theme: data.theme,
         detectedTools,
         paymentGateways,
-        pixels: pixels.map((px) => ({ name: px.name, category: px.category, web: px.web })),
-        infrastructure: infrastructure.map((inf) => ({ name: inf.name, category: inf.category, web: inf.web })),
+        pixels,
+        infrastructure,
         location: data.location,
         latency: data.latency,
         screenshots,

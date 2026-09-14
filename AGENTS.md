@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.102 (Frontend) / v2.5.97 (Backend)  
+> **Versión:** v2.5.107 (Frontend) / v2.5.100 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -16,6 +16,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 - **Backend (API REST Express + Prisma ORM):**
   - **Ubicación:** `server.ts`, `server/`, `prisma/`, `data/`.
   - **Tecnologías:** Express 4, TypeScript, Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`), Auth0, Zod, esbuild.
+  - **Integración Chismógrafo API REST (OpenAPI 3.0.3 v1.14.0):** Soporte completo para esquemas `TechItem` (anidado en `acercaDe`, `herramienta` y campos raíz), resolución de logotipos vía `LogoMetadata` y endpoint `/api/icon`, normalización de planes y frecuencias en `PrecioPlan`, endpoints modulares `/api/cms`, `/api/apps`, `/api/infra`, `/api/payment-processors`, `/api/location`, `/api/latency`, `/api/pagespeed`, `/api/screenshots` y proxy dual GET/POST en `/api/chismografo/detect`.
   - **Servicio Gravatar:** `server/gravatarService.ts` (`computeGravatarHash`, `getGravatarUrl`, `checkGravatarExists`, `resolveUserAvatar`, endpoints `/api/gravatar/lookup` y `/api/users/gravatar`) para resolución, caché y auto-asignación de fotos de perfil vía Gravatar.
   - **Gestión de Slugs e Identidad de Equipos:** `slugifyTeamName`, `generateUniqueTeamSlug`, modelo Prisma `Team.slug` (unique e indexado) y endpoints `/api/teams/:idOrSlug` para URLs amigables de workspace (`/team/:slug`).
   - **Puerto Dev:** `http://localhost:4000` (API REST `/api/*`).
@@ -23,6 +24,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 - **Frontend (SPA React 19 + Vite 6):**
   - **Ubicación:** `src/`, `index.html`, `vite.config.ts`.
   - **Tecnologías:** React 19, Vite 6, Tailwind CSS v4, Zustand 5, Recharts 3, `@auth0/auth0-react`, Auth0 Lock, Lucide React, GSAP / Motion.
+  - **Cliente Chismógrafo:** `src/lib/scrapper.ts` con tipado exhaustivo OpenAPI 3.0.3, helpers modulares (`fetchChismografoCms`, `fetchChismografoApps`, `fetchChismografoInfra`, `fetchChismografoPageSpeed`, `fetchChismografoScreenshot`, `testChismografoRules`, `resolveChismografoLogo`) y fallback adaptativo de auditorías.
   - **Logotipos Dinámicos por Tema de Instancia:** `src/lib/themeLogo.ts` (`getInstanceLogo`, `DARK_MODE_INSTANCE_LOGO` -> `/logo/Vector_Positivo.svg`, `LIGHT_MODE_INSTANCE_LOGO` -> `/logo/Vector_Negativo.svg`), resolución reactiva al tema claro/oscuro en headers, barras laterales y paneles administrativos.
   - **Utilidad Gravatar:** `src/lib/gravatar.ts` con soporte SHA-256 en cliente, auto-detección con debounce al invitar miembros y sincronización en 1 clic desde el panel de perfil de usuario.
   - **Sistema Global de Popups & Avisos:** `AlertPopupProvider` (`src/context/AlertPopupContext.tsx`), `AlertPopupModal` y `AlertToastContainer` (`src/components/AlertPopupModal.tsx`) para unificar todos los avisos, alertas de error/éxito, confirmaciones modales y toasts interactivos reemplazando los diálogos nativos del navegador.
@@ -32,7 +34,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 
 ### 1.3 Arquitectura de Workflows (`server/workflows/`)
 El backend implementa el patrón **Thin Controller + Modular Workflows** desacoplando la lógica de negocio multi-paso en pipelines testeables e independientes:
-- **`auditWorkflow.ts`:** Orquestador de auditorías de e-commerce (Scraping de tienda, Chismógrafo de apps/tecnologías, Lighthouse CWV, resolución de logos, simulación financiera Shopify vs Tiendanube y persistencia transaccional en PostgreSQL).
+- **`auditWorkflow.ts`:** Orquestador de auditorías de e-commerce (Scraping de tienda, Chismógrafo OpenAPI 3.0.3 de apps/tecnologías/infra/píxeles/pagos, Lighthouse CWV, resolución de logos, simulación financiera Shopify vs Tiendanube y persistencia transaccional en PostgreSQL).
 - **`emailWorkflow.ts`:** Motor de correo transaccional y notificaciones con fallback dual automático (Brevo API -> Nodemailer SMTP) y plantillas HTML dinámicas.
 - **`domainWorkflow.ts`:** Verificación y aprovisionamiento de dominios personalizados (Sanitización, validación DNS TXT challenge, diagnósticos y vinculación con Vercel Domains API).
 - **`teamWorkflow.ts`:** Gestión del ciclo de vida de membresías y equipos (Generación y canje de tokens de invitación, solicitudes de unión, flujos de aprobación/rechazo y sincronización de roles).

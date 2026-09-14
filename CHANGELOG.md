@@ -4,6 +4,14 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.107 (Frontend) / v2.5.100 (Backend)] - 2026-09-14
+
+### 🚀 Features & Nuevas Funcionalidades
+- **teams:** require exact team name input before confirming team deletion (`9b7ce66`)
+
+### 🔧 Tareas Operativas y Mantenimiento
+- bump FRONTEND_VERSION to 2.5.106 (`c177654`)
+
 ## [v2.5.106 (Frontend) / v2.5.99 (Backend)] - 2026-09-10
 
 ### 🚀 Features & Nuevas Funcionalidades

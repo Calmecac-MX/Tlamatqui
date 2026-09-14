@@ -9,6 +9,9 @@ export const ToolPricePlanSchema = z.object({
   plan: z.string().min(1, "El nombre del plan es requerido"),
   precio: z.number().nonnegative("El precio no puede ser negativo"),
   moneda: z.string().default("USD"),
+  frecuencia: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  caracteristicas: z.array(z.string()).optional(),
 });
 
 export type ToolPricePlan = z.infer<typeof ToolPricePlanSchema>;

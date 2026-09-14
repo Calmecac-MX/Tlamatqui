@@ -794,6 +794,28 @@ app.post("/api/chismografo/detect", async (req: Request, res: Response) => {
 });
 
 /**
+ * @route GET /api/chismografo/detect
+ * @description Auditoría inteligente vía query param (?url=...) con la API REST del Chismógrafo.
+ */
+app.get("/api/chismografo/detect", async (req: Request, res: Response) => {
+  try {
+    const urlQuery = req.query.url as string;
+    const parseResult = ScrapeRequestSchema.safeParse({ url: urlQuery });
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: "URL faltante o formato inválido",
+        details: parseResult.error.flatten(),
+      });
+    }
+
+    const result = await detectStoreWithChismografo(parseResult.data.url);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Error al conectar con Chismógrafo" });
+  }
+});
+
+/**
  * @route POST /api/scrape
  * @description Auditoría nativa de tiendas Shopify enriquecida con Chismógrafo.
  */
