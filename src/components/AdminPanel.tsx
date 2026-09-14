@@ -1136,6 +1136,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       tiendanubePlan: "tiendanube",
       tools: [],
       comparisonRows: configComparisonRows && configComparisonRows.length > 0 ? [...configComparisonRows] : [...DEFAULT_GLOBAL_COMPARISON_ROWS],
+      pageSpeed: {
+        performanceScore: 78,
+        accessibilityScore: 89,
+        seoScore: 92,
+        fcp: "1.4 s",
+        lcp: "2.8 s",
+        tbt: "140 ms",
+        cls: "0.02",
+        isDemo: true
+      },
       contactEmail: defaultContactEmail || "comercial@tiendanube.mx",
       contactWhatsapp: defaultContactWhatsapp || "5512345678",
       adminLogos: [
@@ -1183,7 +1193,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       infrastructure: auditResult.infrastructure || [],
       serverLocation: auditResult.location || undefined,
       serverLatencyMs: auditResult.latency?.latencyMs || undefined,
-      pageSpeed: auditResult.pageSpeed || undefined,
+      pageSpeed: auditResult.pageSpeed || {
+        performanceScore: 78,
+        accessibilityScore: 89,
+        seoScore: 92,
+        fcp: "1.4 s",
+        lcp: "2.8 s",
+        tbt: "140 ms",
+        cls: "0.02",
+        isDemo: true
+      },
       teamId: selectedTeamId,
       tagline: `Hemos detectado ${tools.length} aplicaciones operativas y oportunidades de ahorro en ${auditResult.storeName}.`,
       fugasCantidad: tools.length || 3,
@@ -1214,7 +1233,19 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
 
   // Initiate Edit
   const handleStartEdit = (report: Report) => {
-    setEditingReport({ ...report });
+    setEditingReport({
+      ...report,
+      pageSpeed: report.pageSpeed || {
+        performanceScore: 78,
+        accessibilityScore: 89,
+        seoScore: 92,
+        fcp: "1.4 s",
+        lcp: "2.8 s",
+        tbt: "140 ms",
+        cls: "0.02",
+        isDemo: true
+      }
+    });
     setActiveFormTab("metrics");
   };
 

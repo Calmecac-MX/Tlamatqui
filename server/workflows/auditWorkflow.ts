@@ -135,6 +135,17 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
     }
   }
 
+  const resolvedPageSpeed: ReportPageSpeed = chismografoData.pageSpeed || {
+    performanceScore: 78,
+    accessibilityScore: 89,
+    seoScore: 92,
+    fcp: "1.4 s",
+    lcp: "2.9 s",
+    tbt: "140 ms",
+    cls: "0.02",
+    isDemo: true
+  };
+
   const newReport: Report = {
     id: reportId,
     name: storeName,
@@ -150,7 +161,7 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
     infrastructure: chismografoData.infrastructure || [],
     serverLocation: chismografoData.location || undefined,
     serverLatencyMs: chismografoData.latency?.latencyMs || undefined,
-    pageSpeed: chismografoData.pageSpeed || undefined,
+    pageSpeed: resolvedPageSpeed,
     tools: finalizedTools,
     comparisonRows: defaultComparisonRows,
     adminLogos: [],
@@ -203,13 +214,13 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
   return {
     success: true,
     report: savedReport,
-    pageSpeed: chismografoData.pageSpeed || undefined,
+    pageSpeed: resolvedPageSpeed,
     summary: {
       storeName: savedReport.name,
       detectedCms: savedReport.detectedCms || "Shopify",
       appsCount: finalizedTools.length,
       estimatedSavingsMXN: savedReport.fugasRangoMax || 0,
-      pageSpeedScore: chismografoData.pageSpeed?.performanceScore || 0
+      pageSpeedScore: resolvedPageSpeed.performanceScore || 0
     }
   };
 }

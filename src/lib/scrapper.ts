@@ -529,6 +529,16 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
     infrastructure: [{ name: "Cloudflare" }],
     location: { ip: "23.227.38.65", country: "Canadá", city: "Ottawa" },
     latency: { latencyMs: 85, description: "85ms (Rápido)" },
+    pageSpeed: {
+      performanceScore: 78,
+      accessibilityScore: 89,
+      seoScore: 92,
+      fcp: "1.4 s",
+      lcp: "2.8 s",
+      tbt: "140 ms",
+      cls: "0.02",
+      isDemo: true
+    },
     shopifyPlanEstimate: "grow",
     estimatedMonthlyAppCostUSD: mock.apps.reduce((sum, a) => sum + a.costEstimate, 0),
   };

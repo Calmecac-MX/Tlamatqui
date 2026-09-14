@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.110 (Frontend) / v2.5.103 (Backend)] - 2026-09-14
+
+### ♻️ Refactorización de Código
+- introduce ToolLogo component and expand known technology domains for logo resolution (`6843779`)
+
 ## [v2.5.109 (Frontend) / v2.5.102 (Backend)] - 2026-09-14
 
 ### 🐛 Corregido & Bug Fixes
