@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.111 (Frontend) / v2.5.105 (Backend)  
+> **Versión:** v2.5.112 (Frontend) / v2.5.106 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -68,6 +68,7 @@ El backend implementa el patrón **Thin Controller + Modular Workflows** desacop
    - **`tlamatini` (Preview / Staging):** Rama de pre-producción y validación de staging ([`.github/workflows/tlamatini.yml`](.github/workflows/tlamatini.yml)).
    - **`omeyocan` (Producción):** Rama principal protegida para releases y despliegue a producción ([`.github/workflows/omeyocan.yml`](.github/workflows/omeyocan.yml)).
    - **Prohibición de Push Directo:** Queda estrictamente prohibido realizar `push` directos de código a `omeyocan`. Todo cambio DEBE promoverse mediante **Pull Request (PR)** con revisión y aprobación obligatoria (*Required Pull Request Reviews*).
+8. **Prohibición Estricta de Google S2 y DuckDuckGo para Logotipos:** Queda terminantemente prohibido utilizar servicios de favicons de terceros como `google.com/s2/favicons` o `icons.duckduckgo.com` en todo el sistema. El logotipo del comercio DEBE ser scrappeado y extraído directamente desde el HTML de la tienda (`og:image`, `twitter:image`, JSON-LD structured data, elementos `img` de logotipo en cabecera o `apple-touch-icon`/assets del propio dominio/CDN del comercio). Los logotipos de tecnologías y herramientas deben resolverse a través de la API de Chismógrafo (`/api/icon` con proveedores autorizados como `brandicons` o `local`) o insignias tipográficas vectoriales de fallback.
 
 ---
 

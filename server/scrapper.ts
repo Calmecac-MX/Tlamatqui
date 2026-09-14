@@ -67,9 +67,99 @@ export const KNOWN_TECH_DOMAINS: Record<string, string> = {
 };
 
 /**
+ * Valida si una URL proviene de servicios de favicons de terceros prohibidos (Google S2, DuckDuckGo).
+ */
+export function isForbiddenLogoService(url?: string): boolean {
+  if (!url || typeof url !== "string") return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes("google.com/s2/favicons") ||
+    lower.includes("duckduckgo.com") ||
+    lower.includes("icons.duckduckgo.com")
+  );
+}
+
+/**
+ * Extrae directamente el logo o imagen representativa de la tienda desde el HTML del sitio web.
+ * Inspecciona OpenGraph (og:image), Twitter Card (twitter:image), JSON-LD structured data,
+ * imágenes de cabecera/brand (<img class="logo">) y favicons de alta resolución del dominio.
+ * 
+ * @param {string} html - Contenido HTML obtenido directamente del sitio web del comercio.
+ * @param {string} baseUrl - URL base del comercio para convertir URLs relativas a absolutas.
+ * @returns {string | undefined} URL absoluta y válida del logotipo del comercio.
+ */
+export function extractStoreLogoFromHtml(html: string, baseUrl: string): string | undefined {
+  if (!html || typeof html !== "string") return undefined;
+
+  let candidate: string | undefined;
+
+  // 1. Prioridad: og:image o twitter:image
+  const ogMatch =
+    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+    html.match(/<meta[^>]+name=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
+  if (ogMatch && ogMatch[1] && !isForbiddenLogoService(ogMatch[1])) {
+    candidate = ogMatch[1].trim();
+  }
+
+  // 2. JSON-LD structured data con "logo" o "image"
+  if (!candidate) {
+    const jsonLdMatches = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    for (const m of jsonLdMatches) {
+      try {
+        const parsed = JSON.parse(m[1]);
+        const logoUrl = parsed.logo?.url || parsed.logo || parsed.image?.url || parsed.image;
+        if (typeof logoUrl === "string" && logoUrl.length > 5 && !isForbiddenLogoService(logoUrl)) {
+          candidate = logoUrl.trim();
+          break;
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 3. Header / Brand Logo en elemento <img> de cabecera
+  if (!candidate) {
+    const imgLogoMatch =
+      html.match(/<img[^>]+class=["'][^"']*(?:logo|brand|header__heading-logo|site-header__logo)[^"']*["'][^>]+src=["']([^"']+)["']/i) ||
+      html.match(/<img[^>]+src=["']([^"']+)["'][^>]+class=["'][^"']*(?:logo|brand|header__heading-logo|site-header__logo)[^"']*["']/i) ||
+      html.match(/<img[^>]+alt=["'][^"']*(?:logo|brand)[^"']*["'][^>]+src=["']([^"']+)["']/i);
+    if (imgLogoMatch && imgLogoMatch[1] && !isForbiddenLogoService(imgLogoMatch[1])) {
+      candidate = imgLogoMatch[1].trim();
+    }
+  }
+
+  // 4. Apple Touch Icon / Shortcut Icon del sitio
+  if (!candidate) {
+    const iconMatch =
+      html.match(/<link[^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i) ||
+      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["']/i);
+    if (iconMatch && iconMatch[1] && !isForbiddenLogoService(iconMatch[1])) {
+      candidate = iconMatch[1].trim();
+    }
+  }
+
+  if (!candidate) return undefined;
+
+  // Normalizar a URL absoluta
+  try {
+    if (candidate.startsWith("//")) {
+      candidate = `https:${candidate}`;
+    } else if (!candidate.startsWith("http://") && !candidate.startsWith("https://")) {
+      const base = baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`;
+      candidate = new URL(candidate, base).href;
+    }
+    return isForbiddenLogoService(candidate) ? undefined : candidate;
+  } catch (_) {
+    return undefined;
+  }
+}
+
+/**
  * Resuelve la URL del icono o logotipo de una tecnología o aplicación.
- * Si ya cuenta con una URL válida, la preserva.
- * Si no cuenta con logotipo, infiere el dominio a partir del nombre o la URL y obtiene el icono de alta resolución.
+ * Prohibido el uso de servicios externos como Google S2 o DuckDuckGo.
+ * Utiliza Chismógrafo /api/icon con provider brandicons o avatares vectoriales tipográficos.
  *
  * @param {string} name - Nombre de la tecnología o aplicación (ej. "Klaviyo", "Loox", "Yotpo").
  * @param {string} [url] - URL o enlace opcional de la herramienta.
@@ -77,16 +167,16 @@ export const KNOWN_TECH_DOMAINS: Record<string, string> = {
  * @returns {string} URL resuelta del icono de la tecnología.
  */
 export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: string): string {
-  if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com")) {
+  if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com") && !isForbiddenLogoService(currentLogo)) {
     return currentLogo.trim();
   }
 
   const normalizedName = (name || "").toLowerCase().trim();
 
-  // 1. Buscar en diccionario de tecnologías conocidas
+  // 1. Buscar en diccionario de tecnologías conocidas vía Chismógrafo API icon
   for (const [key, domain] of Object.entries(KNOWN_TECH_DOMAINS)) {
-    if (normalizedName === key || normalizedName.includes(key)) {
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+    if (normalizedName === key || normalizedName.includes(key) || key.includes(normalizedName)) {
+      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(domain)}&provider=brandicons`;
     }
   }
 
@@ -100,7 +190,7 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
       const parsed = new URL(rawUrl);
       const hostname = parsed.hostname.replace(/^www\./, "");
       if (hostname && !hostname.includes("example.com")) {
-        return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+        return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(hostname)}&provider=brandicons`;
       }
     } catch (_) {}
   }
@@ -108,7 +198,7 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
   // 3. Si el nombre parece un dominio (ej: "app.ejemplo.com")
   if (normalizedName.includes(".")) {
     const cleanDomain = normalizedName.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split(" ")[0];
-    return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`;
+    return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=brandicons`;
   }
 
   // 4. Fallback con avatar tipográfico estilizado de alta definición
@@ -471,6 +561,7 @@ const KNOWN_APP_SIGNATURES: AppSignature[] = [
 export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
   url: string;
   storeName: string;
+  siteLogo?: string;
   detectedTools: Tool[];
   shopifyPlanEstimate: "basic" | "grow" | "advanced";
   estimatedMonthlyAppCostUSD: number;
@@ -484,6 +575,7 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
   let htmlContent = "";
   let storeName = "Comercio Auditado";
   let measuredLatencyMs = 85;
+  let siteLogo: string | undefined = undefined;
 
   try {
     const t0 = Date.now();
@@ -504,6 +596,9 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
       if (titleMatch && titleMatch[1]) {
         storeName = titleMatch[1].split("|")[0].split("-")[0].trim();
       }
+
+      // Extraer logotipo real del HTML del comercio
+      siteLogo = extractStoreLogoFromHtml(htmlContent, cleanUrl);
     }
   } catch (err) {
     console.warn(`[Native Scraper] No se pudo obtener respuesta directa de ${cleanUrl}. Aplicando inspección adaptativa.`);
@@ -596,6 +691,7 @@ export async function scrapeShopifyStoreNative(targetUrl: string): Promise<{
   return {
     url: cleanUrl,
     storeName,
+    siteLogo,
     detectedTools,
     shopifyPlanEstimate: "grow",
     estimatedMonthlyAppCostUSD: totalCostUSD,
@@ -769,6 +865,8 @@ export interface ChismografoDetectResponse {
   technology?: string;
   confidence?: number;
   theme?: string;
+  siteLogo?: string;
+  logo?: string;
   plugins?: ChismografoTechItem[];
   infrastructure?: ChismografoTechItem[];
   pixels?: ChismografoTechItem[];
@@ -1038,7 +1136,27 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
       const rawPixels: any[] = data.pixels || [];
       const rawInfra: any[] = data.infrastructure || [];
       const technology: string = data.technology || "Shopify";
-      const siteLogo: string = resolveTechnologyLogo(storeName, cleanUrl);
+      
+      // Extraer logotipo real del comercio directamente del sitio o respuesta Chismógrafo
+      let siteLogo: string | undefined = data.siteLogo || (data as any).logo || (data as any).storeLogo;
+      if (siteLogo && isForbiddenLogoService(siteLogo)) {
+        siteLogo = undefined;
+      }
+      if (!siteLogo) {
+        try {
+          const siteRes = await fetch(cleanUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+            signal: AbortSignal.timeout(5000),
+          });
+          if (siteRes.ok) {
+            const html = await siteRes.text();
+            siteLogo = extractStoreLogoFromHtml(html, cleanUrl);
+          }
+        } catch (_) {}
+      }
 
       // Normalizar capturas de pantalla de la respuesta
       const screenshots: ChismografoScreenshots | undefined = data.screenshots
@@ -1140,7 +1258,7 @@ export async function detectStoreWithChismografo(targetUrl: string): Promise<Chi
     url: cleanUrl,
     resolvedUrl: cleanUrl,
     storeName: native.storeName,
-    siteLogo: resolveTechnologyLogo(native.storeName, cleanUrl),
+    siteLogo: native.siteLogo || undefined,
     technology: "Shopify",
     confidence: 0.95,
     detectedTools: native.detectedTools,

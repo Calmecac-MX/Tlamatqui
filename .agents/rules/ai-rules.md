@@ -22,3 +22,6 @@ Cada cambio, modificación de código, adición de característica o actualizaci
 ## Directiva Obligatoria de Pull Requests y Aprobaciones
 Queda estrictamente prohibido realizar push directos a la rama principal `omeyocan`. Todo cambio o funcionalidad debe promoverse mediante una Pull Request (PR) y requiere aprobación explícita antes de integrarse al flujo de despliegue en producción.
 
+## Directiva Obligatoria de Logotipos (Prohibición Google S2 y DuckDuckGo)
+Queda estrictamente prohibido utilizar `google.com/s2/favicons` o `icons.duckduckgo.com`. El logo del comercio DEBE ser scrappeado directamente desde el HTML de la tienda (`og:image`, `twitter:image`, JSON-LD structured data, elementos `img` de logotipo en cabecera o `apple-touch-icon`/assets del propio dominio del comercio). Los logotipos de aplicaciones y tecnologías deben resolverse mediante la API oficial del Chismógrafo (`/api/icon` con proveedores autorizados) o avatares vectoriales tipográficos.
+

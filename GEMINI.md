@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.111 (Frontend) / v2.5.105 (Backend)  
+> **Versión:** v2.5.112 (Frontend) / v2.5.106 (Backend)  
 > **Archivo de Configuración Principal:** [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md)
 
 Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para garantizar la compatibilidad completa con Antigravity, Gemini y otros agentes de IA.
@@ -18,6 +18,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 - **Arquitectura de Workflows (`server/workflows/`):** Patrón *Thin Controller* con pipelines modulares para `auditWorkflow`, `emailWorkflow`, `domainWorkflow`, `teamWorkflow` y `engagementWorkflow` (telemetría y píxel estrictamente vinculados a accesos de clientes en `isShared === true`, sin visitantes simulados).
 - **Base de Datos:** Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`).
 - **Autenticación:** Auth0 (`@auth0/auth0-react` en Frontend y validación JWT en Backend).
+- **Resolución de Logotipos (Prohibición Estricta Google S2 / DuckDuckGo):** Queda prohibido el uso de `google.com/s2/favicons` y `icons.duckduckgo.com`. El logo del comercio DEBE ser scrappeado directamente desde el HTML de la tienda (`og:image`, `twitter:image`, JSON-LD, header `<img>`, `apple-touch-icon`). Las herramientas y tecnologías usan `/api/icon` de Chismógrafo o avatares vectoriales tipográficos.
 
 ---
 

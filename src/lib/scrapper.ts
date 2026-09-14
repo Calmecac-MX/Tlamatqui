@@ -166,6 +166,8 @@ export interface ChismografoDetectResponse {
   technology?: string;
   confidence?: number;
   theme?: string;
+  siteLogo?: string;
+  logo?: string;
   plugins?: ChismografoTechItem[];
   infrastructure?: ChismografoTechItem[];
   pixels?: ChismografoTechItem[];
@@ -440,7 +442,7 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         url: data.url || cleanDomain,
         resolvedUrl: data.resolvedUrl,
         storeName: data.storeName || defaultStoreName,
-        siteLogo: data.siteLogo || resolveChismografoLogo(undefined, defaultStoreName, cleanDomain),
+        siteLogo: data.siteLogo && !isForbiddenLogoService(data.siteLogo) ? data.siteLogo : undefined,
         technology: data.technology || "Shopify",
         confidence: data.confidence,
         theme: data.theme,
@@ -528,7 +530,7 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         url: cleanDomain,
         resolvedUrl: data.resolvedUrl,
         storeName: defaultStoreName,
-        siteLogo: resolveChismografoLogo(undefined, defaultStoreName, cleanDomain),
+        siteLogo: data.siteLogo && !isForbiddenLogoService(data.siteLogo) ? data.siteLogo : undefined,
         technology: data.technology || "Shopify",
         confidence: data.confidence || 1,
         theme: data.theme,
@@ -552,7 +554,7 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
     success: true,
     url: cleanDomain,
     storeName: defaultStoreName,
-    siteLogo: resolveTechnologyLogo(defaultStoreName, cleanDomain),
+    siteLogo: undefined,
     technology: "Shopify",
     confidence: 0.9,
     apps: mock.apps,
@@ -661,15 +663,98 @@ export const KNOWN_TECH_DOMAINS: Record<string, string> = {
   "pinterest pixel": "pinterest.com"
 };
 
+/**
+ * Valida si una URL proviene de servicios de favicons de terceros prohibidos (Google S2, DuckDuckGo).
+ */
+export function isForbiddenLogoService(url?: string): boolean {
+  if (!url || typeof url !== "string") return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes("google.com/s2/favicons") ||
+    lower.includes("duckduckgo.com") ||
+    lower.includes("icons.duckduckgo.com")
+  );
+}
+
+/**
+ * Extrae directamente el logo del comercio desde el HTML del sitio web.
+ */
+export function extractStoreLogoFromHtml(html: string, baseUrl: string): string | undefined {
+  if (!html || typeof html !== "string") return undefined;
+
+  let candidate: string | undefined;
+
+  // 1. Prioridad: og:image o twitter:image
+  const ogMatch =
+    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+    html.match(/<meta[^>]+name=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
+  if (ogMatch && ogMatch[1] && !isForbiddenLogoService(ogMatch[1])) {
+    candidate = ogMatch[1].trim();
+  }
+
+  // 2. JSON-LD structured data con "logo" o "image"
+  if (!candidate) {
+    const jsonLdMatches = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    for (const m of jsonLdMatches) {
+      try {
+        const parsed = JSON.parse(m[1]);
+        const logoUrl = parsed.logo?.url || parsed.logo || parsed.image?.url || parsed.image;
+        if (typeof logoUrl === "string" && logoUrl.length > 5 && !isForbiddenLogoService(logoUrl)) {
+          candidate = logoUrl.trim();
+          break;
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 3. Header / Brand Logo en elemento <img> de cabecera
+  if (!candidate) {
+    const imgLogoMatch =
+      html.match(/<img[^>]+class=["'][^"']*(?:logo|brand|header__heading-logo|site-header__logo)[^"']*["'][^>]+src=["']([^"']+)["']/i) ||
+      html.match(/<img[^>]+src=["']([^"']+)["'][^>]+class=["'][^"']*(?:logo|brand|header__heading-logo|site-header__logo)[^"']*["']/i) ||
+      html.match(/<img[^>]+alt=["'][^"']*(?:logo|brand)[^"']*["'][^>]+src=["']([^"']+)["']/i);
+    if (imgLogoMatch && imgLogoMatch[1] && !isForbiddenLogoService(imgLogoMatch[1])) {
+      candidate = imgLogoMatch[1].trim();
+    }
+  }
+
+  // 4. Apple Touch Icon / Shortcut Icon del sitio
+  if (!candidate) {
+    const iconMatch =
+      html.match(/<link[^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i) ||
+      html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["']/i);
+    if (iconMatch && iconMatch[1] && !isForbiddenLogoService(iconMatch[1])) {
+      candidate = iconMatch[1].trim();
+    }
+  }
+
+  if (!candidate) return undefined;
+
+  try {
+    if (candidate.startsWith("//")) {
+      candidate = `https:${candidate}`;
+    } else if (!candidate.startsWith("http://") && !candidate.startsWith("https://")) {
+      const base = baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`;
+      candidate = new URL(candidate, base).href;
+    }
+    return isForbiddenLogoService(candidate) ? undefined : candidate;
+  } catch (_) {
+    return undefined;
+  }
+}
+
 export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: string): string {
-  if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com")) {
+  if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com") && !isForbiddenLogoService(currentLogo)) {
     return currentLogo.trim();
   }
   const cleanName = (name || "").toLowerCase().trim();
 
   for (const [k, dom] of Object.entries(KNOWN_TECH_DOMAINS)) {
     if (cleanName === k || cleanName.includes(k) || k.includes(cleanName)) {
-      return `https://www.google.com/s2/favicons?domain=${dom}&sz=128`;
+      return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(dom)}&provider=brandicons`;
     }
   }
 
@@ -678,14 +763,14 @@ export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: 
       const u = new URL(url.startsWith("http") ? url : `https://${url}`);
       const hostname = u.hostname.replace(/^www\./, "");
       if (hostname && !hostname.includes("example.com")) {
-        return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+        return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(hostname)}&provider=brandicons`;
       }
     } catch (_) {}
   }
 
   if (cleanName.includes(".")) {
     const cleanDomain = cleanName.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split(" ")[0];
-    return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`;
+    return `https://chismografo.rifatela.lol/api/icon?id=${encodeURIComponent(cleanDomain)}&provider=brandicons`;
   }
 
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Tech")}&background=0F172A&color=00FF66&bold=true&size=128`;

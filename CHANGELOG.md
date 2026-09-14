@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.112 (Frontend) / v2.5.106 (Backend)] - 2026-09-14
+
+### 🚀 Features & Nuevas Funcionalidades
+- measure actual request latency in scrapper and bump backend version to 2.5.105 (`323d02c`)
+
 ## [v2.5.111 (Frontend) / v2.5.105 (Backend)] - 2026-09-14
 
 ### 🚀 Features & Nuevas Funcionalidades
