@@ -1837,6 +1837,13 @@ export async function saveDbReport(report: Report): Promise<Report> {
             update: analyticsData,
             create: { ...analyticsData, report: { connect: { id: cleanReport.id } } }
           });
+          if (sanitizedPageSpeed) {
+            await prisma.reportPageSpeed.upsert({
+              where: { reportId: cleanReport.id },
+              update: sanitizedPageSpeed,
+              create: { ...sanitizedPageSpeed, report: { connect: { id: cleanReport.id } } }
+            });
+          }
           await prisma.reportTool.deleteMany({ where: { reportId: cleanReport.id } });
           if (sanitizedTools.length > 0) {
             await prisma.reportTool.createMany({ data: sanitizedTools as any });

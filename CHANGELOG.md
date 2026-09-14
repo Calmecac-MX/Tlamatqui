@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.108 (Frontend) / v2.5.101 (Backend)] - 2026-09-14
+
+### 🚀 Features & Nuevas Funcionalidades
+- integrate Chismografo API detection and update tool price schemas (`751bc7d`)
+
 ## [v2.5.107 (Frontend) / v2.5.100 (Backend)] - 2026-09-14
 
 ### 🚀 Features & Nuevas Funcionalidades

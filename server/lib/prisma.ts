@@ -102,7 +102,25 @@ export async function ensureDatabaseSchema(prismaClient: PrismaClientInstance): 
           `ALTER TABLE "TeamMember" ADD COLUMN IF NOT EXISTS "requestedAt" TIMESTAMP(3);`,
 
           `ALTER TABLE "Partner" ADD COLUMN IF NOT EXISTS "representativeEmail" TEXT;`,
-          `ALTER TABLE "Partner" ADD COLUMN IF NOT EXISTS "teamId" TEXT;`
+          `ALTER TABLE "Partner" ADD COLUMN IF NOT EXISTS "teamId" TEXT;`,
+
+          `CREATE TABLE IF NOT EXISTS "ReportPageSpeed" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "reportId" TEXT NOT NULL UNIQUE,
+            "performanceScore" INTEGER NOT NULL DEFAULT 0,
+            "accessibilityScore" INTEGER NOT NULL DEFAULT 0,
+            "seoScore" INTEGER NOT NULL DEFAULT 0,
+            "fcp" TEXT,
+            "lcp" TEXT,
+            "tbt" TEXT,
+            "cls" TEXT,
+            "speedIndex" TEXT,
+            "interactive" TEXT,
+            "isDemo" BOOLEAN NOT NULL DEFAULT false,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );`,
+          `CREATE UNIQUE INDEX IF NOT EXISTS "ReportPageSpeed_reportId_key" ON "ReportPageSpeed"("reportId");`
         ];
 
         for (const sql of statements) {

@@ -4669,7 +4669,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       <input 
                         type="text" 
                         value={editingReport.detectedCms || ""} 
-                        onChange={(e) => setEditingReport({ ...editingReport, detectedCms: e.target.value })}
+                        onChange={(e) => setEditingReport(prev => prev ? ({ ...prev, detectedCms: e.target.value }) : null)}
                         placeholder="ej. Shopify, WooCommerce"
                         className="w-full bg-bg-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme"
                       />
@@ -4679,7 +4679,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       <input 
                         type="text" 
                         value={editingReport.activeTheme || ""} 
-                        onChange={(e) => setEditingReport({ ...editingReport, activeTheme: e.target.value })}
+                        onChange={(e) => setEditingReport(prev => prev ? ({ ...prev, activeTheme: e.target.value }) : null)}
                         placeholder="ej. Dawn, Prestige, Impulse"
                         className="w-full bg-bg-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme"
                       />
@@ -4688,8 +4688,8 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                       <label className="text-xs font-semibold text-text-dim-theme block mb-1">Latencia al Servidor (ms)</label>
                       <input 
                         type="number" 
-                        value={editingReport.serverLatencyMs || ""} 
-                        onChange={(e) => setEditingReport({ ...editingReport, serverLatencyMs: Number(e.target.value) || undefined })}
+                        value={editingReport.serverLatencyMs ?? ""} 
+                        onChange={(e) => setEditingReport(prev => prev ? ({ ...prev, serverLatencyMs: e.target.value === "" ? undefined : Number(e.target.value) }) : null)}
                         placeholder="ej. 85"
                         className="w-full bg-bg-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme"
                       />
@@ -4707,7 +4707,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <input 
                           type="text" 
                           value={editingReport.screenshotDesktop || ""} 
-                          onChange={(e) => setEditingReport({ ...editingReport, screenshotDesktop: e.target.value })}
+                          onChange={(e) => setEditingReport(prev => prev ? ({ ...prev, screenshotDesktop: e.target.value }) : null)}
                           placeholder="https://.../desktop.png"
                           className="w-full bg-surface-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme font-mono"
                         />
@@ -4717,7 +4717,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <input 
                           type="text" 
                           value={editingReport.screenshotMobile || ""} 
-                          onChange={(e) => setEditingReport({ ...editingReport, screenshotMobile: e.target.value })}
+                          onChange={(e) => setEditingReport(prev => prev ? ({ ...prev, screenshotMobile: e.target.value }) : null)}
                           placeholder="https://.../mobile.png"
                           className="w-full bg-surface-theme border border-border-theme rounded-lg px-3 py-2 text-white text-xs outline-none focus:border-accent-theme font-mono"
                         />
@@ -4743,14 +4743,19 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           type="number" 
                           min="0" 
                           max="100"
-                          value={editingReport.pageSpeed?.performanceScore || 0}
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              performanceScore: Number(e.target.value) || 0
-                            }
-                          })}
+                          value={editingReport.pageSpeed?.performanceScore ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value === "" ? 0 : Number(e.target.value);
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                performanceScore: val,
+                                performance: val
+                              }
+                            }) : null);
+                          }}
+                          placeholder="0"
                           className="w-full bg-bg-theme border border-border-theme rounded px-2.5 py-1.5 text-white font-bold text-sm outline-none focus:border-accent-theme"
                         />
                       </div>
@@ -4760,14 +4765,19 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           type="number" 
                           min="0" 
                           max="100"
-                          value={editingReport.pageSpeed?.accessibilityScore || 0}
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              accessibilityScore: Number(e.target.value) || 0
-                            }
-                          })}
+                          value={editingReport.pageSpeed?.accessibilityScore ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value === "" ? 0 : Number(e.target.value);
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                accessibilityScore: val,
+                                accessibility: val
+                              }
+                            }) : null);
+                          }}
+                          placeholder="0"
                           className="w-full bg-bg-theme border border-border-theme rounded px-2.5 py-1.5 text-white font-bold text-sm outline-none focus:border-accent-theme"
                         />
                       </div>
@@ -4777,14 +4787,19 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                           type="number" 
                           min="0" 
                           max="100"
-                          value={editingReport.pageSpeed?.seoScore || 0}
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              seoScore: Number(e.target.value) || 0
-                            }
-                          })}
+                          value={editingReport.pageSpeed?.seoScore ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value === "" ? 0 : Number(e.target.value);
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                seoScore: val,
+                                seo: val
+                              }
+                            }) : null);
+                          }}
+                          placeholder="0"
                           className="w-full bg-bg-theme border border-border-theme rounded px-2.5 py-1.5 text-white font-bold text-sm outline-none focus:border-accent-theme"
                         />
                       </div>
@@ -4796,13 +4811,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <input 
                           type="text" 
                           value={editingReport.pageSpeed?.fcp || ""} 
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              fcp: e.target.value
-                            }
-                          })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                fcp: val
+                              }
+                            }) : null);
+                          }}
                           placeholder="ej. 1.7 s"
                           className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
                         />
@@ -4812,13 +4830,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <input 
                           type="text" 
                           value={editingReport.pageSpeed?.lcp || ""} 
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              lcp: e.target.value
-                            }
-                          })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                lcp: val
+                              }
+                            }) : null);
+                          }}
                           placeholder="ej. 3.2 s"
                           className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
                         />
@@ -4828,13 +4849,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <input 
                           type="text" 
                           value={editingReport.pageSpeed?.tbt || ""} 
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              tbt: e.target.value
-                            }
-                          })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                tbt: val
+                              }
+                            }) : null);
+                          }}
                           placeholder="ej. 180 ms"
                           className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
                         />
@@ -4844,13 +4868,16 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                         <input 
                           type="text" 
                           value={editingReport.pageSpeed?.cls || ""} 
-                          onChange={(e) => setEditingReport({
-                            ...editingReport,
-                            pageSpeed: {
-                              ...(editingReport.pageSpeed || { performanceScore: 0 }),
-                              cls: e.target.value
-                            }
-                          })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingReport(prev => prev ? ({
+                              ...prev,
+                              pageSpeed: {
+                                ...(prev.pageSpeed || {}),
+                                cls: val
+                              }
+                            }) : null);
+                          }}
                           placeholder="ej. 0.04"
                           className="w-full bg-surface-theme border border-border-theme rounded px-2.5 py-1 text-white text-xs outline-none"
                         />

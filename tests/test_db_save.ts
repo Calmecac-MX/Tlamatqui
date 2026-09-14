@@ -57,13 +57,25 @@ async function testSave() {
       tools: [],
       comparisonRows: [],
       adminLogos: [],
+      pageSpeed: {
+        performanceScore: 85,
+        accessibilityScore: 92,
+        seoScore: 96,
+        fcp: "1.4 s",
+        lcp: "2.8 s",
+        tbt: "120 ms",
+        cls: "0.02"
+      },
       createdAt: new Date().toISOString()
     };
     const savedReport = await saveDbReport(testReport);
-      console.log("saveDbReport SUCCESS:", savedReport.id);
+    console.log("saveDbReport SUCCESS:", savedReport.id);
+    console.log("savedReport pageSpeed:", savedReport.pageSpeed);
 
     const reports = await getDbReports();
     console.log("getDbReports count:", reports.length);
+    const retrieved = reports.find(r => r.id === savedReport.id);
+    console.log("retrieved report pageSpeed:", retrieved?.pageSpeed);
   } catch (err: any) {
     console.error("saveDbReport FAILED with error:", err);
   }
