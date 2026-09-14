@@ -29,6 +29,7 @@ import TeamOnboardingModal from "./TeamOnboardingModal";
 import { useAlertPopup } from "../context/AlertPopupContext";
 import { lookupGravatar, isDefaultPlaceholderAvatar } from "../lib/gravatar";
 import { getInstanceLogo, DARK_MODE_INSTANCE_LOGO, LIGHT_MODE_INSTANCE_LOGO } from "../lib/themeLogo";
+import { ToolLogo } from "./ToolLogo";
 
 /**
  * Propiedades del componente AdminPanel.
@@ -4375,20 +4376,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
                               <tr key={t.id || index} className="hover:bg-surface-hover-theme/40">
                                 <td className="p-3 font-semibold text-slate-200">
                                   <div className="flex items-center gap-2.5">
-                                    {t.logo ? (
-                                      <div className="w-7 h-7 rounded bg-surface-theme border border-border-theme flex items-center justify-center overflow-hidden p-0.5 shrink-0">
-                                        <img 
-                                          src={t.logo} 
-                                          alt={t.name} 
-                                          className="w-full h-full object-contain" 
-                                          onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="w-7 h-7 rounded bg-surface-theme border border-border-theme flex items-center justify-center font-bold text-[10px] text-text-dim-theme shrink-0">
-                                        {t.name.charAt(0).toUpperCase()}
-                                      </div>
-                                    )}
+                                    <ToolLogo name={t.name} logo={t.logo} url={t.url} size="sm" />
                                     <div>
                                       <div>{t.name}</div>
                                       {t.url && <a href={t.url} target="_blank" rel="noreferrer" className="text-[10px] text-accent-theme hover:underline inline-flex items-center gap-1"><LinkIcon className="w-2.5 h-2.5" /> Web</a>}

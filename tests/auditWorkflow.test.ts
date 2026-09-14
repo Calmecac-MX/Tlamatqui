@@ -11,15 +11,26 @@ test("resolveTechnologyLogo - Resolución de logos de aplicaciones y tecnología
   const existingLogo = "https://cdn.mycustombrand.com/logo.png";
   assert.strictEqual(resolveTechnologyLogo("Klaviyo", undefined, existingLogo), existingLogo);
 
-  // 2. Tecnología conocida (Klaviyo -> klaviyo.com)
+  // 2. Tecnologías conocidas estándar y agregadas
   const klaviyoLogo = resolveTechnologyLogo("Klaviyo");
   assert.ok(klaviyoLogo.includes("klaviyo.com"), "Debe resolver icono con dominio klaviyo.com");
 
-  // 3. Tecnología conocida (Judge.me -> judge.me)
   const judgeLogo = resolveTechnologyLogo("Judge.me");
   assert.ok(judgeLogo.includes("judge.me"), "Debe resolver icono con dominio judge.me");
 
-  // 4. Inferencia por URL provista
+  const facturamaLogo = resolveTechnologyLogo("Facturama: Facturación CFDI");
+  assert.ok(facturamaLogo.includes("facturama.mx"), "Debe resolver icono con dominio facturama.mx");
+
+  const clarityLogo = resolveTechnologyLogo("Microsoft Clarity: AI Insights");
+  assert.ok(clarityLogo.includes("clarity.microsoft.com"), "Debe resolver icono con dominio clarity.microsoft.com");
+
+  const mailchimpLogo = resolveTechnologyLogo("Mailchimp: Email & SMS");
+  assert.ok(mailchimpLogo.includes("mailchimp.com"), "Debe resolver icono con dominio mailchimp.com");
+
+  const subiLogo = resolveTechnologyLogo("Subi Subscriptions App");
+  assert.ok(subiLogo.includes("subi.me"), "Debe resolver icono con dominio subi.me");
+
+  // 3. Inferencia por URL provista
   const customUrlLogo = resolveTechnologyLogo("Custom App", "https://mi-app-ecommerce.com/features");
   assert.ok(customUrlLogo.includes("mi-app-ecommerce.com"), "Debe inferir el dominio de la URL");
 });

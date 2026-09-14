@@ -556,37 +556,94 @@ export async function scrapeShopifyStore(storeUrl: string): Promise<ScraperRespo
   };
 }
 
+export const KNOWN_TECH_DOMAINS: Record<string, string> = {
+  "klaviyo": "klaviyo.com",
+  "loox": "loox.app",
+  "loox reviews": "loox.app",
+  "judge.me": "judge.me",
+  "gorgias": "gorgias.com",
+  "bold subscriptions": "boldcommerce.com",
+  "bold commerce": "boldcommerce.com",
+  "bold": "boldcommerce.com",
+  "smile.io": "smile.io",
+  "smile": "smile.io",
+  "infinite options": "shoppad.com",
+  "shoppad": "shoppad.com",
+  "lucky orange": "luckyorange.com",
+  "yotpo": "yotpo.com",
+  "recharge": "rechargepayments.com",
+  "recharge subscriptions": "rechargepayments.com",
+  "omnisend": "omnisend.com",
+  "mailchimp": "mailchimp.com",
+  "privy": "privy.com",
+  "zendesk": "zendesk.com",
+  "hotjar": "hotjar.com",
+  "tidio": "tidio.com",
+  "intercom": "intercom.com",
+  "pushowl": "pushowl.com",
+  "okendo": "okendo.io",
+  "stamped.io": "stamped.io",
+  "stamped": "stamped.io",
+  "vitals": "vitals.co",
+  "pagefly": "pagefly.io",
+  "shogun": "getshogun.com",
+  "aftership": "aftership.com",
+  "parcelpanel": "parcelpanel.com",
+  "triple whale": "triplewhale.com",
+  "postscript": "postscript.io",
+  "attentive": "attentive.com",
+  "skio": "skio.com",
+  "junip": "junip.co",
+  "shipstation": "shipstation.com",
+  "booster seo": "boosterapps.com",
+  "widebundle": "widebundle.com",
+  "back in stock": "backinstock.org",
+  "facturama": "facturama.mx",
+  "clarity": "clarity.microsoft.com",
+  "microsoft clarity": "clarity.microsoft.com",
+  "subi": "subi.me",
+  "subi subscriptions": "subi.me",
+  "subi subscriptions app": "subi.me",
+  "conekta": "conekta.com",
+  "mercado pago": "mercadopago.com",
+  "mercadopago": "mercadopago.com",
+  "stripe": "stripe.com",
+  "paypal": "paypal.com",
+  "kueski": "kueskipay.com",
+  "kueskipay": "kueskipay.com",
+  "aplazo": "aplazo.mx",
+  "meta pixel": "facebook.com",
+  "facebook pixel": "facebook.com",
+  "google analytics": "google.com",
+  "tiktok pixel": "tiktok.com",
+  "pinterest pixel": "pinterest.com"
+};
+
 export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: string): string {
   if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com")) {
     return currentLogo.trim();
   }
   const cleanName = (name || "").toLowerCase().trim();
-  const domainMap: Record<string, string> = {
-    klaviyo: "klaviyo.com",
-    loox: "loox.app",
-    "judge.me": "judge.me",
-    gorgias: "gorgias.com",
-    "bold subscriptions": "boldcommerce.com",
-    "smile.io": "smile.io",
-    "infinite options": "shoppad.com",
-    "lucky orange": "luckyorange.com",
-    yotpo: "yotpo.com",
-    recharge: "rechargepayments.com",
-    hotjar: "hotjar.com",
-    tidio: "tidio.com"
-  };
 
-  for (const [k, dom] of Object.entries(domainMap)) {
-    if (cleanName.includes(k)) {
+  for (const [k, dom] of Object.entries(KNOWN_TECH_DOMAINS)) {
+    if (cleanName === k || cleanName.includes(k) || k.includes(cleanName)) {
       return `https://www.google.com/s2/favicons?domain=${dom}&sz=128`;
     }
   }
 
-  if (url && url.length > 0) {
+  if (url && url.trim().length > 0) {
     try {
       const u = new URL(url.startsWith("http") ? url : `https://${url}`);
-      return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=128`;
+      const hostname = u.hostname.replace(/^www\./, "");
+      if (hostname && !hostname.includes("example.com")) {
+        return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+      }
     } catch (_) {}
+  }
+
+  if (cleanName.includes(".")) {
+    const cleanDomain = cleanName.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0].split(" ")[0];
+    return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`;
   }
 
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Tech")}&background=0F172A&color=00FF66&bold=true&size=128`;

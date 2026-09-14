@@ -45,6 +45,25 @@ export const KNOWN_TECH_DOMAINS: Record<string, string> = {
   "booster seo": "boosterapps.com",
   "widebundle": "widebundle.com",
   "back in stock": "backinstock.org",
+  "facturama": "facturama.mx",
+  "clarity": "clarity.microsoft.com",
+  "microsoft clarity": "clarity.microsoft.com",
+  "subi": "subi.me",
+  "subi subscriptions": "subi.me",
+  "subi subscriptions app": "subi.me",
+  "conekta": "conekta.com",
+  "mercado pago": "mercadopago.com",
+  "mercadopago": "mercadopago.com",
+  "stripe": "stripe.com",
+  "paypal": "paypal.com",
+  "kueski": "kueskipay.com",
+  "kueskipay": "kueskipay.com",
+  "aplazo": "aplazo.mx",
+  "meta pixel": "facebook.com",
+  "facebook pixel": "facebook.com",
+  "google analytics": "google.com",
+  "tiktok pixel": "tiktok.com",
+  "pinterest pixel": "pinterest.com"
 };
 
 /**

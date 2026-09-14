@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.109 (Frontend) / v2.5.102 (Backend)] - 2026-09-14
+
+### 🐛 Corregido & Bug Fixes
+- safely handle null previous state and improve score input handling in AdminPanel (`979c55a`)
+
 ## [v2.5.108 (Frontend) / v2.5.101 (Backend)] - 2026-09-14
 
 ### 🚀 Features & Nuevas Funcionalidades

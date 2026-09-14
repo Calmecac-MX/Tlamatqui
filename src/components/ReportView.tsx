@@ -24,6 +24,7 @@ import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
 import AdaptiveLogo from "./AdaptiveLogo";
 import ReportNavigationDock from "./ReportNavigationDock";
+import { ToolLogo } from "./ToolLogo";
 
 /**
  * Propiedades del componente ReportView.
@@ -1850,18 +1851,7 @@ export default function ReportView({ reportId, onBackToAdmin, isDarkMode, isShar
                                       )}
                                     </div>
                                     <div className="flex items-center gap-2.5 my-2">
-                                      {tool.logo ? (
-                                        <img 
-                                          src={tool.logo} 
-                                          alt={tool.name} 
-                                          className="w-10 h-10 rounded-lg object-contain border border-border-theme bg-surface-theme p-1 shadow-sm shrink-0" 
-                                          onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                                        />
-                                      ) : (
-                                        <div className="w-10 h-10 rounded-lg bg-surface-theme border border-border-theme flex items-center justify-center font-bold text-xs text-text-dim-theme shrink-0">
-                                          {tool.name.charAt(0).toUpperCase()}
-                                        </div>
-                                      )}
+                                      <ToolLogo name={tool.name} logo={tool.logo} url={tool.url} size="lg" />
                                       <div className="truncate">
                                         <h3 className="font-bold text-sm md:text-base text-white truncate">{tool.name}</h3>
                                         {tool.url && (
