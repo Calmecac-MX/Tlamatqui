@@ -115,6 +115,22 @@ export interface ChismografoLatencyData {
   description?: string;
 }
 
+/**
+ * Normaliza y extrae el valor numérico en milisegundos de latencia desde cualquier estructura devuelta por Chismógrafo.
+ */
+export function extractLatencyMs(latencyData: any): number | undefined {
+  if (typeof latencyData === "number" && !isNaN(latencyData) && latencyData > 0) return Math.round(latencyData);
+  if (latencyData && typeof latencyData === "object") {
+    const candidate = latencyData.latencyMs ?? latencyData.latenciaMs ?? latencyData.latencia ?? latencyData.tiempoRespuestaMs ?? latencyData.serverLatencyMs ?? latencyData.ms ?? latencyData.value;
+    if (typeof candidate === "number" && !isNaN(candidate) && candidate > 0) return Math.round(candidate);
+    if (typeof candidate === "string") {
+      const parsed = parseInt(candidate.replace(/[^\d]/g, ""), 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+  }
+  return undefined;
+}
+
 export interface ChismografoPageSpeedScores {
   performance?: number;
   accessibility?: number;
@@ -411,6 +427,14 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         selectedPlanId: t.selectedPlanId,
       }));
 
+      const rawLatency1 = data.latency ?? (data as any).serverLatencyMs ?? (data as any).latenciaMs;
+      const latencyMs1 = extractLatencyMs(rawLatency1) ?? 85;
+      const latency1: ChismografoLatencyData = {
+        success: true,
+        latencyMs: latencyMs1,
+        description: `${latencyMs1}ms (${latencyMs1 < 100 ? "Rápido" : latencyMs1 < 300 ? "Aceptable" : "Lento"})`
+      };
+
       return {
         success: true,
         url: data.url || cleanDomain,
@@ -425,7 +449,7 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         pixels: data.pixels || [],
         infrastructure: data.infrastructure || [],
         location: data.location,
-        latency: data.latency,
+        latency: latency1,
         screenshots: data.screenshots,
         pageSpeed: data.pageSpeed,
         shopifyPlanEstimate: data.shopifyPlanEstimate || "grow",
@@ -491,6 +515,14 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
 
       const totalAppCost = apps.reduce((sum, a) => sum + a.costEstimate, 0);
 
+      const rawLatency2 = data.latency ?? (data as any).serverLatencyMs ?? (data as any).latenciaMs;
+      const latencyMs2 = extractLatencyMs(rawLatency2) ?? 85;
+      const latency2: ChismografoLatencyData = {
+        success: true,
+        latencyMs: latencyMs2,
+        description: `${latencyMs2}ms (${latencyMs2 < 100 ? "Rápido" : latencyMs2 < 300 ? "Aceptable" : "Lento"})`
+      };
+
       return {
         success: true,
         url: cleanDomain,
@@ -505,7 +537,7 @@ export async function detectStoreWithChismografo(storeUrl: string): Promise<Chis
         pixels,
         infrastructure,
         location: data.location,
-        latency: data.latency,
+        latency: latency2,
         screenshots,
         pageSpeed,
         shopifyPlanEstimate: apps.length >= 5 ? "advanced" : apps.length >= 2 ? "grow" : "basic",

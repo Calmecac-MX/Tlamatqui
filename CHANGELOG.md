@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.111 (Frontend) / v2.5.104 (Backend)] - 2026-09-14
+
+### 🚀 Features & Nuevas Funcionalidades
+- add default PageSpeed metrics to audit workflows and scrapers (`b2f0601`)
+
 ## [v2.5.110 (Frontend) / v2.5.103 (Backend)] - 2026-09-14
 
 ### ♻️ Refactorización de Código

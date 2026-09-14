@@ -1301,7 +1301,7 @@ function mapPrismaReportToDomain(r: any): Report {
     pixels: (r.pixels as any) || undefined,
     infrastructure: (r.infrastructure as any) || undefined,
     serverLocation: (r.serverLocation as any) || undefined,
-    serverLatencyMs: r.serverLatencyMs || undefined,
+    serverLatencyMs: r.serverLatencyMs != null ? r.serverLatencyMs : 85,
     pageSpeed: r.pageSpeed ? {
       id: r.pageSpeed.id,
       performanceScore: r.pageSpeed.performanceScore,
@@ -1559,8 +1559,8 @@ export async function saveDbReport(report: Report): Promise<Report> {
     ? cleanReport.serverLocation
     : null;
   const sanitizedServerLatencyMs = cleanReport.serverLatencyMs != null
-    ? sanitizeInt(cleanReport.serverLatencyMs, 0)
-    : null;
+    ? sanitizeInt(cleanReport.serverLatencyMs, 85)
+    : ((cleanReport as any).latencyMs != null ? sanitizeInt((cleanReport as any).latencyMs, 85) : 85);
   const sanitizedPageSpeed = sanitizePageSpeed(cleanReport.pageSpeed);
 
   const prismaReportData = {

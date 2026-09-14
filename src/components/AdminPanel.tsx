@@ -20,7 +20,7 @@ import {
   PanelLeftClose
 } from "lucide-react";
 import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } from "../types";
-import { scrapeShopifyStore, detectStoreWithChismografo, ChismografoAuditResult } from "../lib/scrapper";
+import { scrapeShopifyStore, detectStoreWithChismografo, ChismografoAuditResult, extractLatencyMs } from "../lib/scrapper";
 import { useAuth } from "../lib/authContext";
 import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
@@ -1136,6 +1136,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       tiendanubePlan: "tiendanube",
       tools: [],
       comparisonRows: configComparisonRows && configComparisonRows.length > 0 ? [...configComparisonRows] : [...DEFAULT_GLOBAL_COMPARISON_ROWS],
+      serverLatencyMs: 85,
       pageSpeed: {
         performanceScore: 78,
         accessibilityScore: 89,
@@ -1192,7 +1193,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       pixels: auditResult.pixels || [],
       infrastructure: auditResult.infrastructure || [],
       serverLocation: auditResult.location || undefined,
-      serverLatencyMs: auditResult.latency?.latencyMs || undefined,
+      serverLatencyMs: extractLatencyMs(auditResult.latency) ?? 85,
       pageSpeed: auditResult.pageSpeed || {
         performanceScore: 78,
         accessibilityScore: 89,
@@ -1235,6 +1236,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
   const handleStartEdit = (report: Report) => {
     setEditingReport({
       ...report,
+      serverLatencyMs: report.serverLatencyMs ?? 85,
       pageSpeed: report.pageSpeed || {
         performanceScore: 78,
         accessibilityScore: 89,
@@ -1266,6 +1268,7 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       createdBy: editingReport.createdBy || userEmail || "cesar.ayar19@gmail.com",
       contactEmail: editingReport.contactEmail || userEmail || "comercial@tiendanube.mx",
       teamId: editingReport.teamId || selectedTeamId || "team-default",
+      serverLatencyMs: editingReport.serverLatencyMs ?? 85,
       tools: editingReport.tools || [],
       comparisonRows: (editingReport.comparisonRows && editingReport.comparisonRows.length > 0)
         ? editingReport.comparisonRows

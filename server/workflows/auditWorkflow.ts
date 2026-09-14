@@ -1,5 +1,5 @@
 import { sanitizeDomain } from "../dnsIntegrationService.js";
-import { detectStoreWithChismografo, scrapeShopifyStoreNative, resolveTechnologyLogo, ChismografoDiagnosticResult } from "../scrapper.js";
+import { detectStoreWithChismografo, scrapeShopifyStoreNative, resolveTechnologyLogo, ChismografoDiagnosticResult, extractLatencyMs } from "../scrapper.js";
 import { saveDbReport, getDbConfig } from "../dbBridge.js";
 import { Report, Tool, ComparisonRow, ReportPageSpeed } from "../types.js";
 import { sendWorkflowEmail } from "./emailWorkflow.js";
@@ -160,7 +160,7 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
     pixels: chismografoData.pixels || [],
     infrastructure: chismografoData.infrastructure || [],
     serverLocation: chismografoData.location || undefined,
-    serverLatencyMs: chismografoData.latency?.latencyMs || undefined,
+    serverLatencyMs: extractLatencyMs(chismografoData.latency) ?? 85,
     pageSpeed: resolvedPageSpeed,
     tools: finalizedTools,
     comparisonRows: defaultComparisonRows,
