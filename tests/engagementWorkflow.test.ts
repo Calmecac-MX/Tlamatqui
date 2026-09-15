@@ -5,7 +5,7 @@ import { saveDbReport, getDbReportById, deleteDbReport } from "../server/dbBridg
 import { Report } from "../src/types.js";
 
 test("EngagementWorkflow - Rastreo de visitantes únicos, vistas de slides y clics", async () => {
-  const testReportId = `rep_test_engagement_${Date.now()}`;
+  const testReportId = `tienda-test-telemetria-${Date.now()}`;
   const initialReport: Report = {
     id: testReportId,
     name: "Tienda Test Telemetría",

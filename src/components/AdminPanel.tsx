@@ -20,7 +20,7 @@ import {
   PanelLeftClose
 } from "lucide-react";
 import { Report, Tool, ComparisonRow, ComparisonTemplate, Team, TeamMember } from "../types";
-import { scrapeShopifyStore, detectStoreWithChismografo, ChismografoAuditResult, extractLatencyMs } from "../lib/scrapper";
+import { scrapeShopifyStore, detectStoreWithChismografo, ChismografoAuditResult, extractLatencyMs, slugifyDomainToReportId } from "../lib/scrapper";
 import { useAuth } from "../lib/authContext";
 import SendEmailModal from "./SendEmailModal";
 import { ShareReportModal } from "./ShareReportModal";
@@ -1258,13 +1258,15 @@ export default function AdminPanel({ onViewReport, isDarkMode, toggleDarkMode }:
       return;
     }
 
-    const isNew = !reports.some(r => r.id === editingReport.id);
-    const url = isNew ? "/api/reports" : `/api/reports/${editingReport.id}`;
+    const targetDomain = editingReport.id || editingReport.businessUrl || editingReport.name || "";
+    const reportId = slugifyDomainToReportId(targetDomain);
+    const isNew = !reports.some(r => r.id === reportId);
+    const url = isNew ? "/api/reports" : `/api/reports/${reportId}`;
     const method = isNew ? "POST" : "PUT";
 
     const reportToSave: Report = {
       ...editingReport,
-      id: editingReport.id || `rep_${Date.now()}`,
+      id: reportId,
       createdBy: editingReport.createdBy || userEmail || "cesar.ayar19@gmail.com",
       contactEmail: editingReport.contactEmail || userEmail || "comercial@tiendanube.mx",
       teamId: editingReport.teamId || selectedTeamId || "team-default",

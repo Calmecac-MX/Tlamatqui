@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.115 (Frontend) / v2.5.110 (Backend)  
+> **Versión:** v2.5.116 (Frontend) / v2.5.111 (Backend)  
 > **Archivo de Configuración:** `AGENTS.md` / `GEMINI.md` / `.agents/rules/ai-rules.md`
 
 Este documento establece las normas de desarrollo, la arquitectura del proyecto y las directrices obligatorias para la ejecución de las **Skills instaladas** en este repositorio. Todo agente de IA (Antigravity, Gemini, Claude, etc.) debe seguir estrictamente estas reglas.
@@ -16,6 +16,7 @@ Suite de diagnóstico financiero y auditoría de e-commerce que evalúa métrica
 - **Backend (API REST Express + Prisma ORM):**
   - **Ubicación:** `server.ts`, `server/`, `prisma/`, `data/`.
   - **Tecnologías:** Express 4, TypeScript, Prisma ORM 8 (`prisma@8.0.0-rc.13`, `@prisma/client`, `@prisma/config`), Auth0, Zod, esbuild.
+  - **Identificadores de Reporte en Kebab-Case & Prevención de Duplicados:** `slugifyDomainToReportId` convierte automáticamente dominios y URLs a identificadores amigables en minúsculas y kebab-case (ej. `tienda-demo-calmecac-myshopify-com`, `ropa-online-mx`), garantizando la unicidad e impidiendo reportes duplicados con respuesta `409 Conflict`.
   - **Integración Chismógrafo API REST (OpenAPI 3.0.3 v1.14.0):** Soporte completo para esquemas `TechItem` (anidado en `acercaDe`, `herramienta` y campos raíz), resolución de logotipos vía `LogoMetadata` y endpoint `/api/icon`, normalización de planes y frecuencias en `PrecioPlan`, endpoints modulares `/api/cms`, `/api/apps`, `/api/infra`, `/api/payment-processors`, `/api/location`, `/api/latency`, `/api/pagespeed`, `/api/screenshots` y proxy dual GET/POST en `/api/chismografo/detect`.
   - **Servicio Gravatar:** `server/gravatarService.ts` (`computeGravatarHash`, `getGravatarUrl`, `checkGravatarExists`, `resolveUserAvatar`, endpoints `/api/gravatar/lookup` y `/api/users/gravatar`) para resolución, caché y auto-asignación de fotos de perfil vía Gravatar.
   - **Gestión de Slugs e Identidad de Equipos:** `slugifyTeamName`, `generateUniqueTeamSlug`, modelo Prisma `Team.slug` (unique e indexado) y endpoints `/api/teams/:idOrSlug` para URLs amigables de workspace (`/team/:slug`).

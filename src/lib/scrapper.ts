@@ -746,6 +746,31 @@ export function extractStoreLogoFromHtml(html: string, baseUrl: string): string 
   }
 }
 
+/**
+ * Convierte un dominio, URL de comercio o nombre a un identificador de reporte único en kebab-case.
+ */
+export function slugifyDomainToReportId(urlOrDomain: string): string {
+  if (!urlOrDomain || typeof urlOrDomain !== "string") {
+    return `rep-${Date.now()}`;
+  }
+
+  let clean = urlOrDomain
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+    .replace(/^www\./, "");
+
+  const kebab = clean
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return kebab.length > 0 ? kebab : `rep-${Date.now()}`;
+}
+
 export function resolveTechnologyLogo(name: string, url?: string, currentLogo?: string): string {
   if (currentLogo && currentLogo.trim().length > 0 && !currentLogo.includes("example.com") && !isForbiddenLogoService(currentLogo)) {
     return currentLogo.trim();

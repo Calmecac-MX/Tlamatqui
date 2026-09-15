@@ -1,6 +1,6 @@
 import { sanitizeDomain } from "../dnsIntegrationService.js";
 import { detectStoreWithChismografo, scrapeShopifyStoreNative, resolveTechnologyLogo, ChismografoDiagnosticResult, extractLatencyMs } from "../scrapper.js";
-import { saveDbReport, getDbConfig } from "../dbBridge.js";
+import { saveDbReport, getDbConfig, slugifyDomainToReportId, getDbReportById } from "../dbBridge.js";
 import { Report, Tool, ComparisonRow, ReportPageSpeed } from "../types.js";
 import { sendWorkflowEmail } from "./emailWorkflow.js";
 import { isS3Configured, uploadBase64ToStorage, buildStorageKey, ensureReportScreenshotsInStorage } from "../storageService.js";
@@ -105,7 +105,7 @@ export async function runAuditWorkflow(input: AuditWorkflowInput): Promise<Audit
     }
   ];
 
-  const reportId = `rep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const reportId = slugifyDomainToReportId(normalizedUrl || input.url);
 
   // 4.1. Subida y persistencia de capturas en S3 / Bunny Storage
   const processedScreenshots = await ensureReportScreenshotsInStorage({

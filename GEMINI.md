@@ -1,6 +1,6 @@
 # Reglas y Contexto del Proyecto para Inteligencia Artificial (IA)
 > **Proyecto:** Tlamatqui  
-> **Versión:** v2.5.115 (Frontend) / v2.5.110 (Backend)  
+> **Versión:** v2.5.116 (Frontend) / v2.5.111 (Backend)  
 > **Archivo de Configuración Principal:** [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md)
 
 Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tlamatqui/AGENTS.md) para garantizar la compatibilidad completa con Antigravity, Gemini y otros agentes de IA.
@@ -10,6 +10,7 @@ Este documento complementa a [`AGENTS.md`](file:///Users/cesarayar/Documents/tla
 ## 1. Contexto Rápido del Repositorio
 - **Nombre:** Tlamatqui
 - **Arquitectura:** Desacoplada (Backend API REST en Express/TypeScript en puerto `4000`, Frontend React 19/Vite 6/Tailwind CSS v4 en puerto `3000`).
+- **Identificadores de Reporte en Kebab-Case & Prevención de Duplicados:** `slugifyDomainToReportId` normaliza y genera IDs basados en dominio en kebab-case (ej. `tienda-demo-calmecac-myshopify-com`), bloqueando duplicados en la base de datos PostgreSQL con código de estado HTTP `409 Conflict`.
 - **Integración Chismógrafo API REST (OpenAPI 3.0.3 v1.14.0):** Compatibilidad completa con estructuras anidadas `acercaDe`/`herramienta` y campos raíz, resolución de logotipos vía `LogoMetadata` (`/api/icon`), normalización de planes de precios multidimensionales (`PrecioPlan`), endpoints modulares (`/api/cms`, `/api/apps`, `/api/infra`, `/api/payment-processors`, `/api/location`, `/api/latency`, `/api/pagespeed`, `/api/screenshots`) y proxy dual GET/POST en `/api/chismografo/detect`.
 - **Logotipos Dinámicos por Tema de Instancia:** Configuración y resolución reactiva (`src/lib/themeLogo.ts`, `data/config.json`) con `Vector_Positivo.svg` para modo oscuro y `Vector_Negativo.svg` para modo claro.
 - **Servicio Gravatar:** Resolución automática y en tiempo real de fotos de perfil (`server/gravatarService.ts`, `src/lib/gravatar.ts`) en Auth Context, Registro/Sincronización de Usuarios, Panel de Administración e Invitación de Miembros del Equipo.

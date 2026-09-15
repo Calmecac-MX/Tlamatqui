@@ -838,6 +838,42 @@ export function slugifyTeamName(name: string): string {
 }
 
 /**
+ * Convierte un dominio, URL de comercio o nombre a un identificador de reporte único en kebab-case.
+ * - Elimina protocolos (http://, https://), prefijo www., subdirectorios, puertos y parámetros
+ * - Normaliza caracteres con acentos/diacríticos a letras simples
+ * - Reemplaza puntos, guiones bajos, espacios y caracteres no válidos por guiones simples (-)
+ * - Elimina guiones redundantes al inicio y final
+ * 
+ * Ejemplos:
+ * - "https://tienda-demo-calmecac.myshopify.com/products" -> "tienda-demo-calmecac-myshopify-com"
+ * - "www.ropa-online.mx" -> "ropa-online-mx"
+ * - "Calmécac Tienda" -> "calmecac-tienda"
+ * - "sub.dominio.co.uk" -> "sub-dominio-co-uk"
+ */
+export function slugifyDomainToReportId(urlOrDomain: string): string {
+  if (!urlOrDomain || typeof urlOrDomain !== "string") {
+    return `rep-${Date.now()}`;
+  }
+
+  let clean = urlOrDomain
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+    .replace(/^www\./, "");
+
+  const kebab = clean
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return kebab.length > 0 ? kebab : `rep-${Date.now()}`;
+}
+
+/**
  * Garantiza la unicidad del ID de un equipo en la base de datos o almacenamiento local.
  */
 export async function generateUniqueTeamId(name: string, excludeTeamId?: string): Promise<string> {
@@ -1463,8 +1499,9 @@ export async function getDbReports(): Promise<Report[]> {
 export async function getDbReportById(id: string): Promise<Report | null> {
   if (!id) return null;
   const cleanId = String(id).trim();
+  const kebabId = slugifyDomainToReportId(cleanId);
 
-  const cachedReport = getCachedQueryResult<Report>(`report_${cleanId}`);
+  const cachedReport = getCachedQueryResult<Report>(`report_${cleanId}`) || getCachedQueryResult<Report>(`report_${kebabId}`);
   if (cachedReport) return cachedReport;
 
   const prisma = getPrisma();
@@ -1474,7 +1511,9 @@ export async function getDbReportById(id: string): Promise<Report | null> {
         where: {
           OR: [
             { id: cleanId },
-            { id: { equals: cleanId, mode: "insensitive" } }
+            { id: kebabId },
+            { id: { equals: cleanId, mode: "insensitive" } },
+            { id: { equals: kebabId, mode: "insensitive" } }
           ]
         },
         include: {
@@ -1493,6 +1532,7 @@ export async function getDbReportById(id: string): Promise<Report | null> {
       if (r) {
         const mappedReport = mapPrismaReportToDomain(r);
         setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
+        setCachedQueryResult(`report_${kebabId}`, mappedReport, 3000);
         return mappedReport;
       }
     } catch (err: any) {
@@ -1504,7 +1544,9 @@ export async function getDbReportById(id: string): Promise<Report | null> {
             where: {
               OR: [
                 { id: cleanId },
-                { id: { equals: cleanId, mode: "insensitive" } }
+                { id: kebabId },
+                { id: { equals: cleanId, mode: "insensitive" } },
+                { id: { equals: kebabId, mode: "insensitive" } }
               ]
             },
             include: {
@@ -1521,9 +1563,10 @@ export async function getDbReportById(id: string): Promise<Report | null> {
             }
           });
           if (retryReport) {
-            const mappedReport = mapPrismaReportToDomain(retryReport);
-            setCachedQueryResult(`report_${cleanId}`, mappedReport, 3000);
-            return mappedReport;
+            const mapped = mapPrismaReportToDomain(retryReport);
+            setCachedQueryResult(`report_${cleanId}`, mapped, 3000);
+            setCachedQueryResult(`report_${kebabId}`, mapped, 3000);
+            return mapped;
           }
         } catch (retryErr) {
           console.error(`[Prisma Auto-Repair Error in getDbReportById for ${cleanId}]:`, retryErr);
@@ -1534,13 +1577,20 @@ export async function getDbReportById(id: string): Promise<Report | null> {
     }
   }
 
-  return inMemoryReportsFallback.get(cleanId) || inMemoryReportsFallback.get(cleanId.toLowerCase()) || null;
+  return inMemoryReportsFallback.get(cleanId) || 
+         inMemoryReportsFallback.get(cleanId.toLowerCase()) || 
+         inMemoryReportsFallback.get(kebabId) || 
+         inMemoryReportsFallback.get(kebabId.toLowerCase()) || 
+         null;
 }
 
 export async function saveDbReport(report: Report): Promise<Report> {
+  const targetDomain = report.id || report.businessUrl || report.name || "";
+  const reportId = slugifyDomainToReportId(targetDomain);
+
   const cleanReport: Report = {
     ...report,
-    id: report.id || Math.random().toString(36).substring(2, 11),
+    id: reportId,
     tools: report.tools || [],
     comparisonRows: report.comparisonRows || [],
     adminLogos: report.adminLogos || [],

@@ -4,6 +4,11 @@ Todos los cambios notables en este proyecto son documentados automáticamente de
 
 ---
 
+## [v2.5.116 (Frontend) / v2.5.111 (Backend)] - 2026-09-15
+
+### 🚀 Features & Nuevas Funcionalidades
+- enhance tool logo resolution with candidate slugs and robust fallback steps (`3fc0638`)
+
 ## [v2.5.115 (Frontend) / v2.5.110 (Backend)] - 2026-09-14
 
 ### 🚀 Features & Nuevas Funcionalidades

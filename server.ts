@@ -22,6 +22,7 @@ import {
   deleteDbTeam,
   generateUniqueTeamId,
   slugifyTeamName,
+  slugifyDomainToReportId,
   getDbReports,
   getDbReportById,
   saveDbReport,
@@ -1319,11 +1320,23 @@ app.get("/api/reports/:id", async (req: Request, res: Response) => {
 
 /**
  * @route POST /api/reports
- * @description Crea un nuevo reporte de diagnóstico.
+ * @description Crea un nuevo reporte de diagnóstico validando que no existan duplicados por ID o dominio.
  */
 app.post("/api/reports", async (req: Request, res: Response) => {
   try {
-    const reportId = req.body.id || Math.random().toString(36).substring(2, 11);
+    const rawTarget = req.body.id || req.body.businessUrl || req.body.url || req.body.name || "";
+    const reportId = slugifyDomainToReportId(rawTarget);
+
+    // Validar unicidad y evitar duplicados
+    const existing = await getDbReportById(reportId);
+    if (existing) {
+      return res.status(409).json({
+        error: `Ya existe un reporte registrado con el ID "${reportId}". No se permiten duplicados.`,
+        code: "REPORT_ALREADY_EXISTS",
+        existingReportId: existing.id
+      });
+    }
+
     const screenshots = await ensureReportScreenshotsInStorage({
       ...req.body,
       id: reportId
@@ -1347,15 +1360,16 @@ app.post("/api/reports", async (req: Request, res: Response) => {
  */
 app.put("/api/reports/:id", async (req: Request, res: Response) => {
   try {
-    const report = await getDbReportById(req.params.id);
+    const reportId = slugifyDomainToReportId(req.params.id);
+    const report = await getDbReportById(reportId);
     if (!report) {
       return res.status(404).json({ error: "Reporte no encontrado" });
     }
     const screenshots = await ensureReportScreenshotsInStorage({
       ...req.body,
-      id: req.params.id
+      id: reportId
     });
-    const updatedReport = { ...report, ...req.body, ...screenshots, id: req.params.id };
+    const updatedReport = { ...report, ...req.body, ...screenshots, id: reportId };
     const saved = await saveDbReport(updatedReport);
     res.json(saved);
   } catch (error: any) {
